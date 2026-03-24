@@ -608,7 +608,7 @@ function HeroSection() {
             transition={{ duration: 1.2, repeat: Infinity }}
             style={{ width: 5, height: 5, borderRadius: "50%", background: T.neon, display: "inline-block" }}
           />
-          VISUAL SIMULATION ENGINE · v2.0
+          ONE OF THE FASTEST PROGRAMMING LANGUAGE
         </motion.div>
 
         <motion.h1
@@ -1683,7 +1683,7 @@ function Sidebar({ activeSection }) {
           C 
         </motion.div>
         <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 5, color: T.muted, marginTop: 2 }}>
-          VISUAL SIM
+          PROGRAMMING
         </div>
       </div>
 
@@ -1724,7 +1724,7 @@ function Sidebar({ activeSection }) {
       </nav>
 
       <div style={{ marginTop: "auto", padding: "18px 18px", fontFamily: T.mono, fontSize: 8, color: T.dim, letterSpacing: 2, lineHeight: 1.9 }}>
-        C VISUAL SIM<br />v2.0
+        C PROGRAMMING<br />v2.0
       </div>
     </aside>
   );
