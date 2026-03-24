@@ -629,10 +629,10 @@ function HeroSection() {
           >
             C
           </motion.span>
-          {" "}LANG
+          {" "}
           <br />
           <span style={{ color: T.muted, fontSize: "0.34em", letterSpacing: 9, fontWeight: 400, fontFamily: T.mono }}>
-            THE MOTHER TONGUE
+            Programming language
           </span>
         </motion.h1>
 
@@ -1680,7 +1680,7 @@ function Sidebar({ activeSection }) {
           transition={{ duration: 2.5, repeat: Infinity }}
           style={{ fontFamily: T.display, fontWeight: 800, fontSize: 18, letterSpacing: 2, color: T.neon }}
         >
-          C LANG
+          C 
         </motion.div>
         <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 5, color: T.muted, marginTop: 2 }}>
           VISUAL SIM
