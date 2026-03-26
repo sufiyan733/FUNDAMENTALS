@@ -19,3 +19,18 @@ html, body {
   overflow-x: hidden;
   background-color: #04040f; /* match your dark theme */
 }
+.notebookPanel {
+  scrollbar-width: thin;
+  scrollbar-color: #4d9eff #1e2a3a;
+}
+.notebookPanel::-webkit-scrollbar {
+  width: 5px;
+}
+.notebookPanel::-webkit-scrollbar-track {
+  background: #1e2a3a;
+  border-radius: 10px;
+}
+.notebookPanel::-webkit-scrollbar-thumb {
+  background: #4d9eff;
+  border-radius: 10px;
+}

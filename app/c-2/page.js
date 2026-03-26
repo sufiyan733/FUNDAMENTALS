@@ -375,7 +375,7 @@ function Hero2() {
           <span style={{ color: T.neon2 }}>Data</span>
           <br />
           <span style={{ color: T.muted, fontSize: "0.34em", letterSpacing: 9, fontWeight: 400, fontFamily: T.mono }}>
-            simulation engine
+            C programming
           </span>
         </motion.h1>
 
@@ -1627,8 +1627,9 @@ function StepExecutionSection() {
 function Sidebar({ activeSection }) {
   return (
     <aside style={{
-      width: 176, minWidth: 176,
+      width: 240, minWidth: 240,
       background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
+      borderRight: `1px solid ${T.dim}`,
       borderRight: `1px solid ${T.dim}`,
       display: "flex", flexDirection: "column",
       padding: "26px 0",
@@ -1659,11 +1660,11 @@ function Sidebar({ activeSection }) {
               animate={{ color: isActive ? T.neon : T.muted, borderLeftColor: isActive ? T.neon : "transparent", background: isActive ? `${T.neon}07` : "transparent" }}
               whileHover={{ color: T.text, paddingLeft: 24 }}
               transition={{ duration: 0.2 }}
-              style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 18px", fontFamily: T.mono, fontSize: 10, fontWeight: 700, letterSpacing: 2, textDecoration: "none", borderLeft: "2px solid transparent", transition: "all 0.2s" }}
+              style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 18px", fontFamily: T.mono, fontSize: 12, fontWeight: 700, letterSpacing: 2, textDecoration: "none", borderLeft: "2px solid transparent", transition: "all 0.2s" }}
             >
               <span style={{ fontSize: 12, flexShrink: 0 }}>{item.icon}</span>
               <div>
-                <div style={{ fontSize: 7, opacity: 0.45, marginBottom: 1 }}>{item.num}</div>
+                <div style={{ fontSize: 8, opacity: 0.45, marginBottom: 1 }}>{item.num}</div>
                 {item.label}
               </div>
               {isActive && (
@@ -1675,7 +1676,7 @@ function Sidebar({ activeSection }) {
         })}
       </nav>
 
-      <div style={{ marginTop: "auto", padding: "18px 18px", fontFamily: T.mono, fontSize: 8, color: T.dim, letterSpacing: 2, lineHeight: 1.9 }}>
+      <div style={{ marginTop: "auto", padding: "18px 18px", fontFamily: T.mono, fontSize: 10, color: T.dim, letterSpacing: 2, lineHeight: 1.9 }}>
         C PROGRAMMING<br />CHAPTER 2
       </div>
     </aside>
@@ -1737,7 +1738,7 @@ function DeepUnderstandingPanel({ activeSection }) {
 
   return (
     <aside style={{
-      width: 272, minWidth: 272,
+      width: 350, minWidth: 350,
       background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
       borderLeft: `1px solid ${T.dim}`,
       padding: "26px 14px",
@@ -1747,8 +1748,8 @@ function DeepUnderstandingPanel({ activeSection }) {
     }}>
       {/* Header */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 5, color: T.neon, fontWeight: 700, marginBottom: 4 }}>DEEP UNDERSTANDING</div>
-        <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginBottom: 8 }}>Updates as you explore</div>
+        <div style={{ fontFamily: T.mono, fontSize: 10, letterSpacing: 5, color: T.neon, fontWeight: 700, marginBottom: 4 }}>DEEP UNDERSTANDING</div>
+        <div style={{ fontFamily: T.mono, fontSize: 10, color: T.text, marginBottom: 8, fontWeight: 600 }}>Updates as you explore</div>
         <div style={{ height: 1, background: `linear-gradient(90deg, ${T.neon}35, transparent)` }} />
       </div>
 
@@ -1758,8 +1759,8 @@ function DeepUnderstandingPanel({ activeSection }) {
           <motion.button key={m} whileTap={{ scale: 0.95 }}
             onClick={() => setMode(m)}
             style={{
-              flex: 1, fontFamily: T.mono, fontSize: 8, letterSpacing: 2, fontWeight: 700,
-              color: mode === m ? "#000" : T.muted, padding: "6px 0",
+              flex: 1, fontFamily: T.mono, fontSize: 10, letterSpacing: 2, fontWeight: 700,
+              color: mode === m ? "#000" : T.text, padding: "6px 0",
               background: mode === m ? T.neon2 : "transparent",
               border: `1px solid ${mode === m ? T.neon2 : T.dim}`, borderRadius: 4, cursor: "pointer",
             }}>
@@ -1770,7 +1771,7 @@ function DeepUnderstandingPanel({ activeSection }) {
 
       {/* Section insights */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.neon, marginBottom: 8 }}>⚡ KEY TAKEAWAYS</div>
+        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon, marginBottom: 8 }}>⚡ KEY TAKEAWAYS</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <AnimatePresence mode="wait">
             {insights.map((ins, i) => {
@@ -1791,22 +1792,22 @@ function DeepUnderstandingPanel({ activeSection }) {
                     <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{ins.icon}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontFamily: T.display, fontWeight: 700, fontSize: 11, color: T.text }}>{ins.title}</div>
-                        <motion.div animate={{ rotate: isExp ? 90 : 0 }} style={{ color: T.muted, fontSize: 10, flexShrink: 0, marginLeft: 6 }}>›</motion.div>
+                        <div style={{ fontFamily: T.display, fontWeight: 700, fontSize: 13, color: T.text }}>{ins.title}</div>
+                        <motion.div animate={{ rotate: isExp ? 90 : 0 }} style={{ color: T.text, fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 6 }}>›</motion.div>
                       </div>
                       <AnimatePresence>
                         {isExp && (
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} style={{ overflow: "hidden" }}>
-                            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, lineHeight: 1.7, marginTop: 6 }}>{ins.body}</div>
+                            <div style={{ fontFamily: T.mono, fontSize: 12, color: T.text, lineHeight: 1.7, marginTop: 6 }}>{ins.body}</div>
                             <motion.button whileTap={{ scale: 0.95 }} onClick={e => { e.stopPropagation(); speakInsight(ins); }}
-                              style={{ marginTop: 8, fontFamily: T.mono, fontSize: 7, letterSpacing: 2, color: speakId === ins.title ? "#000" : ins.color, background: speakId === ins.title ? ins.color : "transparent", border: `1px solid ${ins.color}40`, borderRadius: 3, padding: "3px 8px", cursor: "pointer" }}>
+                              style={{ marginTop: 8, fontFamily: T.mono, fontSize: 8, letterSpacing: 2, color: speakId === ins.title ? "#000" : ins.color, background: speakId === ins.title ? ins.color : "transparent", border: `1px solid ${ins.color}40`, borderRadius: 3, padding: "3px 8px", cursor: "pointer" }}>
                               {speakId === ins.title ? "🔊 …" : "🔊 EXPLAIN"}
                             </motion.button>
                           </motion.div>
                         )}
                       </AnimatePresence>
                       {!isExp && (
-                        <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        <div style={{ fontFamily: T.mono, fontSize: 9, color: T.text, lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {ins.body.slice(0, 48)}…
                         </div>
                       )}
@@ -1821,16 +1822,16 @@ function DeepUnderstandingPanel({ activeSection }) {
 
       {/* Mental models */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.neon2, marginBottom: 8 }}>🧠 MENTAL MODELS</div>
+        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2, marginBottom: 8 }}>🧠 MENTAL MODELS</div>
         <AnimatePresence mode="wait">
           <motion.div key={activeSection} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
             {currentModels.map((m, i) => (
               <div key={i} style={{ background: "rgba(0,212,255,0.04)", border: `1px solid ${T.neon2}18`, borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
                 <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
                   <span style={{ fontSize: 14 }}>{m.icon}</span>
-                  <div style={{ fontFamily: T.mono, fontSize: 10, fontWeight: 700, color: T.neon2, lineHeight: 1.5 }}>{m.model}</div>
+                  <div style={{ fontFamily: T.mono, fontSize: 12, fontWeight: 700, color: T.neon2, lineHeight: 1.5 }}>{m.model}</div>
                 </div>
-                <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, lineHeight: 1.6 }}>{m.detail}</div>
+                <div style={{ fontFamily: T.mono, fontSize: 10, color: T.text, lineHeight: 1.6 }}>{m.detail}</div>
               </div>
             ))}
           </motion.div>
@@ -1839,7 +1840,7 @@ function DeepUnderstandingPanel({ activeSection }) {
 
       {/* Common mistakes */}
       <div>
-        <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.neon3, marginBottom: 8 }}>🚫 COMMON MISTAKES</div>
+        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon3, marginBottom: 8 }}>🚫 COMMON MISTAKES</div>
         {[
           { mistake: "Using = instead of == for comparison", fix: "if (x == 5) not if (x = 5)" },
           { mistake: "Forgetting & in scanf", fix: "scanf(\"%d\", &x) not scanf(\"%d\", x)" },
