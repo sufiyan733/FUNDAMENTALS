@@ -4,11 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import gsap from "gsap";
 
-/* ─────────────────────────────────────────
-   BOOT LINES — REAL TERMINAL STYLE
-───────────────────────────────────────── */
 const BOOT_LINES = [
-  "LANG_FILES v4.2.0 — BOOT SEQUENCE INITIATED",
+  "LANG_FILES v4.002.0 — BOOT SEQUENCE INITIATED",
   "UEFI Firmware Version: 2024.03 (VISUOSLAYER)",
   "CPU: AMD EPYC 9754 128-Core @ 2.25GHz",
   "Memory: 256 GiB DDR5 ECC @ 4800 MT/s",
@@ -41,9 +38,6 @@ const BOOT_LINES = [
   "SELECT YOUR TARGET LANGUAGE",
 ];
 
-/* ─────────────────────────────────────────
-   LANGUAGE DATA (unchanged)
-───────────────────────────────────────── */
 const LANGUAGES = [
   {
     id: "c",
@@ -80,28 +74,7 @@ const LANGUAGES = [
   },
 ];
 
-/* ─────────────────────────────────────────
-   UTILITY: typewriter hook
-───────────────────────────────────────── */
-function useTypewriter(text, speed = 28, start = true) {
-  const [displayed, setDisplayed] = useState("");
-  useEffect(() => {
-    if (!start) return;
-    setDisplayed("");
-    let i = 0;
-    const iv = setInterval(() => {
-      setDisplayed(text.slice(0, i + 1));
-      i++;
-      if (i >= text.length) clearInterval(iv);
-    }, speed);
-    return () => clearInterval(iv);
-  }, [text, start]);
-  return displayed;
-}
-
-/* ─────────────────────────────────────────
-   GLITCH TEXT component
-───────────────────────────────────────── */
+/* ── Glitch Text ── */
 const GLITCH_CHARS = "!<>-_\\/[]{}—=+*^?#@$%&";
 function GlitchText({ text, active }) {
   const [display, setDisplay] = useState(text);
@@ -122,64 +95,104 @@ function GlitchText({ text, active }) {
   return <span>{display}</span>;
 }
 
-/* ─────────────────────────────────────────
-   BOOT SCREEN (with shake + red error at 80% progress)
-───────────────────────────────────────── */
+/* ── Boot Screen — BUG FIXED ──
+   Root cause: useEffect deps included `isRed`, causing the effect to
+   re-run and spawn a second setTimeout chain every time isRed flipped.
+   Fix: move all mutable counters into refs so the closure never goes
+   stale, use functional setState, and keep deps array empty.
+*/
 function BootScreen({ onComplete }) {
-  const [lines, setLines] = useState([]);
+  const [lines, setLines]       = useState([]);
   const [progress, setProgress] = useState(0);
-  const [done, setDone] = useState(false);
-  const [shakeRed, setShakeRed] = useState(false);
+  const [done, setDone]         = useState(false);
+  const [isRed, setIsRed]       = useState(false);
+  const [errorLine, setErrorLine] = useState(null);
 
+  const mountedRef  = useRef(false);
+  const lineIdxRef  = useRef(0);
+  const isRedRef    = useRef(false);
+  const timerRef    = useRef(null);
+  const termRef     = useRef(null);
+  const headerRef   = useRef(null);
+  const barFillRef  = useRef(null);
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+
+  /* GSAP entrance */
   useEffect(() => {
-    let lineIdx = 0;
-    const addLine = () => {
-      if (lineIdx >= BOOT_LINES.length) {
-        setTimeout(() => setDone(true), 600);
-        setTimeout(() => onComplete(), 1200);
-        return;
-      }
-      setLines((prev) => [...prev, BOOT_LINES[lineIdx]]);
-      const newProgress = Math.round(((lineIdx + 1) / BOOT_LINES.length) * 100);
-      setProgress(newProgress);
-      lineIdx++;
-      setTimeout(addLine, 260 + Math.random() * 180);
-    };
-    const t = setTimeout(addLine, 400);
-    return () => clearTimeout(t);
+    if (headerRef.current)
+      gsap.from(headerRef.current, { y: -24, opacity: 0, duration: 0.7, ease: "power3.out" });
+    if (termRef.current)
+      gsap.from(termRef.current,   { y:  24, opacity: 0, duration: 0.7, ease: "power3.out", delay: 0.18 });
   }, []);
 
-  // Trigger shake + red when progress >= 80
+  /* GSAP progress bar glow pulse */
   useEffect(() => {
-    if (progress >= 80 && progress < 100) {
-      setShakeRed(true);
-    } else {
-      setShakeRed(false);
-    }
-  }, [progress]);
+    if (!barFillRef.current) return;
+    gsap.killTweensOf(barFillRef.current);
+    gsap.to(barFillRef.current, {
+      boxShadow: isRed
+        ? "0 0 18px #ff3366, 0 0 6px #ff3366"
+        : "0 0 14px #00f7ff, 0 0 4px #00f7ff",
+      duration: 0.9, yoyo: true, repeat: -1, ease: "sine.inOut",
+    });
+  }, [isRed]);
+
+  /* Line ticker — single chain, no stale closures */
+  useEffect(() => {
+    if (mountedRef.current) return;
+    mountedRef.current = true;
+
+    const tick = () => {
+      const idx = lineIdxRef.current;
+      if (idx >= BOOT_LINES.length) {
+        setTimeout(() => setDone(true), 600);
+        setTimeout(() => onCompleteRef.current?.(), 1200);
+        return;
+      }
+
+      setLines(prev => [...prev, BOOT_LINES[idx]]);
+      const pct = Math.round(((idx + 1) / BOOT_LINES.length) * 100);
+      setProgress(pct);
+
+      if (pct >= 80 && !isRedRef.current) {
+        isRedRef.current = true;
+        setIsRed(true);
+        setErrorLine("⚠️ CRITICAL ERROR: Memory fault at 0x7FFE — Kernel panic! ⚠️");
+        if (termRef.current) {
+          gsap.to(termRef.current, {
+            keyframes: [
+              { boxShadow: "0 0 50px rgba(255,51,102,0.9)", duration: 0.08 },
+              { boxShadow: "0 0 12px rgba(255,51,102,0.25)", duration: 0.35 },
+            ],
+          });
+        }
+      }
+
+      lineIdxRef.current += 1;
+      timerRef.current = setTimeout(tick, 260 + Math.random() * 180);
+    };
+
+    timerRef.current = setTimeout(tick, 400);
+    return () => clearTimeout(timerRef.current);
+  }, []); // ← empty: intentional, all state via refs
 
   return (
-    <div
-      style={{
-        position: "fixed", inset: 0, background: "#060810", zIndex: 1000,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        flexDirection: "column",
-        opacity: done ? 0 : 1,
-        transition: "opacity 0.6s ease",
-        pointerEvents: done ? "none" : "all",
-      }}
-    >
-      {/* scanlines */}
+    <div style={{
+      position: "fixed", inset: 0, background: "#060810", zIndex: 1000,
+      display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column",
+      opacity: done ? 0 : 1, transition: "opacity 0.6s ease",
+      pointerEvents: done ? "none" : "all",
+    }}>
       <div style={{
         position: "absolute", inset: 0, pointerEvents: "none",
         background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.08) 2px,rgba(0,0,0,0.08) 4px)",
         zIndex: 1,
       }} />
+
       <div style={{ width: "min(600px,90vw)", position: "relative", zIndex: 2 }}>
         {/* header */}
-        <div style={{
-          borderLeft: "2px solid #00f7ff", paddingLeft: 16, marginBottom: 28,
-        }}>
+        <div ref={headerRef} style={{ borderLeft: "2px solid #00f7ff", paddingLeft: 16, marginBottom: 28 }}>
           <div style={{ color: "#00f7ff", fontSize: 10, letterSpacing: 4, marginBottom: 4 }}>
             TOP SECRET // CASE #2026
           </div>
@@ -188,15 +201,13 @@ function BootScreen({ onComplete }) {
           </div>
         </div>
 
-        {/* terminal window with dynamic shake+red class */}
+        {/* terminal */}
         <div
-          className={`terminal-container ${shakeRed ? "shake-terminal terminal-red" : ""}`}
+          ref={termRef}
+          className={isRed ? "shake-terminal terminal-red" : ""}
           style={{
-            border: "1px solid #1e2535",
-            background: "rgba(10,13,20,0.95)",
-            padding: "0",
-            position: "relative",
-            transition: "border 0.2s, box-shadow 0.2s",
+            border: "1px solid #1e2535", background: "rgba(10,13,20,0.95)",
+            position: "relative", transition: "border 0.2s",
           }}
         >
           {/* title bar */}
@@ -204,16 +215,17 @@ function BootScreen({ onComplete }) {
             background: "#0d1118", borderBottom: "1px solid #1e2535",
             padding: "6px 14px", display: "flex", alignItems: "center", gap: 8,
           }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff3366", display: "block" }} />
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ffb347", display: "block" }} />
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#39ff14", display: "block" }} />
+            {["#ff3366","#ffb347","#39ff14"].map(c => (
+              <span key={c} style={{ width: 8, height: 8, borderRadius: "50%", background: c, display: "block" }} />
+            ))}
             <span style={{ color: "#3a4558", fontSize: 10, marginLeft: 8, letterSpacing: 2 }}>
               TERMINAL — BOOT_SEQUENCE.sh
             </span>
           </div>
+
           {/* lines */}
           <div style={{ padding: "20px 20px 16px", minHeight: 220, fontFamily: "'Fira Code',monospace", fontSize: 12 }}>
-            {lines.filter(Boolean).map((l, i) => (
+            {lines.map((l, i) => (
               <div key={i} style={{
                 display: "flex", gap: 10, marginBottom: 6,
                 color: l.includes("✓") ? "#39ff14" : l.includes("SELECT") ? "#ffb347" : "#c8d8f0",
@@ -223,23 +235,36 @@ function BootScreen({ onComplete }) {
                 <span>{l}</span>
               </div>
             ))}
+            {errorLine && (
+              <div style={{
+                display: "flex", gap: 10, marginBottom: 6, color: "#ff3366",
+                animation: "fadeIn 0.2s ease, glitch 0.3s infinite",
+              }}>
+                <span style={{ color: "#ff3366", userSelect: "none" }}>!</span>
+                <span>{errorLine}</span>
+              </div>
+            )}
             <span style={{
               display: "inline-block", width: 8, height: 14,
-              background: "#00f7ff", animation: "blink 1s step-end infinite",
-              verticalAlign: "middle",
+              background: "#00f7ff", animation: "blink 1s step-end infinite", verticalAlign: "middle",
             }} />
           </div>
-          {/* progress bar */}
+
+          {/* progress */}
           <div style={{ borderTop: "1px solid #1e2535", padding: "10px 20px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 10, color: "#3a4558", letterSpacing: 2 }}>
               <span>LOADING</span><span>{progress}%</span>
             </div>
             <div style={{ height: 2, background: "#1e2535", width: "100%" }}>
-              <div style={{
-                height: "100%", background: shakeRed ? "#ff3366" : "#00f7ff",
-                width: `${progress}%`, transition: "width 0.3s ease, background 0.2s",
-                boxShadow: shakeRed ? "0 0 8px #ff3366" : "0 0 8px #00f7ff",
-              }} />
+              <div
+                ref={barFillRef}
+                style={{
+                  height: "100%",
+                  background: isRed ? "#ff3366" : "#00f7ff",
+                  width: `${progress}%`,
+                  transition: "width 0.3s ease, background 0.2s",
+                }}
+              />
             </div>
           </div>
         </div>
@@ -258,48 +283,43 @@ function BootScreen({ onComplete }) {
       <style>{`
         @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
         @keyframes fadeIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:none}}
-        
-        /* SHAKE animation for terminal */
-        @keyframes shakeTerminal {
-          0% { transform: translate(1px, 1px) rotate(0deg); }
-          10% { transform: translate(-1px, -2px) rotate(-0.5deg); }
-          20% { transform: translate(-2px, 0px) rotate(0.5deg); }
-          30% { transform: translate(2px, 1px) rotate(0deg); }
-          40% { transform: translate(1px, -1px) rotate(0.5deg); }
-          50% { transform: translate(-1px, 2px) rotate(-0.5deg); }
-          60% { transform: translate(-2px, 1px) rotate(0deg); }
-          70% { transform: translate(2px, 1px) rotate(-0.5deg); }
-          80% { transform: translate(-1px, -1px) rotate(0.5deg); }
-          90% { transform: translate(1px, 2px) rotate(0deg); }
-          100% { transform: translate(1px, -2px) rotate(-0.5deg); }
+        @keyframes shakeTerminal{
+          0%{transform:translate(1px,1px) rotate(0deg)}10%{transform:translate(-1px,-2px) rotate(-0.5deg)}
+          20%{transform:translate(-2px,0px) rotate(0.5deg)}30%{transform:translate(2px,1px) rotate(0deg)}
+          40%{transform:translate(1px,-1px) rotate(0.5deg)}50%{transform:translate(-1px,2px) rotate(-0.5deg)}
+          60%{transform:translate(-2px,1px) rotate(0deg)}70%{transform:translate(2px,1px) rotate(-0.5deg)}
+          80%{transform:translate(-1px,-1px) rotate(0.5deg)}90%{transform:translate(1px,2px) rotate(0deg)}
+          100%{transform:translate(1px,-2px) rotate(-0.5deg)}
         }
-        .shake-terminal {
-          animation: shakeTerminal 0.15s infinite;
-        }
-        .terminal-red {
-          border: 1px solid #ff3366 !important;
-          box-shadow: 0 0 20px rgba(255,51,102,0.4);
+        .shake-terminal{animation:shakeTerminal 0.15s infinite}
+        .terminal-red{border:1px solid #ff3366 !important;box-shadow:0 0 20px rgba(255,51,102,0.4)}
+        @keyframes glitch{
+          0%{text-shadow:-1px 0 red,1px 0 blue;opacity:1}
+          50%{text-shadow:-2px 0 red,2px 0 blue;opacity:0.8}
+          100%{text-shadow:-1px 0 red,1px 0 blue;opacity:1}
         }
       `}</style>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────
-   HUD (unchanged)
-───────────────────────────────────────── */
+/* ── HUD ── */
 function HUD({ activeLanguage }) {
   const [time, setTime] = useState("00:00:00");
+  const hudRef = useRef(null);
   useEffect(() => {
     const iv = setInterval(() => {
       const n = new Date();
-      setTime([n.getHours(), n.getMinutes(), n.getSeconds()].map(x => String(x).padStart(2, "0")).join(":"));
+      setTime([n.getHours(), n.getMinutes(), n.getSeconds()].map(x => String(x).padStart(2,"0")).join(":"));
     }, 1000);
     return () => clearInterval(iv);
   }, []);
-
+  useEffect(() => {
+    if (hudRef.current)
+      gsap.from(hudRef.current, { y: -40, opacity: 0, duration: 0.8, ease: "power3.out", delay: 0.1 });
+  }, []);
   return (
-    <div style={{
+    <div ref={hudRef} style={{
       position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
       display: "flex", justifyContent: "space-between", alignItems: "center",
       padding: "10px 24px",
@@ -328,155 +348,164 @@ function HUD({ activeLanguage }) {
   );
 }
 
-/* ─────────────────────────────────────────
-   LANGUAGE CARD (unchanged)
-───────────────────────────────────────── */
+/* ── Language Card with GSAP hover ── */
 function LanguageCard({ lang, onSelect, index }) {
   const [hovered, setHovered] = useState(false);
   const [clicked, setClicked] = useState(false);
+  const cardRef = useRef(null);
 
+  /* GSAP entrance stagger */
+  useEffect(() => {
+    if (cardRef.current)
+      gsap.from(cardRef.current, {
+        y: 40, opacity: 0, duration: 0.7,
+        ease: "power3.out",
+        delay: 0.15 + index * 0.15,
+      });
+  }, []);
+
+  const handleMouseEnter = () => {
+    setHovered(true);
+    if (cardRef.current)
+      gsap.to(cardRef.current, { y: -6, duration: 0.35, ease: "power2.out" });
+  };
+  const handleMouseLeave = () => {
+    setHovered(false);
+    if (cardRef.current)
+      gsap.to(cardRef.current, { y: 0, duration: 0.4, ease: "power2.inOut" });
+  };
   const handleClick = () => {
     setClicked(true);
-    setTimeout(() => onSelect(lang), 300);
+    if (cardRef.current) {
+      gsap.to(cardRef.current, {
+        scale: 0.96, duration: 0.12, ease: "power2.in",
+        onComplete: () => {
+          gsap.to(cardRef.current, { scale: 1, duration: 0.2, ease: "power2.out" });
+        },
+      });
+    }
+    setTimeout(() => onSelect(lang), 320);
   };
+
+  const rgbMap = { "#00f7ff": "0,247,255", "#ffb347": "255,179,71", "#ff3366": "255,51,102" };
+  const rgb = rgbMap[lang.accent];
 
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      ref={cardRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       onClick={handleClick}
       style={{
         border: `1px solid ${hovered ? lang.accent : "#1e2535"}`,
-        background: hovered ? `rgba(${lang.accent === "#00f7ff" ? "0,247,255" : lang.accent === "#ffb347" ? "255,179,71" : "255,51,102"},0.04)` : "#0a0d14",
-        padding: "32px 28px",
+        background: hovered ? `rgba(${rgb},0.04)` : "#0a0d14",
+        padding: "clamp(20px,4vw,32px) clamp(20px,4vw,28px)",
         cursor: "none",
         position: "relative",
         overflow: "hidden",
-        transition: "border-color 0.2s, background 0.2s, transform 0.2s",
-        transform: clicked ? "scale(0.97)" : hovered ? "scale(1.01)" : "scale(1)",
-        animationDelay: `${index * 0.12}s`,
-        animation: "cardReveal 0.6s ease both",
+        transition: "border-color 0.2s, background 0.2s",
       }}
     >
       {/* scan sweep on hover */}
       {hovered && (
         <div style={{
           position: "absolute", inset: 0,
-          background: `linear-gradient(90deg,transparent 0%,${lang.accent}0a 50%,transparent 100%)`,
+          background: `linear-gradient(90deg,transparent 0%,${lang.accent}0d 50%,transparent 100%)`,
           animation: "scanSweep 0.8s ease",
           pointerEvents: "none",
         }} />
       )}
 
       {/* corner brackets */}
-      <div style={{ position: "absolute", top: 10, left: 10, width: 12, height: 12, borderTop: `1px solid ${lang.accent}`, borderLeft: `1px solid ${lang.accent}` }} />
-      <div style={{ position: "absolute", top: 10, right: 10, width: 12, height: 12, borderTop: `1px solid ${lang.accent}`, borderRight: `1px solid ${lang.accent}` }} />
-      <div style={{ position: "absolute", bottom: 10, left: 10, width: 12, height: 12, borderBottom: `1px solid ${lang.accent}`, borderLeft: `1px solid ${lang.accent}` }} />
-      <div style={{ position: "absolute", bottom: 10, right: 10, width: 12, height: 12, borderBottom: `1px solid ${lang.accent}`, borderRight: `1px solid ${lang.accent}` }} />
+      {[["top","left"],["top","right"],["bottom","left"],["bottom","right"]].map(([v,h]) => (
+        <div key={v+h} style={{
+          position: "absolute", [v]: 10, [h]: 10, width: 12, height: 12,
+          [`border${v.charAt(0).toUpperCase()+v.slice(1)}`]: `1px solid ${lang.accent}`,
+          [`border${h.charAt(0).toUpperCase()+h.slice(1)}`]: `1px solid ${lang.accent}`,
+          transition: "opacity 0.2s",
+          opacity: hovered ? 1 : 0.4,
+        }} />
+      ))}
 
-      {/* tag */}
       <div style={{ fontSize: 9, letterSpacing: 3, color: lang.accent, marginBottom: 20, opacity: 0.7 }}>
         {lang.tag}
       </div>
-
-      {/* big label */}
       <div style={{
-        fontSize: "clamp(42px,7vw,64px)",
-        fontWeight: 700,
-        letterSpacing: -1,
-        color: hovered ? lang.accent : "#c8d8f0",
-        lineHeight: 1,
-        marginBottom: 8,
+        fontSize: "clamp(36px,10vw,64px)", fontWeight: 700, letterSpacing: -1,
+        color: hovered ? lang.accent : "#c8d8f0", lineHeight: 1, marginBottom: 8,
         transition: "color 0.2s",
-        textShadow: hovered ? `0 0 30px ${lang.accent}40` : "none",
+        textShadow: hovered ? `0 0 30px ${lang.accent}50` : "none",
       }}>
         {lang.label}
       </div>
-
-      {/* tagline */}
-      <div style={{ fontSize: 11, color: "#6b7fa3", letterSpacing: 2, marginBottom: 20 }}>
+      <div style={{ fontSize: "clamp(10px,2vw,11px)", color: "#6b7fa3", letterSpacing: 2, marginBottom: 20 }}>
         {lang.tagline}
       </div>
-
-      {/* desc */}
-      <div style={{ fontSize: 12, color: "#8a9ab8", lineHeight: 1.7, marginBottom: 24, fontFamily: "'Fira Code',monospace" }}>
+      <div style={{ fontSize: "clamp(11px,2vw,12px)", color: "#8a9ab8", lineHeight: 1.7, marginBottom: 24, fontFamily: "'Fira Code',monospace" }}>
         {lang.desc}
       </div>
-
-      {/* meta pills */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 28 }}>
-        {lang.meta.map((m) => (
+        {lang.meta.map(m => (
           <span key={m} style={{
-            fontSize: 9, letterSpacing: 2, padding: "3px 10px",
+            fontSize: "clamp(8px,1.8vw,9px)", letterSpacing: 2, padding: "3px 10px",
             border: `1px solid ${lang.accent}30`,
             color: lang.accent, background: `${lang.accent}08`,
           }}>{m}</span>
         ))}
       </div>
-
-      {/* features */}
       <div style={{ marginBottom: 28 }}>
-        {lang.features.map((f) => (
-          <div key={f} style={{
-            fontSize: 11, color: "#6b7fa3", marginBottom: 6,
-            display: "flex", alignItems: "center", gap: 8,
-          }}>
-            <span style={{ color: lang.accent, fontSize: 8 }}>▸</span>
-            {f}
+        {lang.features.map(f => (
+          <div key={f} style={{ fontSize: "clamp(10px,2vw,11px)", color: "#6b7fa3", marginBottom: 6, display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: lang.accent, fontSize: 8 }}>▸</span>{f}
           </div>
         ))}
       </div>
-
-      {/* SELECT button */}
-      <button
-        style={{
-          width: "100%", padding: "12px",
-          border: `1px solid ${lang.accent}`,
-          color: lang.accent,
-          fontFamily: "'Fira Code',monospace",
-          fontSize: 11, letterSpacing: 3,
-          cursor: "none",
-          transition: "background 0.2s, box-shadow 0.2s",
-          background: hovered ? `${lang.accent}15` : "transparent",
-          boxShadow: hovered ? `0 0 20px ${lang.accent}20, inset 0 0 20px ${lang.accent}08` : "none",
-        }}
-      >
+      <button style={{
+        width: "100%", padding: "12px",
+        border: `1px solid ${lang.accent}`,
+        color: lang.accent,
+        fontFamily: "'Fira Code',monospace",
+        fontSize: "clamp(10px,2vw,11px)", letterSpacing: 3,
+        cursor: "none",
+        transition: "background 0.2s, box-shadow 0.2s",
+        background: hovered ? `${lang.accent}15` : "transparent",
+        boxShadow: hovered ? `0 0 20px ${lang.accent}25, inset 0 0 20px ${lang.accent}08` : "none",
+      }}>
         <GlitchText text="[ DECRYPT FILE ]" active={hovered} />
       </button>
     </div>
   );
 }
 
-/* ─────────────────────────────────────────
-   MAIN PAGE (with GSAP floating heading)
-───────────────────────────────────────── */
+/* ── Main Page ── */
 export default function Page() {
   const router = useRouter();
   const [booted, setBooted] = useState(false);
   const [activeLanguage, setActiveLanguage] = useState(null);
   const [sectionVisible, setSectionVisible] = useState(false);
-  const mainRef = useRef(null);
   const floatingHeadingRef = useRef(null);
+  const metaBarRef = useRef(null);
+  const warningRef = useRef(null);
 
   useEffect(() => {
-    if (booted) {
-      setTimeout(() => setSectionVisible(true), 100);
-    }
+    if (!booted) return;
+    setTimeout(() => setSectionVisible(true), 100);
   }, [booted]);
 
-  // GSAP floating animation for heading span
+  /* GSAP floating heading */
   useEffect(() => {
-    if (floatingHeadingRef.current) {
-      gsap.to(floatingHeadingRef.current, {
-        y: -8,
-        duration: 2,
-        repeat: -1,
-        yoyo: true,
-        ease: "sine.inOut",
-        stagger: 0,
-      });
-    }
+    if (floatingHeadingRef.current)
+      gsap.to(floatingHeadingRef.current, { y: -10, duration: 2.2, repeat: -1, yoyo: true, ease: "sine.inOut" });
   }, []);
+
+  /* GSAP meta bar + warning fade-in after boot */
+  useEffect(() => {
+    if (!sectionVisible) return;
+    if (metaBarRef.current)
+      gsap.from(metaBarRef.current, { opacity: 0, y: 16, duration: 0.6, ease: "power2.out", delay: 0.6 });
+    if (warningRef.current)
+      gsap.from(warningRef.current, { opacity: 0, x: -12, duration: 0.5, ease: "power2.out", delay: 1.1 });
+  }, [sectionVisible]);
 
   const handleSelect = (lang) => {
     setActiveLanguage(lang.label);
@@ -485,25 +514,20 @@ export default function Page() {
 
   return (
     <>
-      {/* Boot Screen */}
       {!booted && <BootScreen onComplete={() => setBooted(true)} />}
-
-      {/* HUD */}
       <HUD activeLanguage={activeLanguage} />
 
-      {/* Scanlines overlay */}
+      {/* scanlines overlay */}
       <div style={{
         position: "fixed", inset: 0, pointerEvents: "none", zIndex: 50,
         background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.06) 2px,rgba(0,0,0,0.06) 4px)",
       }} />
-
-      {/* Vignette */}
+      {/* vignette */}
       <div style={{
         position: "fixed", inset: 0, pointerEvents: "none", zIndex: 49,
         background: "radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,0.55) 100%)",
       }} />
-
-      {/* Grid background */}
+      {/* grid */}
       <div style={{
         position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0,
         backgroundImage: `
@@ -513,73 +537,52 @@ export default function Page() {
         backgroundSize: "60px 60px",
       }} />
 
-      {/* MAIN */}
-      <main
-        ref={mainRef}
-        style={{
-          position: "relative", zIndex: 10,
-          paddingTop: 80,
-          minHeight: "100vh",
-          opacity: sectionVisible ? 1 : 0,
-          transition: "opacity 0.8s ease",
-        }}
-      >
-        {/* ── SECTION 1 — CHOOSE LANGUAGE ── */}
-        <section style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "60px 24px 100px",
-        }}>
-          {/* Section header */}
+      <main style={{
+        position: "relative", zIndex: 10,
+        paddingTop: 80, minHeight: "100vh",
+        opacity: sectionVisible ? 1 : 0,
+        transition: "opacity 0.8s ease",
+      }}>
+        <section style={{ maxWidth: 1200, margin: "0 auto", padding: "60px 24px 100px" }}>
+          {/* heading block */}
           <div style={{ marginBottom: 60 }}>
             <div style={{
-              fontSize: 10, letterSpacing: 4, color: "#00f7ff",
+              fontSize: "clamp(8px,2vw,10px)", letterSpacing: 4, color: "#00f7ff",
               marginBottom: 12, display: "flex", alignItems: "center", gap: 12,
             }}>
               <span style={{ display: "inline-block", width: 30, height: 1, background: "#00f7ff" }} />
               SECTION_01 // LANGUAGE SELECTION
               <span style={{ display: "inline-block", width: 30, height: 1, background: "#00f7ff" }} />
             </div>
-
-            {/* Single line heading with floating GSAP animation */}
             <h1 style={{
-              fontSize: "clamp(28px,5vw,52px)",
-              fontWeight: 700,
-              letterSpacing: -1,
-              color: "#c8d8f0",
-              lineHeight: 1.2,
-              marginBottom: 16,
+              fontSize: "clamp(24px,8vw,52px)", fontWeight: 700, letterSpacing: -1,
+              color: "#c8d8f0", lineHeight: 1.2, marginBottom: 16,
             }}>
               CHOOSE YOUR{" "}
               <span
                 ref={floatingHeadingRef}
                 style={{
-                  color: "#00f7ff",
-                  display: "inline-block",
-                  textShadow: "0 0 12px rgba(0,247,255,0.5)",
-                  letterSpacing: "-0.5px",
+                  color: "#00f7ff", display: "inline-block",
+                  textShadow: "0 0 12px rgba(0,247,255,0.5)", letterSpacing: "-0.5px",
                 }}
               >
                 TARGET LANGUAGE
               </span>
             </h1>
-
             <p style={{
-              fontSize: 12, color: "#6b7fa3", letterSpacing: 1, lineHeight: 1.8,
-              maxWidth: 500,
+              fontSize: "clamp(11px,2.5vw,12px)", color: "#6b7fa3",
+              letterSpacing: 1, lineHeight: 1.8, maxWidth: 500,
             }}>
               Three encrypted files. Each contains the fundamentals of a programming language.
               Select one to begin decryption. Your mission starts now.
             </p>
           </div>
 
-          {/* Status bar */}
-          <div style={{
+          {/* meta bar */}
+          <div ref={metaBarRef} style={{
             display: "flex", gap: 24, marginBottom: 40, flexWrap: "wrap",
-            padding: "10px 16px",
-            border: "1px solid #1e2535",
-            background: "#0a0d14",
-            fontSize: 10, letterSpacing: 2,
+            padding: "10px 16px", border: "1px solid #1e2535", background: "#0a0d14",
+            fontSize: "clamp(8px,2vw,10px)", letterSpacing: 2,
           }}>
             <span style={{ color: "#3a4558" }}>ACTIVE_CASE: <span style={{ color: "#00f7ff" }}>LANG-SELECT</span></span>
             <span style={{ color: "#3a4558" }}>FILES_FOUND: <span style={{ color: "#ffb347" }}>3</span></span>
@@ -587,44 +590,32 @@ export default function Page() {
             <span style={{ color: "#3a4558" }}>ANALYST: <span style={{ color: "#c8d8f0" }}>BEGINNER</span></span>
           </div>
 
-          {/* Cards grid */}
+          {/* cards */}
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
-            gap: 2,
+            gap: "2px",
           }}>
             {LANGUAGES.map((lang, i) => (
-              <LanguageCard
-                key={lang.id}
-                lang={lang}
-                index={i}
-                onSelect={handleSelect}
-              />
+              <LanguageCard key={lang.id} lang={lang} index={i} onSelect={handleSelect} />
             ))}
           </div>
 
-          {/* Bottom note */}
-          <div style={{
+          {/* warning */}
+          <div ref={warningRef} style={{
             marginTop: 40, display: "flex", alignItems: "center", gap: 12,
-            fontSize: 10, color: "#3a4558", letterSpacing: 2,
+            fontSize: "clamp(8px,2vw,10px)", color: "#3a4558", letterSpacing: 2,
           }}>
             <span style={{ color: "#ff3366" }}>▲</span>
             WARNING: Once a language file is opened, full immersion begins. Proceed carefully.
           </div>
         </section>
 
-        {/* ── FOOTER ── */}
         <footer style={{
-          borderTop: "1px solid #1e2535",
-          padding: "20px 24px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          fontSize: 9,
-          color: "#3a4558",
-          letterSpacing: 2,
-          maxWidth: 1200,
-          margin: "0 auto",
+          borderTop: "1px solid #1e2535", padding: "20px 24px",
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          fontSize: "clamp(8px,2vw,9px)", color: "#3a4558", letterSpacing: 2,
+          maxWidth: 1200, margin: "0 auto", flexWrap: "wrap", gap: "10px",
         }}>
           <span>LANG_FILES // CASE #2026</span>
           <span>ALL FILES ENCRYPTED — AUTHORIZED PERSONNEL ONLY</span>
@@ -633,36 +624,25 @@ export default function Page() {
       </main>
 
       <style>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; cursor: none !important; }
-        html { scroll-behavior: smooth; }
-        body {
-          background: #060810;
-          color: #c8d8f0;
-          font-family: 'Fira Code', 'Courier New', monospace;
-          overflow-x: hidden;
-        }
+        *{box-sizing:border-box;margin:0;padding:0;cursor:none !important}
+        html{scroll-behavior:smooth}
+        body{background:#060810;color:#c8d8f0;font-family:'Fira Code','Courier New',monospace;overflow-x:hidden}
 
-        @keyframes cardReveal {
-          from { opacity: 0; transform: translateY(24px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes scanSweep {
-          from { transform: translateX(-100%); }
-          to   { transform: translateX(100%); }
-        }
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50%       { opacity: 0; }
-        }
+        @keyframes scanSweep{from{transform:translateX(-100%)}to{transform:translateX(100%)}}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 
-        ::selection {
-          background: #00f7ff22;
-          color: #00f7ff;
+        ::selection{background:#00f7ff22;color:#00f7ff}
+        ::-webkit-scrollbar{width:4px}
+        ::-webkit-scrollbar-track{background:#060810}
+        ::-webkit-scrollbar-thumb{background:#1e2535}
+        ::-webkit-scrollbar-thumb:hover{background:#00f7ff44}
+
+        @media(max-width:768px){
+          .terminal-container{width:95vw}
         }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #060810; }
-        ::-webkit-scrollbar-thumb { background: #1e2535; }
-        ::-webkit-scrollbar-thumb:hover { background: #00f7ff44; }
+        @media(max-width:480px){
+          footer{flex-direction:column;text-align:center}
+        }
       `}</style>
     </>
   );
