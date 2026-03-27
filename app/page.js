@@ -243,7 +243,7 @@ function Boot({ onDone }) {
             <div style={{ width:2,height:44,background:"linear-gradient(to bottom,#00f7ff,#00f7ff00)" }} />
             <div>
               <div style={{ color:"#2a3548",fontSize:9,letterSpacing:5,fontFamily:"'Fira Code',monospace",marginBottom:3 }}>VISUOSLAYER // SAIF — TOP SECRET</div>
-              <div style={{ color:"#c8d8f0",fontSize:22,fontFamily:"'Fira Code',monospace",fontWeight:800,letterSpacing:3 }}>E</div>
+              <div style={{ color:"#c8d8f0",fontSize:22,fontFamily:"'Fira Code',monospace",fontWeight:800,letterSpacing:3 }}>VisuoSlayer !</div>
             </div>
           </div>
           <div style={{ fontFamily:"'Fira Code',monospace",fontSize:9,color:"#2a3548",letterSpacing:2,textAlign:"right",lineHeight:1.8 }}>
@@ -353,7 +353,7 @@ function HUD({ activeLang }) {
           <span style={{ color:"#c8d8f0",fontWeight:800,letterSpacing:4 }}>VISUOSLAYER</span>
         </div>
         <span style={{ color:"#1a2030" }}>|</span>
-        <span style={{ color:"#3a4558" }}>LANG_FILES <span style={{ color:"#00f7ff" }}>LANG-01</span></span>
+        <span style={{ color:"#3a4558" }}>LANG_FILES <span style={{ color:"#00f7ff" }}>SAIF</span></span>
       </div>
       <div style={{ display:"flex",gap:"clamp(12px,3vw,24px)",alignItems:"center",flexWrap:"wrap" }}>
         {activeLang && <span style={{ color:"#ffb347",animation:"fr .4s ease" }}>TARGET: <span style={{ color:"#ff3366" }}>{activeLang}</span></span>}
