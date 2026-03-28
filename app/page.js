@@ -10,12 +10,10 @@ if (typeof window !== "undefined") gsap.registerPlugin(ScrollTrigger);
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
 const BOOT_NORMAL = [
-  { t: "Memory: 256 GiB DDR5 ECC Registered @ 4800 MT/s",          c: "dim" },
-  { t: "Storage: NVMe Samsung PM9A3 3.84TB  [GPT, EXT4]",          c: "dim" },
+  { t: "Memory: 256 GB DDR5 ECC Registered @ 4800 MT/s",          c: "dim" },
   { t: "Network: eth0 10.0.4.22/24  gw 10.0.4.1",                  c: "dim" },
-  { t: "  -> C_PROGRAM ............ [DECRYPTED]  1.2ms",            c: "ok"  },
-  { t: "  -> PYTHON_CORE ....... [DECRYPTED]  0.8ms",               c: "ok"  },
-  { t: "  -> JAVA_RUNTIME ...... [DECRYPTED]  1.1ms",               c: "ok"  },
+  { t: "  -> C_PROGRAM ............ [DECRYPTED]  0.2ms",            c: "ok"  },
+  { t: "  -> PYTHON_CORE .......... [DECRYPTED]  0.8ms",               c: "ok"  },
   { t: "Initialising VisuoSlayer security layer: [ OK ]",           c: "ok"  },
 ];
 
@@ -176,7 +174,7 @@ function Boot({ onDone }) {
       setLines(l => [...l, safeLine(BOOT_NORMAL[ni])]);
       setPct(Math.round(((ni + 1) / BOOT_NORMAL.length) * 88));
       scroll(); ni++;
-      tid = setTimeout(normalTick, 500);
+      tid = setTimeout(normalTick, 250);
     };
 
     const startError = () => {
@@ -193,7 +191,7 @@ function Boot({ onDone }) {
       setLines(l => [...l, safeLine(BOOT_ERROR[0])]);
       setPct(88); scroll();
       setFrozen(true);
-      tid = setTimeout(startRecovery, 1600);
+      tid = setTimeout(startRecovery, 100);
     };
 
     const startRecovery = () => {
@@ -210,7 +208,7 @@ function Boot({ onDone }) {
               tid = setTimeout(() => {
                 setExiting(true);
                 setTimeout(() => doneRef.current?.(), 900);
-              }, 500);
+              }, 100);
             }
           };
           requestAnimationFrame(animPct);
