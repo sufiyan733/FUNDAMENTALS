@@ -1,1208 +1,2376 @@
-// "use client";
-
-// import { useEffect, useRef, useState, useCallback } from "react";
-// import { useRouter } from "next/navigation";
-// import gsap from "gsap";
-// import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-// if (typeof window !== "undefined") gsap.registerPlugin(ScrollTrigger);
-
-// const FONT_LINK = `
-//   @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Chakra+Petch:wght@400;600;700&family=Orbitron:wght@400;600;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
-// `;
-
-// const F = {
-//   display: "'Bebas Neue', sans-serif",
-//   crazy: "'Chakra Petch', monospace",
-//   hud: "'Orbitron', monospace",
-//   mono: "'Space Mono', monospace",
-// };
-
-// const BOOT_NORMAL = [
-//   { t: "Network: eth0 10.0.4.22/24  gw 10.0.4.1", c: "dim" },
-//   { t: "  -> C_PROGRAM ............ [DECRYPTED]  1.2ms", c: "ok" },
-//   { t: "  -> PYTHON_CORE ....... [DECRYPTED]  0.8ms", c: "ok" },
-//   { t: "  -> JAVA_RUNTIME ...... [DECRYPTED]  1.1ms", c: "ok" },
-//   { t: "Initialising VisuoSlayer security layer: [ OK ]", c: "ok" },
-// ];
-// const BOOT_ERROR = [
-//   { t: "!! CRITICAL: Memory fault at 0x7FFE2C4A — ECC correction failed. SYSTEM HALT.", c: "err" },
-// ];
-// const BOOT_RECOVERY = [{ t: "SELECT YOUR TARGET LANGUAGE", c: "hd" }];
-// const safeLine = l => ({ c: "dim", ...l });
-
-// const LANGUAGES = [
-//   {
-//     id: "c", label: "C", index: "01", tag: "EVIDENCE_01",
-//     tagline: "Systems & Speed",
-//     desc: "The foundation of modern computing. Raw, fast, impossibly close to the metal.",
-//     meta: ["Compiled", "Low-Level", "1972"],
-//     accent: "#00f7ff", route: "/c-1",
-//     features: ["Memory Management", "Pointer Arithmetic", "OS Development"],
-//   },
-//   {
-//     id: "python", label: "PYTHON", index: "02", tag: "EVIDENCE_02",
-//     tagline: "Readability & Versatility",
-//     desc: "Clean syntax, massive ecosystem. From scripts to neural networks effortlessly.",
-//     meta: ["Interpreted", "High-Level", "1991"],
-//     accent: "#ffb347", route: "/p-1",
-//     features: ["Data Science", "Automation", "Web Backend"],
-//   },
-//   {
-//     id: "java", label: "JAVA", index: "03", tag: "EVIDENCE_03",
-//     tagline: "Enterprise & Stability",
-//     desc: "Write once, run anywhere. The backbone of enterprise software for three decades.",
-//     meta: ["Compiled+VM", "OOP", "1995"],
-//     accent: "#ff3366", route: "/j-1",
-//     features: ["Android Dev", "Enterprise Apps", "Cross-Platform"],
-//   },
-// ];
-
-// const TICKER_ITEMS = [
-//   "VISUOSLAYER", "LANG FILES", "CASE #2026", "CLEARANCE ALPHA",
-//   "SAIF // OPERATOR", "3 FILES FOUND", "DECRYPTION READY", "ANALYST: BEGINNER",
-// ];
-// const GLITCH_CHARS = "!<>-_\\/[]{}=+*^?#@$%&";
-
-// // ─── HOOK: GLITCH TEXT ────────────────────────────────────────────────────────
-// function useGlitch(text, active) {
-//   const [display, setDisplay] = useState(text);
-//   useEffect(() => {
-//     if (!active) { setDisplay(text); return; }
-//     let i = 0;
-//     const iv = setInterval(() => {
-//       setDisplay(text.split("").map((c, j) =>
-//         j < i ? c : c === " " ? " " : GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]
-//       ).join(""));
-//       i += 0.5;
-//       if (i >= text.length) { setDisplay(text); clearInterval(iv); }
-//     }, 28);
-//     return () => clearInterval(iv);
-//   }, [active, text]);
-//   return display;
-// }
-
-// // ─── CINEMATIC SECTION WRAPPER ────────────────────────────────────────────────
-// function CinematicSection({ children, id, enterFX = "surge", exitFX = "dissolve", enterStart = "top 85%", exitStart = "bottom 20%" }) {
-//   const sectionRef = useRef(null);
-
-//   useEffect(() => {
-//     const el = sectionRef.current;
-//     if (!el) return;
-
-//     const enterAnimations = {
-//       surge: () => {
-//         gsap.set(el, { y: 160, opacity: 0, filter: "blur(30px) brightness(0.1) saturate(0)", skewY: 5, scale: 0.94 });
-//         return gsap.timeline({ paused: true })
-//           .to(el, { y: -8, opacity: 1, filter: "blur(0px) brightness(1.4) saturate(1)", skewY: -1, scale: 1.01, duration: 0.9, ease: "expo.out" })
-//           .to(el, { y: 0, filter: "blur(0px) brightness(1) saturate(1)", skewY: 0, scale: 1, duration: 0.5, ease: "elastic.out(1.2,0.5)" });
-//       },
-//       "glitch-slam": () => {
-//         gsap.set(el, { opacity: 0, x: -120, skewX: 18, filter: "blur(24px) saturate(0) contrast(3) hue-rotate(180deg)" });
-//         return gsap.timeline({ paused: true })
-//           .to(el, { opacity: 1, x: 28, skewX: -6, filter: "blur(6px) saturate(0.3) contrast(1.8) hue-rotate(90deg)", duration: 0.2, ease: "power4.out" })
-//           .to(el, { x: -12, skewX: 3, filter: "blur(3px) saturate(0.6) contrast(1.3) hue-rotate(30deg)", duration: 0.1 })
-//           .to(el, { x: 6, skewX: -1.5, filter: "blur(1px) saturate(0.85) contrast(1.1) hue-rotate(10deg)", duration: 0.1 })
-//           .to(el, { x: 0, skewX: 0, filter: "blur(0px) saturate(1) contrast(1) hue-rotate(0deg)", duration: 0.3, ease: "expo.out" });
-//       },
-//       "iris-open": () => {
-//         gsap.set(el, { scale: 0.7, opacity: 0, filter: "blur(40px) saturate(0) brightness(0)", transformOrigin: "center", rotationX: 20, transformPerspective: 800 });
-//         return gsap.timeline({ paused: true })
-//           .to(el, { scale: 1.06, opacity: 0.7, filter: "blur(16px) saturate(0.5) brightness(1.2)", rotationX: -3, duration: 0.6, ease: "expo.out" })
-//           .to(el, { scale: 1, opacity: 1, filter: "blur(0px) saturate(1) brightness(1)", rotationX: 0, duration: 0.7, ease: "expo.out" });
-//       },
-//       "light-sweep": () => {
-//         gsap.set(el, { opacity: 0, y: 80, clipPath: "inset(0 0 100% 0 round 2px)" });
-//         return gsap.timeline({ paused: true })
-//           .to(el, { clipPath: "inset(0 0 0% 0 round 2px)", y: 0, opacity: 1, duration: 0.9, ease: "expo.inOut" });
-//       },
-//       "scanline-wipe": () => {
-//         gsap.set(el, { opacity: 0, clipPath: "inset(50% 0 50% 0)", filter: "blur(18px) brightness(3) saturate(0)" });
-//         return gsap.timeline({ paused: true })
-//           .to(el, { clipPath: "inset(0% 0 0% 0)", filter: "blur(0px) brightness(1) saturate(1)", opacity: 1, duration: 1.0, ease: "expo.out" });
-//       },
-//       "shatter-in": () => {
-//         gsap.set(el, { opacity: 0, scale: 1.15, rotationX: 22, filter: "blur(28px) brightness(3) saturate(0)", transformPerspective: 1000, transformOrigin: "center top" });
-//         return gsap.timeline({ paused: true })
-//           .to(el, { scale: 0.96, rotationX: -3, opacity: 1, filter: "blur(4px) brightness(1.5) saturate(0.5)", duration: 0.45, ease: "power4.out" })
-//           .to(el, { scale: 1.02, rotationX: 1.5, filter: "blur(1.5px) brightness(1.1) saturate(0.85)", duration: 0.22, ease: "power2.inOut" })
-//           .to(el, { scale: 1, rotationX: 0, filter: "blur(0px) brightness(1) saturate(1)", duration: 0.4, ease: "expo.out" });
-//       },
-//       "data-stream": () => {
-//         gsap.set(el, { opacity: 0, y: 60, filter: "blur(0px) brightness(4) saturate(0)", clipPath: "inset(0 100% 0 0 round 2px)" });
-//         return gsap.timeline({ paused: true })
-//           .to(el, { clipPath: "inset(0 0% 0 0 round 2px)", duration: 0.85, ease: "expo.inOut" })
-//           .to(el, { opacity: 1, y: 0, filter: "blur(0px) brightness(1) saturate(1)", duration: 0.7, ease: "expo.out" }, "-=0.6");
-//       },
-//       "vhs-glitch": () => {
-//         gsap.set(el, { opacity: 0, scaleY: 0.05, filter: "blur(20px) contrast(8) saturate(0) brightness(5)", transformOrigin: "center" });
-//         return gsap.timeline({ paused: true })
-//           .to(el, { scaleY: 1.08, opacity: 1, filter: "blur(8px) contrast(2) saturate(0.3) brightness(2)", duration: 0.35, ease: "power4.out" })
-//           .to(el, { scaleY: 0.97, filter: "blur(3px) contrast(1.3) saturate(0.7) brightness(1.2)", duration: 0.15 })
-//           .to(el, { scaleY: 1, filter: "blur(0px) contrast(1) saturate(1) brightness(1)", duration: 0.35, ease: "expo.out" });
-//       },
-//     };
-
-//     const exitAnimations = {
-//       dissolve: () => gsap.timeline({ paused: true })
-//         .to(el, { opacity: 0, y: -100, filter: "blur(32px) brightness(3) saturate(0)", scale: 1.08, duration: 1.1, ease: "expo.in" }),
-
-//       "shatter-apart": () => gsap.timeline({ paused: true })
-//         .to(el, { skewY: 6, scaleX: 1.03, filter: "blur(3px) contrast(2) brightness(1.5)", duration: 0.2, ease: "power3.in" })
-//         .to(el, { y: -140, opacity: 0, skewY: -5, scaleX: 0.97, scale: 0.9, filter: "blur(28px) brightness(3) saturate(0)", duration: 0.7, ease: "expo.in" }),
-
-//       "static-burst": () => gsap.timeline({ paused: true })
-//         .to(el, { filter: "blur(0px) contrast(5) saturate(0) brightness(6)", duration: 0.12 })
-//         .to(el, { filter: "blur(40px) contrast(1) saturate(0) brightness(0)", opacity: 0, y: -80, scale: 1.05, duration: 0.6, ease: "power4.in" }),
-
-//       implode: () => gsap.timeline({ paused: true })
-//         .to(el, { scale: 0.82, filter: "blur(36px) brightness(0) saturate(0)", opacity: 0, duration: 0.9, ease: "expo.in", transformOrigin: "center" }),
-
-//       "slide-left": () => gsap.timeline({ paused: true })
-//         .to(el, { x: -200, opacity: 0, filter: "blur(24px) saturate(0) brightness(2)", skewX: -8, duration: 0.85, ease: "expo.in" }),
-
-//       "fold-up": () => gsap.timeline({ paused: true })
-//         .to(el, { rotationX: 45, y: -120, opacity: 0, filter: "blur(22px) brightness(2)", transformPerspective: 1000, transformOrigin: "center bottom", scale: 0.9, duration: 0.9, ease: "expo.in" }),
-
-//       "glitch-out": () => gsap.timeline({ paused: true })
-//         .to(el, { x: 30, skewX: 8, filter: "blur(6px) contrast(3) saturate(0) hue-rotate(90deg)", duration: 0.1 })
-//         .to(el, { x: -45, skewX: -12, filter: "blur(12px) contrast(5) saturate(0) brightness(3) hue-rotate(180deg)", duration: 0.12 })
-//         .to(el, { x: 15, opacity: 0.3, filter: "blur(32px) saturate(0) brightness(0)", duration: 0.3, ease: "expo.in" }),
-
-//       "scan-erase": () => gsap.timeline({ paused: true })
-//         .to(el, { clipPath: "inset(0 100% 0 0 round 2px)", filter: "blur(8px) brightness(3)", opacity: 0, duration: 0.8, ease: "expo.inOut" }),
-
-//       "vhs-collapse": () => gsap.timeline({ paused: true })
-//         .to(el, { scaleY: 1.05, filter: "blur(4px) contrast(2) brightness(2)", duration: 0.15, ease: "power2.in" })
-//         .to(el, { scaleY: 0.02, opacity: 0, filter: "blur(20px) brightness(5) saturate(0)", transformOrigin: "center", duration: 0.55, ease: "power4.in" }),
-//     };
-
-//     const enterTL = (enterAnimations[enterFX] || enterAnimations.surge)();
-//     const exitTL = (exitAnimations[exitFX] || exitAnimations.dissolve)();
-
-//     const stEnter = ScrollTrigger.create({
-//       trigger: el,
-//       start: enterStart,
-//       onEnter: () => enterTL.restart(),
-//       onEnterBack: () => { exitTL.progress(0).pause(); enterTL.restart(); },
-//     });
-
-//     const stExit = ScrollTrigger.create({
-//       trigger: el,
-//       start: exitStart,
-//       end: "bottom top",
-//       onLeave: () => exitTL.restart(),
-//       onLeaveBack: () => { exitTL.progress(0).pause(); },
-//     });
-
-//     return () => { stEnter.kill(); stExit.kill(); };
-//   }, [enterFX, exitFX, enterStart, exitStart]);
-
-//   return (
-//     <div ref={sectionRef} id={id} style={{ position: "relative", willChange: "transform, opacity, filter" }}>
-//       {children}
-//     </div>
-//   );
-// }
-
-// // ─── CURSOR ──────────────────────────────────────────────────────────────────
-// function Cursor() {
-//   const dot = useRef(null);
-//   const ring = useRef(null);
-//   const trail = useRef(null);
-//   const mp = useRef({ x: -200, y: -200 });
-//   const rp = useRef({ x: -200, y: -200 });
-//   const tp = useRef({ x: -200, y: -200 });
-//   const raf = useRef(null);
-//   const big = useRef(false);
-//   const sp = useRef(0);
-
-//   useEffect(() => {
-//     const mv = e => {
-//       mp.current = { x: e.clientX, y: e.clientY };
-//       big.current = !!document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-cur]");
-//     };
-//     window.addEventListener("mousemove", mv);
-//     const upd = () => {
-//       const h = document.documentElement.scrollHeight - window.innerHeight;
-//       if (h > 0) sp.current = window.scrollY / h;
-//     };
-//     window.addEventListener("scroll", upd); upd();
-//     const loop = () => {
-//       rp.current.x += (mp.current.x - rp.current.x) * 0.09;
-//       rp.current.y += (mp.current.y - rp.current.y) * 0.09;
-//       tp.current.x += (rp.current.x - tp.current.x) * 0.05;
-//       tp.current.y += (rp.current.y - tp.current.y) * 0.05;
-//       const sz = big.current ? 34 : 20;
-//       const hue = 180 + sp.current * 180;
-//       if (dot.current) dot.current.style.transform = `translate(${mp.current.x - 4}px,${mp.current.y - 4}px)`;
-//       if (ring.current) {
-//         ring.current.style.transform = `translate(${rp.current.x - sz}px,${rp.current.y - sz}px)`;
-//         ring.current.style.width = ring.current.style.height = `${sz * 2}px`;
-//         ring.current.style.borderColor = `hsla(${hue},100%,65%,0.6)`;
-//       }
-//       if (trail.current) trail.current.style.transform = `translate(${tp.current.x - 12}px,${tp.current.y - 12}px)`;
-//       raf.current = requestAnimationFrame(loop);
-//     };
-//     raf.current = requestAnimationFrame(loop);
-//     return () => { window.removeEventListener("mousemove", mv); window.removeEventListener("scroll", upd); cancelAnimationFrame(raf.current); };
-//   }, []);
-
-//   return (
-//     <>
-//       <div ref={dot} style={{ position: "fixed", top: 0, left: 0, zIndex: 99999, pointerEvents: "none", width: 8, height: 8, borderRadius: "50%", background: "#00f7ff", boxShadow: "0 0 12px #00f7ff", willChange: "transform" }} />
-//       <div ref={ring} style={{ position: "fixed", top: 0, left: 0, zIndex: 99998, pointerEvents: "none", width: 40, height: 40, borderRadius: "50%", border: "1px solid rgba(0,247,255,0.6)", willChange: "transform", transition: "width .38s cubic-bezier(.34,1.56,.64,1),height .38s cubic-bezier(.34,1.56,.64,1),border-color .2s" }} />
-//       <div ref={trail} style={{ position: "fixed", top: 0, left: 0, zIndex: 99997, pointerEvents: "none", width: 24, height: 24, borderRadius: "50%", background: "radial-gradient(circle,rgba(0,247,255,0.2) 0%,rgba(0,247,255,0) 70%)", willChange: "transform", filter: "blur(4px)" }} />
-//     </>
-//   );
-// }
-
-// // ─── BOOT ─────────────────────────────────────────────────────────────────────
-// function Boot({ onDone }) {
-//   const [lines, setLines] = useState([]);
-//   const [pct, setPct] = useState(0);
-//   const [isErr, setIsErr] = useState(false);
-//   const [frozen, setFrozen] = useState(false);
-//   const [exiting, setExiting] = useState(false);
-//   const termRef = useRef(null);
-//   const bodyRef = useRef(null);
-//   const doneRef = useRef(onDone);
-//   useEffect(() => { doneRef.current = onDone; }, [onDone]);
-
-//   useEffect(() => {
-//     if (termRef.current) gsap.from(termRef.current, { y: 36, opacity: 0, duration: .9, ease: "power3.out", delay: .3 });
-//     let tid;
-//     const scroll = () => { if (bodyRef.current) bodyRef.current.scrollTop = bodyRef.current.scrollHeight; };
-//     let ni = 0;
-//     const normalTick = () => {
-//       if (ni >= BOOT_NORMAL.length) { tid = setTimeout(startError, 300); return; }
-//       setLines(l => [...l, safeLine(BOOT_NORMAL[ni])]);
-//       setPct(Math.round(((ni + 1) / BOOT_NORMAL.length) * 88));
-//       scroll(); ni++;
-//       tid = setTimeout(normalTick, 500);
-//     };
-//     const startError = () => {
-//       setIsErr(true);
-//       if (termRef.current) {
-//         gsap.timeline()
-//           .to(termRef.current, { x: -9, duration: .04 }).to(termRef.current, { x: 8, duration: .04 })
-//           .to(termRef.current, { x: -6, duration: .04 }).to(termRef.current, { x: 5, duration: .04 })
-//           .to(termRef.current, { x: -3, duration: .04 }).to(termRef.current, { x: 0, duration: .04 });
-//       }
-//       setLines(l => [...l, safeLine(BOOT_ERROR[0])]);
-//       setPct(88); scroll(); setFrozen(true);
-//       tid = setTimeout(startRecovery, 1600);
-//     };
-//     const startRecovery = () => {
-//       setFrozen(false);
-//       let ri = 0;
-//       const recTick = () => {
-//         if (ri >= BOOT_RECOVERY.length) {
-//           const start = performance.now();
-//           const animPct = ts => {
-//             const t = Math.min((ts - start) / 1300, 1);
-//             setPct(Math.round(88 + t * 12));
-//             if (t < 1) requestAnimationFrame(animPct);
-//             else { tid = setTimeout(() => { setExiting(true); setTimeout(() => doneRef.current?.(), 900); }, 500); }
-//           };
-//           requestAnimationFrame(animPct); return;
-//         }
-//         setLines(l => [...l, safeLine(BOOT_RECOVERY[ri])]);
-//         scroll(); ri++;
-//         tid = setTimeout(recTick, 480);
-//       };
-//       recTick();
-//     };
-//     tid = setTimeout(normalTick, 700);
-//     return () => clearTimeout(tid);
-//   }, []);
-
-//   const col = { sys: "#c8d8f0", dim: "#4a5f7a", ok: "#39ff14", err: "#ff3366", wrn: "#ffb347", hd: "#ffb347" };
-
-//   return (
-//     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#05060e", display: "flex", alignItems: "center", justifyContent: "center", opacity: exiting ? 0 : 1, transition: exiting ? "opacity .9s cubic-bezier(.4,0,.2,1)" : "none", pointerEvents: exiting ? "none" : "all" }}>
-//       <svg style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: .05, pointerEvents: "none" }}>
-//         <filter id="bn"><feTurbulence type="fractalNoise" baseFrequency=".65" numOctaves="3" stitchTiles="stitch" /><feColorMatrix type="saturate" values="0" /></filter>
-//         <rect width="100%" height="100%" filter="url(#bn)" />
-//       </svg>
-//       <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.12) 2px,rgba(0,0,0,.12) 4px)" }} />
-//       <div style={{ width: "min(700px,93vw)", position: "relative" }}>
-//         <div style={{ marginBottom: 26, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
-//           <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-//             <div style={{ width: 2, height: 44, background: "linear-gradient(to bottom,#00f7ff,#00f7ff00)" }} />
-//             <div>
-//               <div style={{ color: "#2a3548", fontSize: 9, letterSpacing: 5, fontFamily: F.hud, marginBottom: 3 }}>VISUOSLAYER // SAIF — TOP SECRET</div>
-//               <div style={{ color: "#c8d8f0", fontSize: "clamp(20px, 6vw, 28px)", fontFamily: F.display, letterSpacing: 6, lineHeight: 1.2 }}>VisuoSlayer !</div>
-//             </div>
-//           </div>
-//           <div style={{ fontFamily: F.hud, fontSize: 9, color: "#2a3548", letterSpacing: 2, textAlign: "right", lineHeight: 1.8 }}>
-//             <div>CASE #2026</div>
-//             <div style={{ color: "#ff3366", display: "flex", alignItems: "center", gap: 5, justifyContent: "flex-end" }}>
-//               <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#ff3366", display: "inline-block", animation: "bl 1.1s step-end infinite" }} />REC
-//             </div>
-//           </div>
-//         </div>
-//         <div ref={termRef} style={{ border: `1px solid ${isErr ? "#ff336666" : "#1a2030"}`, background: isErr ? "rgba(12,5,8,.98)" : "rgba(5,7,14,.98)", boxShadow: isErr ? "0 0 120px rgba(255,51,102,.25),inset 0 0 80px rgba(255,51,102,.08)" : "0 0 60px rgba(0,247,255,.05)", transition: "border-color .35s,box-shadow .4s,background .4s" }}>
-//           <div style={{ background: isErr ? "#0a0508" : "#080a12", borderBottom: `1px solid ${isErr ? "#ff336633" : "#1a2030"}`, padding: "8px 16px", display: "flex", alignItems: "center", gap: 8, transition: "background .4s" }}>
-//             {["#ff3366", "#ffb347", "#39ff14"].map(c => <span key={c} style={{ width: 10, height: 10, borderRadius: "50%", background: c, display: "block", opacity: .7 }} />)}
-//             <span style={{ color: isErr ? "#ff336688" : "#2a3548", fontSize: 9, marginLeft: 10, letterSpacing: 2, fontFamily: F.mono, transition: "color .4s" }}>
-//               {isErr ? "visuoslayer@saif:~$  !! SYSTEM HALTED" : "visuoslayer@saif:~$  BOOT_SEQUENCE.sh"}
-//             </span>
-//           </div>
-//           <div ref={bodyRef} style={{ padding: "18px 20px 14px", minHeight: 220, maxHeight: "40vh", overflowY: "hidden", fontFamily: F.mono, fontSize: 12, lineHeight: 1.7, wordBreak: "break-word" }}>
-//             {lines.map((l, i) => (
-//               <div key={i} style={{ display: "flex", gap: 12, marginBottom: 3, color: col[l.c] || "#c8d8f0", fontWeight: l.c === "hd" || l.c === "err" ? 700 : 400, fontSize: l.c === "hd" ? 13 : 12, textShadow: l.c === "err" ? "0 0 18px rgba(255,51,102,.8)" : l.c === "ok" ? "0 0 6px rgba(57,255,20,.2)" : "none", animation: "bi .1s ease forwards" }}>
-//                 <span style={{ color: l.c === "err" || l.c === "wrn" ? "#ff336666" : "#253040", userSelect: "none", flexShrink: 0 }}>{l.c === "err" || l.c === "wrn" ? "!" : "$"}</span>
-//                 {l.t}
-//               </div>
-//             ))}
-//             {!frozen && <span style={{ display: "inline-block", width: 8, height: 13, verticalAlign: "middle", background: isErr ? "#ff3366" : "#00f7ff", boxShadow: isErr ? "0 0 12px #ff3366" : "0 0 8px #00f7ff", animation: "bl 1s step-end infinite", opacity: isErr ? 0 : 1, transition: "background .3s,opacity .3s" }} />}
-//             {frozen && <div style={{ marginTop: 10, color: "#ff3366", fontFamily: F.mono, fontSize: 11, letterSpacing: 3, textShadow: "0 0 14px rgba(255,51,102,.7)", animation: "bl 1.2s step-end infinite" }}>!! TERMINAL HALTED — AWAITING OVERRIDE...</div>}
-//           </div>
-//           <div style={{ borderTop: `1px solid ${isErr ? "#ff336622" : "#1a2030"}`, padding: "12px 20px", transition: "border-color .4s" }}>
-//             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7, fontSize: 9, letterSpacing: 3, fontFamily: F.hud }}>
-//               <span style={{ color: isErr ? "#ff3366" : "#2a3548", transition: "color .3s" }}>{isErr ? (frozen ? "SYSTEM CRITICAL — OVERRIDE PENDING" : "OVERRIDE ACTIVE — RESUMING") : "LOADING CASE FILES"}</span>
-//               <span style={{ color: isErr ? "#ff3366" : "#00f7ff", transition: "color .3s" }}>{pct}%</span>
-//             </div>
-//             <div style={{ height: 1, background: isErr ? "#ff336618" : "#1a2030", position: "relative", overflow: "hidden" }}>
-//               <div style={{ position: "absolute", inset: 0, background: isErr ? "linear-gradient(90deg,#ff3366,#ff336688)" : "linear-gradient(90deg,#00f7ff,#00f7ff55)", width: `${pct}%`, transition: "width .3s ease,background .4s", boxShadow: isErr ? "0 0 18px #ff3366" : "0 0 18px #00f7ff" }} />
-//             </div>
-//           </div>
-//         </div>
-//         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 9, color: "#1e2535", letterSpacing: 2, fontFamily: F.hud }}>
-//           <span>CAM_04 [REC]</span><span>VISUOSLAYER // SAIF</span>
-//           <span style={{ color: isErr ? "#ff336688" : "#1e2535", transition: "color .3s" }}>{isErr ? (frozen ? "SIGNAL: CRITICAL — HALTED" : "SIGNAL: OVERRIDE ACTIVE") : "SIGNAL: STABLE"}</span>
-//         </div>
-//       </div>
-//       <style>{`@keyframes bl{0%,100%{opacity:1}50%{opacity:0}} @keyframes bi{from{opacity:0;transform:translateX(-5px)}to{opacity:1;transform:none}}`}</style>
-//     </div>
-//   );
-// }
-
-// // ─── HUD ─────────────────────────────────────────────────────────────────────
-// function HUD({ activeLang }) {
-//   const [time, setTime] = useState("00:00:00");
-//   const ref = useRef(null);
-//   useEffect(() => {
-//     const iv = setInterval(() => {
-//       const n = new Date();
-//       setTime([n.getHours(), n.getMinutes(), n.getSeconds()].map(x => String(x).padStart(2, "0")).join(":"));
-//     }, 1000);
-//     if (ref.current) gsap.from(ref.current, { y: -80, opacity: 0, duration: 1, ease: "power3.out", delay: .15 });
-//     return () => clearInterval(iv);
-//   }, []);
-//   return (
-//     <div ref={ref} style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 100, display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 5vw", background: "rgba(5,6,14,.92)", borderBottom: "1px solid #1a2030", backdropFilter: "blur(20px)", fontFamily: F.hud, fontSize: 9, letterSpacing: 3 }}>
-//       <div style={{ display: "flex", gap: "clamp(12px,3vw,24px)", alignItems: "center", flexWrap: "wrap" }}>
-//         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-//           <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00f7ff", display: "block", boxShadow: "0 0 10px #00f7ff", animation: "hp 2.5s ease-in-out infinite" }} />
-//           <span style={{ color: "#c8d8f0", fontFamily: F.display, fontSize: 18, letterSpacing: 6 }}>VISUOSLAYER</span>
-//         </div>
-//         <span style={{ color: "#1a2030" }}>|</span>
-//         <span style={{ color: "#3a4558", fontSize: 8 }}>LANG_FILES <span style={{ color: "#00f7ff" }}>SAIF</span></span>
-//       </div>
-//       <div style={{ display: "flex", gap: "clamp(12px,3vw,24px)", alignItems: "center", flexWrap: "wrap" }}>
-//         {activeLang && <span style={{ color: "#ffb347", fontSize: 8 }}>TARGET: <span style={{ color: "#ff3366" }}>{activeLang}</span></span>}
-//         <span style={{ color: "#2a3548", fontSize: 8 }}>SIG: <span style={{ color: "#39ff14" }}>99%</span></span>
-//         <span style={{ display: "flex", alignItems: "center", gap: 5, color: "#ff3366", fontSize: 8 }}>
-//           <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#ff3366", display: "inline-block", boxShadow: "0 0 6px #ff3366", animation: "hp 1.3s ease-in-out infinite" }} />REC
-//         </span>
-//         <span style={{ color: "#2a3548", fontSize: 8, fontFamily: F.mono }}>{time}</span>
-//       </div>
-//       <style>{`@keyframes hp{0%,100%{opacity:1}50%{opacity:.2}}`}</style>
-//     </div>
-//   );
-// }
-
-// // ─── SCROLL PROGRESS ─────────────────────────────────────────────────────────
-// function ScrollBar() {
-//   const ref = useRef(null);
-//   useEffect(() => {
-//     const upd = () => {
-//       const total = document.documentElement.scrollHeight - window.innerHeight;
-//       if (ref.current) ref.current.style.transform = `scaleX(${total > 0 ? window.scrollY / total : 0})`;
-//     };
-//     window.addEventListener("scroll", upd, { passive: true });
-//     return () => window.removeEventListener("scroll", upd);
-//   }, []);
-//   return (
-//     <div style={{ position: "fixed", top: 41, left: 0, right: 0, height: 2, zIndex: 101, background: "rgba(255,255,255,0.03)" }}>
-//       <div ref={ref} style={{ position: "absolute", inset: 0, background: "linear-gradient(90deg,#00f7ff,#ff3366,#ffb347)", transformOrigin: "left", transform: "scaleX(0)" }} />
-//     </div>
-//   );
-// }
-
-// // ─── TICKER ─────────────────────────────────────────────────────────────────
-// function Ticker() {
-//   const items = [...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS];
-//   return (
-//     <div style={{ borderTop: "2px solid rgba(0,247,255,0.25)", borderBottom: "2px solid rgba(0,247,255,0.25)", padding: "10px 0", overflow: "hidden", position: "relative", marginBottom: 52, boxShadow: "0 0 15px rgba(0,247,255,0.1)" }}>
-//       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "15%", zIndex: 2, background: "linear-gradient(90deg,#05060e,transparent)", pointerEvents: "none" }} />
-//       <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "15%", zIndex: 2, background: "linear-gradient(270deg,#05060e,transparent)", pointerEvents: "none" }} />
-//       <div style={{ display: "flex", animation: "tk 24s linear infinite", whiteSpace: "nowrap", width: "max-content" }}>
-//         {items.map((item, i) => (
-//           <span key={i} style={{ fontSize: 9, letterSpacing: 5, color: "#3a4f70", fontFamily: F.hud, paddingRight: 48, display: "inline-flex", alignItems: "center" }}>
-//             <span style={{ color: "#00f7ff40", marginRight: 18, fontSize: 7 }}>*</span>{item}
-//           </span>
-//         ))}
-//       </div>
-//       <style>{`@keyframes tk{from{transform:translateX(0)}to{transform:translateX(-33.33%)}}`}</style>
-//     </div>
-//   );
-// }
-
-// // ─── ORB ─────────────────────────────────────────────────────────────────────
-// function PremiumGSAPOrb() {
-//   const canvasRef = useRef(null);
-//   const scrollProgress = useRef(0);
-//   const time = useRef(0);
-//   const isMobile = useRef(false);
-
-//   useEffect(() => {
-//     const canvas = canvasRef.current; if (!canvas) return;
-//     const ctx = canvas.getContext("2d");
-//     let width = 0, height = 0, animationId;
-//     const updateIsMobile = () => { isMobile.current = window.innerWidth <= 768; };
-//     updateIsMobile(); window.addEventListener("resize", updateIsMobile);
-//     const updatePixelRatio = () => {
-//       const dpr = window.devicePixelRatio || 1;
-//       width = canvas.clientWidth * dpr; height = canvas.clientHeight * dpr;
-//       canvas.width = width; canvas.height = height;
-//     };
-//     const updateScroll = () => {
-//       const total = document.documentElement.scrollHeight - window.innerHeight;
-//       scrollProgress.current = total > 0 ? window.scrollY / total : 0;
-//     };
-//     window.addEventListener("scroll", updateScroll); updateScroll();
-//     updatePixelRatio(); window.addEventListener("resize", updatePixelRatio);
-
-//     function drawSphere(ctx, cx, cy, radius, rx, ry, rz, color, lw) {
-//       const stL = isMobile.current ? 8 : 14, stN = isMobile.current ? 12 : 20;
-//       const rotate = (p, rx, ry, rz) => {
-//         let x = p.x, y = p.y, z = p.z;
-//         let c = Math.cos(rx), s = Math.sin(rx); let y1 = y * c - z * s, z1 = y * s + z * c; y = y1; z = z1;
-//         c = Math.cos(ry); s = Math.sin(ry); let x1 = x * c + z * s, z2 = -x * s + z * c; x = x1; z = z2;
-//         c = Math.cos(rz); s = Math.sin(rz); let x2 = x * c - y * s, y2 = x * s + y * c;
-//         return { x: x2, y: y2 };
-//       };
-//       const proj = (p, r) => ({ x: cx + p.x * r, y: cy + p.y * r });
-//       for (let i = 1; i < stL; i++) {
-//         const phi = (i / stL) * Math.PI, r = Math.sin(phi), y = Math.cos(phi);
-//         const pts = []; for (let j = 0; j <= stN; j++) { const t = (j / stN) * Math.PI * 2; pts.push(proj(rotate({ x: r * Math.cos(t), y, z: r * Math.sin(t) }, rx, ry, rz), radius)); }
-//         ctx.beginPath(); pts.forEach((p, j) => j === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-//         ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.stroke();
-//       }
-//       for (let j = 0; j < stN; j++) {
-//         const t = (j / stN) * Math.PI * 2, pts = [];
-//         for (let i = 0; i <= stL; i++) { const phi = (i / stL) * Math.PI; pts.push(proj(rotate({ x: Math.sin(phi) * Math.cos(t), y: Math.cos(phi), z: Math.sin(phi) * Math.sin(t) }, rx, ry, rz), radius)); }
-//         ctx.beginPath(); pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)); ctx.stroke();
-//       }
-//     }
-
-//     const draw = () => {
-//       if (!ctx || width === 0 || height === 0) return;
-//       ctx.clearRect(0, 0, width, height);
-//       time.current += 0.008;
-//       const t = time.current, progress = scrollProgress.current;
-//       const cx = width / 2, cy = height / 2;
-//       const baseRadius = Math.min(width, height) * (isMobile.current ? 0.32 : 0.38);
-//       const hue = 200 + progress * 100;
-//       ctx.save(); ctx.translate(cx, cy); ctx.scale(1, 0.95); ctx.translate(-cx, -cy);
-//       drawSphere(ctx, cx, cy, baseRadius, t * 0.2, t * 0.15, t * 0.05, `hsla(${hue},80%,65%,0.9)`, isMobile.current ? 1 : 1.2);
-//       ctx.shadowBlur = 15; ctx.shadowColor = `hsla(${hue},85%,70%,0.8)`;
-//       drawSphere(ctx, cx, cy, baseRadius * 0.98, t * 0.2, t * 0.15, t * 0.05, `hsla(${hue + 30},85%,70%,0.85)`, isMobile.current ? 0.8 : 1);
-//       ctx.shadowBlur = 0; ctx.restore();
-//       const rc = isMobile.current ? 2 : 3;
-//       for (let i = 0; i < rc; i++) {
-//         const rr = baseRadius * (0.85 + i * 0.12), tilt = Math.sin(t * 0.5 + i) * 0.2, angle = t * (0.5 + i * 0.3);
-//         ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle); ctx.scale(1, 0.7 + tilt * 0.1);
-//         ctx.beginPath(); ctx.ellipse(0, 0, rr, rr * 0.45, 0, 0, Math.PI * 2);
-//         ctx.strokeStyle = `hsla(${hue + i * 20},85%,70%,0.5)`; ctx.lineWidth = isMobile.current ? 0.8 : 1.2; ctx.stroke(); ctx.restore();
-//       }
-//       const pc = isMobile.current ? 40 : 80;
-//       for (let i = 0; i < pc; i++) {
-//         const ri = i % rc, rr = baseRadius * (0.85 + ri * 0.12), a = i * (Math.PI * 2 / (pc / rc)) + t * 1.5;
-//         const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr * 0.75;
-//         const sz = isMobile.current ? 1.2 : 1.8 + Math.sin(t * 5 + i) * 0.8;
-//         ctx.beginPath(); ctx.arc(x, y, sz, 0, Math.PI * 2);
-//         ctx.fillStyle = `hsla(${hue + ri * 30},90%,75%,0.9)`; ctx.fill();
-//       }
-//       const g = ctx.createRadialGradient(cx, cy, baseRadius * 0.08, cx, cy, baseRadius * 0.28);
-//       g.addColorStop(0, `hsla(${hue},90%,70%,0.95)`); g.addColorStop(0.7, `hsla(${hue},85%,65%,0.4)`); g.addColorStop(1, "transparent");
-//       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, baseRadius * 0.28, 0, Math.PI * 2); ctx.fill();
-//       ctx.beginPath(); ctx.arc(cx, cy, baseRadius * 0.08, 0, Math.PI * 2);
-//       ctx.fillStyle = `hsla(${hue},100%,85%,1)`; ctx.fill();
-//       animationId = requestAnimationFrame(draw);
-//     };
-//     draw();
-//     return () => { cancelAnimationFrame(animationId); window.removeEventListener("scroll", updateScroll); window.removeEventListener("resize", updatePixelRatio); window.removeEventListener("resize", updateIsMobile); };
-//   }, []);
-
-//   return <canvas ref={canvasRef} style={{ position: "absolute", top: "8%", right: "2%", width: "min(500px,45vw,70vh)", height: "min(500px,45vw,70vh)", pointerEvents: "none", zIndex: 5, filter: "drop-shadow(0 0 20px rgba(0,150,255,0.25))", opacity: 0.95, willChange: "transform" }} />;
-// }
-
-// // ─── SCROLL MARQUEE ──────────────────────────────────────────────────────────
-// function ScrollMarquee({ text, direction, accent = "#00f7ff", dim = "#161b26", index = 0 }) {
-//   const trackRef = useRef(null), wrapRef = useRef(null), glowRef = useRef(null);
-//   const isTop = index === 0;
-//   const words = Array(14).fill(text);
-
-//   useEffect(() => {
-//     const track = trackRef.current, wrap = wrapRef.current;
-//     if (!track || !wrap) return;
-//     gsap.set(track, { xPercent: direction === 1 ? 0 : -50 });
-//     const st = ScrollTrigger.create({
-//       trigger: wrap, start: "top bottom", end: "bottom top", scrub: 1.8,
-//       onUpdate: self => {
-//         const v = self.getVelocity(), move = direction * v * 0.014;
-//         gsap.to(track, { xPercent: `+=${move}`, duration: .8, ease: "power1.out", modifiers: { xPercent: x => { let v = parseFloat(x) % 50; if (v > 0) v -= 50; return v; } } });
-//         if (glowRef.current) {
-//           const spd = Math.abs(v), int = Math.min(spd / 800, 1), hue = isTop ? 190 + int * 20 : 38 + int * 15;
-//           glowRef.current.style.opacity = `${0.4 + int * 0.6}`;
-//           glowRef.current.style.background = `linear-gradient(90deg,transparent,hsla(${hue},100%,65%,0.9),transparent)`;
-//           glowRef.current.style.filter = `blur(${2 + int * 6}px)`;
-//         }
-//       },
-//     });
-//     return () => st.kill();
-//   }, [direction, isTop]);
-
-//   const accentMid = isTop ? "#00f7ff" : "#ffb347";
-//   return (
-//     <div ref={wrapRef} style={{ overflow: "hidden", position: "relative", borderTop: `1px solid ${accentMid}55`, borderBottom: `1px solid ${accentMid}33` }}>
-//       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${accentMid}cc,#fff,${accentMid}cc,transparent)`, boxShadow: `0 0 18px 2px ${accentMid}aa`, zIndex: 3, pointerEvents: "none" }} />
-//       <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${accentMid}88,${accentMid}cc,${accentMid}88,transparent)`, zIndex: 3, pointerEvents: "none" }} />
-//       <div ref={glowRef} style={{ position: "absolute", top: "30%", left: "-10%", width: "40%", height: "40%", background: `linear-gradient(90deg,transparent,${accentMid}99,transparent)`, filter: "blur(4px)", pointerEvents: "none", zIndex: 2, opacity: 0.5 }} />
-//       <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: "12%", zIndex: 4, background: `linear-gradient(90deg,#05060e,transparent)`, pointerEvents: "none" }} />
-//       <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: "12%", zIndex: 4, background: `linear-gradient(270deg,#05060e,transparent)`, pointerEvents: "none" }} />
-//       <div ref={trackRef} style={{ display: "flex", whiteSpace: "nowrap", width: "max-content", willChange: "transform", padding: "clamp(7px,2vw,12px) 0", position: "relative", zIndex: 1 }}>
-//         {words.map((w, i) => (
-//           <span key={i} style={{ fontSize: "clamp(30px,6.5vw,96px)", fontWeight: 900, letterSpacing: 2, fontFamily: F.display, paddingRight: "clamp(22px,4vw,60px)", color: i % 2 === 0 ? "transparent" : `${dim}`, WebkitTextStroke: i % 2 === 0 ? `1.5px ${accentMid}cc` : "none", textShadow: i % 2 === 0 ? `0 0 80px ${accentMid}50,0 0 20px ${accentMid}30` : i % 4 === 1 ? `0 0 40px ${accentMid}22` : "none", filter: i % 2 === 0 ? `drop-shadow(0 0 8px ${accentMid}66)` : "none" }}>{w}</span>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }
-
-// // ─── PARTICLES ───────────────────────────────────────────────────────────────
-// function Particles() {
-//   const cvs = useRef(null);
-//   useEffect(() => {
-//     const c = cvs.current; if (!c) return;
-//     const ctx = c.getContext("2d");
-//     let W = c.width = window.innerWidth, H = c.height = window.innerHeight, pts = [];
-//     const init = () => { const mob = window.innerWidth <= 768, n = mob ? 40 : 85; pts = Array.from({ length: n }, () => ({ x: Math.random() * W, y: Math.random() * H, vx: (Math.random() - .5) * .22, vy: (Math.random() - .5) * .22, r: Math.random() * 1.5 + .3, o: Math.random() * .28 + .06 })); };
-//     init();
-//     const onR = () => { W = c.width = window.innerWidth; H = c.height = window.innerHeight; init(); };
-//     window.addEventListener("resize", onR);
-//     let af, time = 0;
-//     const draw = () => { ctx.clearRect(0, 0, W, H); time += 0.01; const hb = 180 + Math.sin(time) * 30; pts.forEach(p => { p.x += p.vx; p.y += p.vy; if (p.x < 0) p.x = W; if (p.x > W) p.x = 0; if (p.y < 0) p.y = H; if (p.y > H) p.y = 0; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fillStyle = `hsla(${hb},100%,60%,${p.o})`; ctx.fill(); }); for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) { const dx = pts[i].x - pts[j].x, dy = pts[i].y - pts[j].y, d = Math.sqrt(dx * dx + dy * dy); if (d < 100) { ctx.beginPath(); ctx.moveTo(pts[i].x, pts[i].y); ctx.lineTo(pts[j].x, pts[j].y); ctx.strokeStyle = `hsla(${hb},100%,65%,${(1 - d / 100) * .08})`; ctx.lineWidth = 0.6; ctx.stroke(); } } af = requestAnimationFrame(draw); };
-//     draw();
-//     return () => { cancelAnimationFrame(af); window.removeEventListener("resize", onR); };
-//   }, []);
-//   return <canvas ref={cvs} style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", willChange: "transform" }} />;
-// }
-
-// // ─── ANIMATED COUNTER ────────────────────────────────────────────────────────
-// function AnimCounter({ from = 0, to, suffix = "" }) {
-//   const [val, setVal] = useState(from);
-//   const ref = useRef(null);
-//   useEffect(() => {
-//     if (!ref.current) return;
-//     const obs = new IntersectionObserver(([e]) => {
-//       if (!e.isIntersecting) return; obs.disconnect();
-//       gsap.fromTo(ref.current, { innerText: from }, { innerText: to, duration: 1.6, snap: { innerText: 1 }, ease: "power2.out", onUpdate: function () { setVal(Math.floor(this.targets()[0].innerText)); } });
-//     }, { threshold: .4 });
-//     obs.observe(ref.current);
-//     return () => obs.disconnect();
-//   }, [from, to]);
-//   return <span ref={ref}>{val}{suffix}</span>;
-// }
-
-// // ─── CARD ────────────────────────────────────────────────────────────────────
-// function Card({ lang, onSelect, index }) {
-//   const [hov, setHov] = useState(false);
-//   const [mousePos, setMousePos] = useState({ x: .5, y: .5 });
-//   const ref = useRef(null), topLine = useRef(null), glowRef = useRef(null);
-//   const btn = useGlitch("[ DECRYPT FILE ]", hov);
-//   const lbl = useGlitch(lang.label, hov);
-//   const RGB = { "#00f7ff": "0,247,255", "#ffb347": "255,179,71", "#ff3366": "255,51,102" };
-//   const rgb = RGB[lang.accent];
-
-//   useEffect(() => {
-//     if (!ref.current) return;
-//     gsap.set(ref.current, { opacity: 0, y: 120, rotateX: 18, scale: 0.92 });
-//     ScrollTrigger.create({
-//       trigger: ref.current, start: "top 92%",
-//       onEnter: () => gsap.to(ref.current, {
-//         opacity: 1, y: 0, rotateX: 0, scale: 1,
-//         duration: 1.2, ease: "expo.out", delay: index * .22
-//       }),
-//       once: true
-//     });
-//   }, [index]);
-
-//   const enter = e => {
-//     setHov(true);
-//     const rect = ref.current.getBoundingClientRect();
-//     setMousePos({ x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height });
-//     gsap.to(ref.current, { y: -16, scale: 1.018, duration: .5, ease: "power2.out" });
-//     if (topLine.current) gsap.to(topLine.current, { scaleX: 1, duration: .45, ease: "power2.out" });
-//     if (glowRef.current) gsap.to(glowRef.current, { opacity: 1, duration: .4 });
-//   };
-//   const leave = () => {
-//     setHov(false);
-//     gsap.to(ref.current, { y: 0, scale: 1, rotateY: 0, rotateX: 0, duration: .6, ease: "power2.inOut" });
-//     if (topLine.current) gsap.to(topLine.current, { scaleX: 0, duration: .3 });
-//     if (glowRef.current) gsap.to(glowRef.current, { opacity: 0, duration: .4 });
-//   };
-//   const mouseMove = e => {
-//     if (!hov || !ref.current) return;
-//     const rect = ref.current.getBoundingClientRect();
-//     const mx = (e.clientX - rect.left) / rect.width - .5, my = (e.clientY - rect.top) / rect.height - .5;
-//     gsap.to(ref.current, { rotateY: mx * 10, rotateX: -my * 6, duration: .4, ease: "power1.out" });
-//     setMousePos({ x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height });
-//   };
-//   const click = () => {
-//     gsap.timeline().to(ref.current, { scale: .96, duration: .12, ease: "power2.in" }).to(ref.current, { scale: 1, duration: .25, ease: "back.out(1.5)" });
-//     const fl = document.createElement("div");
-//     Object.assign(fl.style, { position: "absolute", inset: 0, zIndex: 20, background: `radial-gradient(circle at ${mousePos.x * 100}% ${mousePos.y * 100}%,${lang.accent}60,transparent 70%)`, pointerEvents: "none", animation: "ripFade .5s ease forwards", borderRadius: "inherit" });
-//     ref.current.appendChild(fl); setTimeout(() => fl.remove(), 550); setTimeout(() => onSelect(lang), 330);
-//   };
-
-//   return (
-//     <div ref={ref} data-cur onMouseEnter={enter} onMouseLeave={leave} onMouseMove={mouseMove} onClick={click}
-//       style={{
-//         position: "relative", cursor: "none", overflow: "hidden",
-//         border: `1px solid ${hov ? lang.accent + "dd" : "#1a2030"}`,
-//         background: hov
-//           ? `linear-gradient(145deg, rgba(${rgb},.10) 0%, rgba(5,7,14,0.98) 60%, rgba(${rgb},.05) 100%)`
-//           : "rgba(5,7,14,.98)",
-//         padding: "clamp(20px, 3vw, 36px) clamp(18px, 2.5vw, 28px)",
-//         transformStyle: "preserve-3d", willChange: "transform",
-//         boxShadow: hov
-//           ? `0 0 60px rgba(${rgb},.20), 0 40px 80px rgba(0,0,0,.6), inset 0 1px 0 rgba(${rgb},.3)`
-//           : "0 8px 40px rgba(0,0,0,.4)",
-//         transition: "border-color .35s, box-shadow .35s, background .35s",
-//       }}>
-
-//       {/* Ambient glow */}
-//       <div ref={glowRef} style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: 0, background: `radial-gradient(ellipse at ${mousePos.x * 100}% ${mousePos.y * 100}%,rgba(${rgb},0.22) 0%,transparent 65%)`, transition: "background .1s" }} />
-
-//       {/* Top gradient flash */}
-//       <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 220, pointerEvents: "none", background: `radial-gradient(ellipse at 50% -10%,rgba(${rgb},${hov ? .18 : 0}) 0%,transparent 70%)`, transition: "background .5s" }} />
-
-//       {/* Top border line */}
-//       <div ref={topLine} style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,transparent,${lang.accent},transparent)`, boxShadow: `0 0 24px 2px ${lang.accent}`, transformOrigin: "center", transform: "scaleX(0)" }} />
-
-//       {/* Bottom border glow on hover */}
-//       {hov && <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg,transparent,${lang.accent}44,transparent)` }} />}
-
-//       {/* Corner accents */}
-//       {["tl", "tr", "bl", "br"].map(c => (
-//         <div key={c} style={{ position: "absolute", top: c[0] === "t" ? 12 : "auto", bottom: c[0] === "b" ? 12 : "auto", left: c[1] === "l" ? 12 : "auto", right: c[1] === "r" ? 12 : "auto", width: 14, height: 14, borderTop: c[0] === "t" ? `1.5px solid ${lang.accent}` : "none", borderBottom: c[0] === "b" ? `1.5px solid ${lang.accent}` : "none", borderLeft: c[1] === "l" ? `1.5px solid ${lang.accent}` : "none", borderRight: c[1] === "r" ? `1.5px solid ${lang.accent}` : "none", opacity: hov ? 1 : .25, transition: "opacity .3s,transform .3s", transform: hov ? `translate(${c[1] === "l" ? "-3px" : "3px"},${c[0] === "t" ? "-3px" : "3px"})` : "" }} />
-//       ))}
-
-//       {/* Large index watermark */}
-//       <div style={{ position: "absolute", bottom: -18, right: -8, fontSize: "clamp(60px, 12vw, 120px)", fontFamily: F.crazy, color: lang.accent, opacity: hov ? .10 : .04, lineHeight: 1, pointerEvents: "none", userSelect: "none", transition: "opacity .4s,transform .6s", transform: hov ? "translateY(-8px) scale(1.05)" : "none" }}>{lang.index}</div>
-
-//       {/* Scan line on hover */}
-//       {hov && <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "none", overflow: "hidden", zIndex: 1 }}>
-//         <div style={{ position: "absolute", width: "100%", height: 1, background: `linear-gradient(90deg,transparent,${lang.accent}99,transparent)`, animation: "cardScan 2.2s ease-in-out infinite" }} />
-//       </div>}
-
-//       <div style={{ position: "relative", zIndex: 2 }}>
-//         {/* Tag */}
-//         <div style={{ fontSize: 7, letterSpacing: 4, color: lang.accent, opacity: hov ? .8 : .5, marginBottom: 20, fontFamily: F.hud, display: "flex", alignItems: "center", gap: 8, transition: "opacity .3s" }}>
-//           <span style={{ width: 18, height: 1, background: lang.accent, display: "inline-block", opacity: .6 }} />{lang.tag}
-//         </div>
-
-//         {/* Label */}
-//         <div style={{ fontSize: "clamp(44px, 7vw, 80px)", fontFamily: F.display, letterSpacing: 2, lineHeight: .82, color: hov ? lang.accent : "#c8d8f0", marginBottom: 16, transition: "color .28s", textShadow: hov ? `0 0 100px ${lang.accent}70,0 0 40px ${lang.accent}40` : "none" }}>{lbl}</div>
-
-//         {/* Tagline */}
-//         <div style={{ fontSize: 8, color: hov ? lang.accent + "cc" : "#506070", letterSpacing: 3, marginBottom: 18, fontFamily: F.hud, transition: "color .3s", textTransform: "uppercase" }}>{lang.tagline}</div>
-
-//         {/* Divider */}
-//         <div style={{ height: 1, background: `linear-gradient(90deg,${lang.accent}cc,${lang.accent}44,transparent)`, marginBottom: 18, opacity: hov ? 1 : .3, transition: "opacity .3s" }} />
-
-//         {/* Description */}
-//         <p style={{ fontSize: "clamp(10px, 1.8vw, 11px)", color: hov ? "#9aaabb" : "#607080", lineHeight: 1.9, marginBottom: 22, fontFamily: F.mono, transition: "color .3s" }}>{lang.desc}</p>
-
-//         {/* Meta tags */}
-//         <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginBottom: 22 }}>
-//           {lang.meta.map(m => (
-//             <span key={m} style={{ fontSize: 7, letterSpacing: 2, padding: "5px 12px", border: `1px solid ${lang.accent}${hov ? "77" : "33"}`, color: hov ? lang.accent : lang.accent + "77", background: `${lang.accent}${hov ? "18" : "08"}`, fontFamily: F.hud, transition: "all .3s" }}>{m}</span>
-//           ))}
-//         </div>
-
-//         {/* Features */}
-//         <div style={{ marginBottom: 30 }}>
-//           {lang.features.map((f, i) => (
-//             <div key={f} style={{ fontSize: 10, color: hov ? "#9aaabb" : "#506070", marginBottom: 8, display: "flex", alignItems: "center", gap: 10, fontFamily: F.mono, transform: hov ? "translateX(8px)" : "none", transition: `transform .4s ${i * .07}s ease,color .3s` }}>
-//               <span style={{ color: lang.accent, fontSize: 7, transition: "transform .3s", transform: hov ? "scale(1.4)" : "scale(1)", display: "inline-block" }}>▶</span>{f}
-//             </div>
-//           ))}
-//         </div>
-
-//         {/* CTA Button */}
-//         <button style={{ width: "100%", padding: "clamp(10px, 2vw, 14px)", cursor: "none", border: `1px solid ${lang.accent}${hov ? "ff" : "66"}`, color: hov ? "#fff" : lang.accent, fontFamily: F.hud, fontSize: 8, letterSpacing: 4, background: hov ? `linear-gradient(135deg, rgba(${rgb},.35), rgba(${rgb},.15))` : "transparent", boxShadow: hov ? `0 0 60px ${lang.accent}44,inset 0 0 40px ${lang.accent}18,0 0 0 1px ${lang.accent}55` : "none", transition: "all .35s", position: "relative", overflow: "hidden" }}>
-//           {hov && <div style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg,transparent,${lang.accent}25,transparent)`, animation: "btnShine 1.4s ease-in-out infinite" }} />}
-//           <span style={{ position: "relative", zIndex: 1 }}>{btn}</span>
-//         </button>
-//       </div>
-//     </div>
-//   );
-// }
-
-// // ─── STATS STRIP ─────────────────────────────────────────────────────────────
-// function StatsStrip() {
-//   const stripRef = useRef(null);
-//   const stats = [
-//     { label: "LANG FILES", val: 3, suffix: "", accent: "#00f7ff" },
-//     { label: "CONCEPTS COVERED", val: 120, suffix: "+", accent: "#ffb347" },
-//     { label: "HOURS OF CONTENT", val: 48, suffix: "H", accent: "#ff3366" },
-//     { label: "SKILL LEVEL", val: 0, suffix: "→∞", accent: "#39ff14" },
-//   ];
-//   useEffect(() => {
-//     if (!stripRef.current) return;
-//     gsap.from(stripRef.current.querySelectorAll(".stat-item"), { opacity: 0, y: 30, stagger: .1, duration: .8, ease: "power2.out", scrollTrigger: { trigger: stripRef.current, start: "top 88%", once: true } });
-//   }, []);
-//   return (
-//     <div ref={stripRef} style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(140px,1fr))", borderTop: "2px solid rgba(0,247,255,0.25)", borderLeft: "1px solid #1a2030", marginBottom: 52 }}>
-//       {stats.map(s => (
-//         <div key={s.label} className="stat-item" style={{ padding: "clamp(14px, 3vw, 24px) clamp(12px, 2.5vw, 20px)", borderRight: "1px solid #1a2030", borderBottom: "1px solid #1a2030", position: "relative", overflow: "hidden", transition: "background .3s" }}
-//           onMouseEnter={e => e.currentTarget.style.background = "rgba(0,247,255,.04)"}
-//           onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-//           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,${s.accent}aa,transparent)` }} />
-//           <div style={{ fontSize: 7, letterSpacing: 3, color: "#2a3548", marginBottom: 8, fontFamily: F.hud }}>{s.label}</div>
-//           <div style={{ fontSize: "clamp(28px, 5vw, 42px)", fontFamily: F.display, color: s.accent, letterSpacing: 2, textShadow: `0 0 40px ${s.accent}80` }}>
-//             <AnimCounter to={s.val} suffix={s.suffix} />
-//           </div>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }
-
-// // ─── FEATURE ITEMS ───────────────────────────────────────────────────────────
-// function FeatureItem({ item, idx }) {
-//   const [hov, setHov] = useState(false);
-//   const ref = useRef(null);
-//   useEffect(() => {
-//     if (!ref.current) return;
-//     gsap.set(ref.current, { opacity: 0, y: 40 });
-//     ScrollTrigger.create({ trigger: ref.current, start: "top 92%", onEnter: () => gsap.to(ref.current, { opacity: 1, y: 0, duration: .7, ease: "power3.out", delay: idx * .08 }), once: true });
-//   }, [idx]);
-//   return (
-//     <div ref={ref} onMouseEnter={() => setHov(true)} onMouseLeave={() => setHov(false)}
-//       style={{ padding: "clamp(16px, 4vw, 24px) clamp(14px, 3vw, 20px)", border: `1px solid ${hov ? "#00f7ff60" : "#1a2030"}`, background: hov ? "rgba(0,247,255,.04)" : "transparent", transition: "border-color .3s,background .3s", position: "relative", overflow: "hidden" }}>
-//       {hov && <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,transparent,#00f7ffaa,transparent)" }} />}
-//       <div style={{ fontSize: "clamp(18px, 4vw, 22px)", marginBottom: 12, color: "#00f7ff", opacity: hov ? 1 : .55, transition: "opacity .3s,transform .35s", transform: hov ? "scale(1.2) translateX(3px)" : "none" }}>{item.icon}</div>
-//       <div style={{ fontSize: 8, letterSpacing: 3, color: hov ? "#c8d8f0" : "#506070", marginBottom: 8, transition: "color .3s", fontFamily: F.hud }}>{item.title}</div>
-//       <div style={{ fontSize: "clamp(9px, 1.8vw, 10px)", color: hov ? "#4a6f80" : "#2a3548", lineHeight: 1.6, transition: "color .3s", fontFamily: F.mono }}>{item.desc}</div>
-//     </div>
-//   );
-// }
-
-// function HorizontalFeatures() {
-//   const items = [
-//     { icon: "◈", title: "MODULAR LESSONS", desc: "Each concept is a self-contained file. Open, decrypt, master." },
-//     { icon: "⬡", title: "OPERATOR FLOW", desc: "Progress through missions like an intelligence analyst on assignment." },
-//     { icon: "◎", title: "CASE SYSTEM", desc: "Your learning path is your case file. Every concept a new lead." },
-//     { icon: "▣", title: "LIVE FEEDBACK", desc: "Instant output. See your code run in real-time terminal output." },
-//     { icon: "◆", title: "ZERO FILLER", desc: "No fluff. Pure signal. Every lesson is mission-critical intel." },
-//   ];
-//   return (
-//     <div style={{ marginBottom: 60 }}>
-//       <div style={{ fontSize: 8, letterSpacing: 5, color: "#2a3548", fontFamily: F.hud, marginBottom: 24 }}>// INTEL BRIEF — WHY VISUOSLAYER</div>
-//       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 2 }}>
-//         {items.map((it, i) => <FeatureItem key={it.title} item={it} idx={i} />)}
-//       </div>
-//     </div>
-//   );
-// }
-
-// // ─── HERO BG ─────────────────────────────────────────────────────────────────
-// function HeroBG() {
-//   const cvs = useRef(null);
-//   useEffect(() => {
-//     const c = cvs.current; if (!c) return;
-//     const ctx = c.getContext("2d");
-//     let W, H;
-//     const resize = () => { W = c.width = c.offsetWidth; H = c.height = c.offsetHeight; };
-//     resize(); window.addEventListener("resize", resize);
-//     const HEX_R = 42;
-//     const buildHexes = () => { const list = []; const cols = Math.ceil(W / (HEX_R * 1.732)) + 2, rows = Math.ceil(H / (HEX_R * 1.5)) + 2; for (let r = 0; r < rows; r++) for (let col = 0; col < cols; col++) { const ox = r % 2 === 0 ? 0 : HEX_R * .866; list.push({ x: col * HEX_R * 1.732 + ox, y: r * HEX_R * 1.5, pulse: Math.random() * 6, speed: .003 + Math.random() * .006, bright: Math.random() }); } return list; };
-//     let hexes = buildHexes(); window.addEventListener("resize", () => { hexes = buildHexes(); });
-//     const CHARS = "01アイウエオ<>{}[]#@";
-//     const streams = Array.from({ length: 28 }, () => ({ x: Math.random() * 2000, y: Math.random() * 900, speed: .4 + Math.random() * .8, chars: Array.from({ length: 9 }, () => CHARS[Math.floor(Math.random() * CHARS.length)]), op: .03 + Math.random() * .09, timer: 0 }));
-//     let af, time = 0;
-//     const draw = () => { ctx.clearRect(0, 0, W, H); time += .008; const hb = 180 + Math.sin(time) * 30; hexes.forEach(h => { h.pulse += h.speed; const alpha = (Math.sin(h.pulse) * .5 + .5) * h.bright * .05; ctx.beginPath(); for (let i = 0; i < 6; i++) { const a = (Math.PI / 3) * i - Math.PI / 6; const px = h.x + HEX_R * .9 * Math.cos(a), py = h.y + HEX_R * .9 * Math.sin(a); i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py); } ctx.closePath(); ctx.strokeStyle = `hsla(${hb},100%,65%,${alpha})`; ctx.lineWidth = .6; ctx.stroke(); }); streams.forEach(s => { s.timer++; if (s.timer % 7 === 0) { s.chars.shift(); s.chars.push(CHARS[Math.floor(Math.random() * CHARS.length)]); } s.y += s.speed; if (s.y > H + 130) { s.y = -130; s.x = Math.random() * W; } s.chars.forEach((ch, i) => { ctx.font = "10px 'Space Mono',monospace"; ctx.fillStyle = `hsla(${hb},100%,70%,${s.op * ((s.chars.length - i) / s.chars.length)})`; ctx.fillText(ch, s.x, s.y + i * 13); }); }); [[0, 0], [W, 0], [0, H], [W, H]].forEach(([bx, by]) => { const sx = bx === 0 ? 1 : -1, sy = by === 0 ? 1 : -1; ctx.strokeStyle = `hsla(${hb},100%,65%,0.12)`; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(bx + sx * 18, by + sy * 1); ctx.lineTo(bx + sx * 70, by + sy * 1); ctx.stroke(); ctx.beginPath(); ctx.moveTo(bx + sx * 1, by + sy * 18); ctx.lineTo(bx + sx * 1, by + sy * 70); ctx.stroke(); }); af = requestAnimationFrame(draw); };
-//     af = requestAnimationFrame(draw);
-//     return () => { cancelAnimationFrame(af); window.removeEventListener("resize", resize); };
-//   }, []);
-//   return <canvas ref={cvs} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 1 }} />;
-// }
-
-// // ─── HERO ─────────────────────────────────────────────────────────────────────
-// function Hero({ eyeRef, h1Ref, subRef }) {
-//   const reticleRef = useRef(null), hRef = useRef(null);
-//   const orb1 = useRef(null), orb2 = useRef(null);
-//   const scrollArrow = useRef(null), dividerRef = useRef(null), statusRef = useRef(null);
-//   const [typed, setTyped] = useState("");
-//   const STATUS = "AWAITING_SELECTION...";
-
-//   useEffect(() => { let i = 0; const iv = setInterval(() => { setTyped(STATUS.slice(0, i)); i = i >= STATUS.length + 6 ? 0 : i + 1; }, 90); return () => clearInterval(iv); }, []);
-
-//   useEffect(() => {
-//     if (orb1.current && orb2.current) {
-//       ScrollTrigger.create({
-//         trigger: hRef.current, start: "top top", end: "bottom top", scrub: 1.2,
-//         onUpdate: (self) => {
-//           const y = self.progress * 180;
-//           gsap.to(orb1.current, { y: -30 - y * 0.6, x: 70 - y * 0.3, scale: 1 + self.progress * 0.2, duration: 0.1 });
-//           gsap.to(orb2.current, { y: 20 + y * 0.8, x: -60 + y * 0.4, scale: 1 - self.progress * 0.15, duration: 0.1 });
-//         }
-//       });
-//     }
-//   }, []);
-
-//   useEffect(() => {
-//     const words = h1Ref.current?.querySelectorAll(".word");
-//     if (words && words.length) {
-//       words.forEach((word, idx) => {
-//         ScrollTrigger.create({
-//           trigger: hRef.current, start: "top top", end: "bottom top", scrub: 1,
-//           onUpdate: (self) => {
-//             const progress = self.progress;
-//             gsap.to(word, { x: (idx - 1) * 40 * progress, y: -20 * progress, rotation: idx === 1 ? 0 : (idx === 0 ? -8 : 8) * progress, duration: 0.1, ease: "none" });
-//           }
-//         });
-//       });
-//     }
-//   }, [h1Ref]);
-
-//   useEffect(() => {
-//     const section = hRef.current; if (!section) return;
-//     ScrollTrigger.create({
-//       trigger: section, start: "top top", end: "85% top", scrub: 0.8,
-//       onUpdate: (self) => {
-//         const p = self.progress;
-//         const heroContent = section.querySelector(".hero-content");
-//         if (heroContent) {
-//           gsap.set(heroContent, {
-//             filter: `blur(${p * 14}px) brightness(${1 + p * 0.7}) saturate(${1 - p * 0.6})`,
-//             opacity: 1 - p * 0.9,
-//             y: -p * 100,
-//             scale: 1 - p * 0.04,
-//           });
-//         }
-//       }
-//     });
-//   }, []);
-
-//   useEffect(() => {
-//     if (scrollArrow.current) gsap.to(scrollArrow.current, { y: 10, duration: 1.4, ease: "sine.inOut", yoyo: true, repeat: -1 });
-//     if (dividerRef.current) gsap.from(dividerRef.current, { scaleX: 0, duration: 1.4, ease: "power3.out", delay: .6, scrollTrigger: { trigger: dividerRef.current, start: "top 95%", once: true } });
-//     if (statusRef.current) gsap.from(statusRef.current, { x: 30, opacity: 0, duration: .9, ease: "power3.out", delay: .9 });
-//   }, []);
-
-//   useEffect(() => {
-//     const el = hRef.current; if (!el) return;
-//     const move = e => { const rect = el.getBoundingClientRect(); gsap.to(reticleRef.current, { x: e.clientX - rect.left, y: e.clientY - rect.top, duration: .5, ease: "power2.out" }); };
-//     el.addEventListener("mousemove", move); return () => el.removeEventListener("mousemove", move);
-//   }, []);
-
-//   return (
-//     <section ref={hRef} style={{ width: "100%", minHeight: "100vh", padding: "80px clamp(20px,5vw,80px) 0", position: "relative", overflow: "hidden", display: "flex", flexDirection: "column", justifyContent: "center", boxSizing: "border-box" }}>
-//       <HeroBG />
-//       <PremiumGSAPOrb />
-//       <div ref={orb1} style={{ position: "absolute", top: "15%", right: "6%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle,rgba(0,247,255,.07) 0%,transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
-//       <div ref={orb2} style={{ position: "absolute", bottom: "10%", left: "3%", width: 440, height: 440, borderRadius: "50%", background: "radial-gradient(circle,rgba(0,247,255,.045) 0%,transparent 70%)", pointerEvents: "none", zIndex: 0 }} />
-//       <div ref={reticleRef} style={{ position: "absolute", pointerEvents: "none", width: 88, height: 88, marginLeft: -44, marginTop: -44, zIndex: 8, opacity: .3, top: 0, left: 0 }}>
-//         <svg width="88" height="88" viewBox="0 0 88 88">
-//           <circle cx="44" cy="44" r="42" fill="none" stroke="#00f7ff" strokeWidth=".5" strokeDasharray="5 9" />
-//           <circle cx="44" cy="44" r="5" fill="none" stroke="#00f7ff" strokeWidth="1" />
-//           <line x1="0" y1="44" x2="28" y2="44" stroke="#00f7ff" strokeWidth=".6" />
-//           <line x1="60" y1="44" x2="88" y2="44" stroke="#00f7ff" strokeWidth=".6" />
-//           <line x1="44" y1="0" x2="44" y2="28" stroke="#00f7ff" strokeWidth=".6" />
-//           <line x1="44" y1="60" x2="44" y2="88" stroke="#00f7ff" strokeWidth=".6" />
-//         </svg>
-//       </div>
-
-//       <div className="hero-content" style={{ position: "relative", zIndex: 10, willChange: "transform, filter, opacity" }}>
-//         <div ref={eyeRef} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28, fontFamily: F.hud, fontSize: 8, letterSpacing: 5, color: "#00f7ffaa", flexWrap: "wrap" }}>
-//           <span style={{ width: 36, height: 2, background: "linear-gradient(90deg,#00f7ff,transparent)", display: "inline-block" }} />
-//           VISUOSLAYER // CASE #2026 // LANG-SELECT
-//           <span style={{ width: 36, height: 2, background: "linear-gradient(270deg,#00f7ff,transparent)", display: "inline-block" }} />
-//         </div>
-
-//         <h1 ref={h1Ref} style={{ lineHeight: .82, fontFamily: F.display, fontWeight: 400, fontSize: "clamp(72px,14vw,220px)", letterSpacing: "0.02em", width: "100%", wordBreak: "break-word" }}>
-//           <span className="word" style={{ display: "block", color: "transparent", WebkitTextStroke: "1px rgba(200,216,240,.3)", lineHeight: .9 }}>BEGINNER?</span>
-//           <span className="word" id="select-word" style={{ display: "block", color: "#00f7ff", textShadow: "0 0 160px rgba(0,247,255,.8),0 0 60px rgba(0,247,255,.5)", animation: "floatY 3.8s ease-in-out infinite", position: "relative", lineHeight: .9 }}>
-//             <span style={{ fontFamily: F.hud, letterSpacing: "0.04em", fontWeight: 900 }}>SELECT</span>
-//             <span style={{ position: "absolute", left: 0, top: "52%", width: "100%", height: 3, background: "linear-gradient(90deg,transparent 0%,#00f7ff88 30%,#00f7ff 50%,#00f7ff88 70%,transparent 100%)", animation: "scanH 2.8s cubic-bezier(.4,0,.2,1) infinite", pointerEvents: "none", boxShadow: "0 0 18px #00f7ff" }} />
-//           </span>
-//           <span className="word" style={{ display: "block", color: "#c8d8f0", lineHeight: .9 }}>LANGUAGE</span>
-//         </h1>
-
-//         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 40, marginTop: 56, flexWrap: "wrap" }}>
-//           <div style={{ display: "flex", gap: 24, alignItems: "flex-start", maxWidth: 520, flex: "1 1 300px" }}>
-//             <div style={{ width: 2, minHeight: 90, background: "linear-gradient(to bottom,#00f7ff,transparent)", flexShrink: 0, marginTop: 4, boxShadow: "0 0 12px #00f7ffaa" }} />
-//             <p ref={subRef} style={{ fontSize: "clamp(11px,2vw,12px)", color: "#607080", letterSpacing: 1, lineHeight: 2, fontFamily: F.mono, wordBreak: "break-word" }}>
-//               Three encrypted files. Each contains the fundamentals of a programming language.
-//               Select one to begin decryption. Your mission starts now.
-//               <br /><br /><span style={{ color: "#304050" }}>// VISUOSLAYER by SAIF — CASE #2026</span>
-//             </p>
-//           </div>
-//           <div ref={statusRef} style={{ flexShrink: 0, border: "1px solid #2a3a4a", padding: "clamp(10px, 2.5vw, 14px) clamp(12px, 3vw, 18px)", fontFamily: F.hud, fontSize: 8, lineHeight: 1.8, color: "#2a4050", minWidth: 220, background: "rgba(5,7,14,.85)", backdropFilter: "blur(12px)", flex: "0 0 auto", position: "relative", overflow: "hidden" }}>
-//             <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,transparent,#00f7ff88,transparent)" }} />
-//             <div style={{ color: "#2a3548", fontSize: 7, letterSpacing: 4, marginBottom: 8 }}>SYSTEM STATUS</div>
-//             {[["KERNEL", "OVERRIDE_ACTIVE"], ["FILES", "3 / UNLOCKED"], ["OPERATOR", "SAIF"], ["SIGNAL", "99%"]].map(([k, v]) => (
-//               <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 24, letterSpacing: 2 }}>
-//                 <span style={{ color: "#1e2535", fontSize: 7 }}>{k}</span>
-//                 <span style={{ color: "#4a6a80", fontSize: 7 }}>{v}</span>
-//               </div>
-//             ))}
-//             <div style={{ marginTop: 10, borderTop: "1px solid #1a2030", paddingTop: 8, color: "#00f7ff77", fontSize: 8, letterSpacing: 2, fontFamily: F.mono }}>
-//               &gt; {typed}<span style={{ animation: "bl 1s step-end infinite", color: "#00f7ffaa" }}>_</span>
-//             </div>
-//           </div>
-//         </div>
-
-//         <div ref={dividerRef} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 52, paddingTop: 16, borderTop: "2px solid rgba(0,247,255,0.4)", fontFamily: F.hud, fontSize: 7, letterSpacing: 2, color: "#2a4050", flexWrap: "wrap", gap: 12, transformOrigin: "left", boxShadow: "0 -4px 15px rgba(0,247,255,0.1)" }}>
-//           <span>CAM_01 · LAT 23.0225°N · LONG 72.5714°E</span>
-//           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-//             {[0, 1, 2, 3, 4].map(i => <div key={i} style={{ width: 24, height: 2, background: i === 2 ? "#00f7ffaa" : "#2a4050", boxShadow: i === 2 ? "0 0 10px #00f7ff" : "none" }} />)}
-//           </div>
-//           <span>ALT 53M · <span style={{ color: "#00f7ff55", fontFamily: F.mono }}>{typed}<span style={{ animation: "bl 1s step-end infinite", color: "#00f7ff66" }}>_</span></span></span>
-//         </div>
-//       </div>
-
-//       <div ref={scrollArrow} style={{ position: "absolute", bottom: 36, left: "50%", transform: "translateX(-50%)", zIndex: 20, display: "flex", flexDirection: "column", alignItems: "center", gap: 6, fontFamily: F.hud, fontSize: 6, letterSpacing: 5, color: "#00f7ffaa" }}>
-//         <span>SCROLL</span>
-//         <div style={{ width: 2, height: 28, background: "linear-gradient(to bottom,#00f7ffcc,transparent)", boxShadow: "0 0 8px #00f7ff" }} />
-//         <svg width="10" height="6" viewBox="0 0 12 8" fill="none"><path d="M1 1L6 7L11 1" stroke="#00f7ff" strokeWidth="1.5" strokeLinecap="round" /></svg>
-//       </div>
-
-//       <style>{`
-//         @keyframes scanH{0%{transform:translateX(-110%)}100%{transform:translateX(110%)}}
-//         @keyframes ripFade{from{opacity:1}to{opacity:0}}
-//         @keyframes cardScan{0%{top:-1px}100%{top:100%}}
-//         @keyframes btnShine{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
-//       `}</style>
-//     </section>
-//   );
-// }
-
-// // ─── MARQUEE SECTION ─────────────────────────────────────────────────────────
-// function PremiumMarqueeSection() {
-//   return (
-//     <div style={{ overflow: "hidden", margin: "60px 0 0", position: "relative" }}>
-//       <div style={{ position: "absolute", inset: 0, zIndex: 0, pointerEvents: "none", background: "linear-gradient(180deg,rgba(0,247,255,0.025) 0%,rgba(0,0,0,0) 40%,rgba(0,0,0,0) 60%,rgba(255,179,71,0.025) 100%)" }} />
-//       <ScrollMarquee text="VISUOSLAYER - SAIF - " direction={1} accent="#00f7ff" dim="#0d1e2c" index={0} />
-//       <div style={{ position: "relative", height: 2, background: "linear-gradient(90deg,transparent,#00f7ff33,#00f7ff88,#00f7ff33,transparent)", zIndex: 5, overflow: "visible" }}>
-//         <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%,-50%) rotate(45deg)", width: 5, height: 5, background: "#00f7ff", boxShadow: "0 0 10px 2px #00f7ff", zIndex: 6 }} />
-//         <div style={{ position: "absolute", top: "-1px", left: 0, right: 0, height: 4, background: "linear-gradient(90deg,transparent,#00f7ffcc,transparent)", filter: "blur(2px)", animation: "dividerSweep 3s ease-in-out infinite", pointerEvents: "none" }} />
-//       </div>
-//       <ScrollMarquee text="C  - PYTHON - JAVA -" direction={-1} accent="#ffb347" dim="#1a1400" index={1} />
-//       <style>{`@keyframes dividerSweep{0%{transform:translateX(-120%);opacity:0}20%{opacity:1}80%{opacity:1}100%{transform:translateX(120%);opacity:0}}`}</style>
-//     </div>
-//   );
-// }
-
-// // ─── HUD BAR ──────────────────────────────────────────────────────────────────
-// function HudBar({ items }) {
-//   return (
-//     <div style={{ display: "flex", gap: 0, marginBottom: 48, border: "1px solid #1a2030", flexWrap: "wrap" }}>
-//       {items.map(([k, v, c], i, a) => (
-//         <div key={k} className="hud-cell" style={{ padding: "clamp(8px, 1.8vw, 12px) clamp(12px, 2.5vw, 20px)", borderRight: i < a.length - 1 ? "1px solid #1a2030" : "none", fontFamily: F.hud, fontSize: 7, letterSpacing: 2, background: "rgba(5,7,14,.7)", display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
-//           <span style={{ color: "#253040" }}>{k}</span>
-//           <span style={{ color: c, textShadow: `0 0 16px ${c}88` }}>{v}</span>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }
-
-// // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
-// export default function Page() {
-//   const router = useRouter();
-//   const [booted, setBooted] = useState(false);
-//   const [vis, setVis] = useState(false);
-//   const [activeLang, setActiveLang] = useState(null);
-
-//   const eyeRef = useRef(null);
-//   const h1Ref = useRef(null);
-//   const subRef = useRef(null);
-
-//   useEffect(() => {
-//     let lenis;
-//     const initLenis = async () => {
-//       try {
-//         const { default: Lenis } = await import("@studio-freight/lenis");
-//         lenis = new Lenis({
-//           duration: 1.2,
-//           easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-//           smoothWheel: true, wheelMultiplier: 0.8, touchMultiplier: 1.5,
-//           infinite: false, gestureOrientation: "vertical",
-//         });
-//         const raf = (time) => { lenis.raf(time); requestAnimationFrame(raf); };
-//         requestAnimationFrame(raf);
-//         lenis.on("scroll", ScrollTrigger.update);
-//         ScrollTrigger.scrollerProxy(document.body, {
-//           scrollTop(value) { return arguments.length ? lenis.scrollTo(value) : lenis.scroll; },
-//           getBoundingClientRect() { return { top: 0, left: 0, width: window.innerWidth, height: window.innerHeight }; },
-//           pinType: document.body.style.transform ? "transform" : "fixed",
-//         });
-//         ScrollTrigger.refresh();
-//         window.addEventListener("resize", () => ScrollTrigger.refresh());
-//       } catch (error) { console.warn("Lenis failed to load:", error); }
-//     };
-//     initLenis();
-//     return () => { lenis?.destroy(); ScrollTrigger.killAll(); };
-//   }, []);
-
-//   useEffect(() => {
-//     const onM = e => {
-//       const x = (e.clientX / window.innerWidth - .5) * 18, y = (e.clientY / window.innerHeight - .5) * 10;
-//       if (h1Ref.current) gsap.to(h1Ref.current, { x, y, duration: .9, ease: "power2.out" });
-//     };
-//     window.addEventListener("mousemove", onM);
-//     return () => window.removeEventListener("mousemove", onM);
-//   }, []);
-
-//   useEffect(() => {
-//     if (!booted) return;
-//     setTimeout(() => setVis(true), 80);
-//     const tl = gsap.timeline({ delay: .3 });
-//     if (eyeRef.current) tl.from(eyeRef.current, { opacity: 0, y: 24, duration: .7, ease: "power3.out" });
-//     if (h1Ref.current) tl.from(h1Ref.current.querySelectorAll(".word"), { opacity: 0, y: 80, stagger: .12, duration: 1, ease: "power3.out" }, "-=.4");
-//     if (subRef.current) tl.from(subRef.current, { opacity: 0, y: 20, duration: .7, ease: "power2.out" }, "-=.5");
-//   }, [booted]);
-
-//   const handleSelect = useCallback(lang => {
-//     setActiveLang(lang.label);
-//     const fl = document.createElement("div");
-//     Object.assign(fl.style, { position: "fixed", inset: 0, zIndex: 9000, background: lang.accent, opacity: "0", pointerEvents: "none" });
-//     document.body.appendChild(fl);
-//     gsap.timeline().to(fl, { opacity: .22, duration: .2 }).to(fl, { opacity: 0, duration: .45 }).then(() => { fl.remove(); router.push(lang.route); });
-//   }, [router]);
-
-//   const HUD_ITEMS = [
-//     ["ACTIVE_CASE", "LANG-SELECT", "#00f7ff"],
-//     ["FILES_FOUND", "3", "#ffb347"],
-//     ["CLEARANCE", "GRANTED", "#39ff14"],
-//     ["OPERATOR", "SAIF", "#c8d8f0"],
-//     ["SYSTEM", "VISUOSLAYER", "#506070"],
-//   ];
-
-//   return (
-//     <>
-//       <style dangerouslySetInnerHTML={{
-//         __html: `
-//         ${FONT_LINK}
-//         *{box-sizing:border-box;margin:0;padding:0;cursor:none!important}
-//         html,body{background:#05060e;color:#c8d8f0;font-family:${F.mono};overflow-x:hidden;overflow-wrap:break-word;word-break:break-word}
-//         html.lenis,html.lenis body{height:auto}
-//         .lenis.lenis-smooth [data-lenis-prevent]{overscroll-behavior:contain}
-//         @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
-//         @keyframes bl{0%,100%{opacity:1}50%{opacity:0}}
-//         ::selection{background:#00f7ff20;color:#00f7ff}
-//         ::-webkit-scrollbar{width:3px}
-//         ::-webkit-scrollbar-track{background:#05060e}
-//         ::-webkit-scrollbar-thumb{background:#1a2030}
-//         ::-webkit-scrollbar-thumb:hover{background:#00f7ff66}
-//         @media(max-width:640px){footer{flex-direction:column;text-align:center}}
-//       `}} />
-
-//       <Cursor />
-//       {!booted && <Boot onDone={() => setBooted(true)} />}
-//       {booted && <><HUD activeLang={activeLang} /><ScrollBar /></>}
-
-//       <div style={{ position: "fixed", inset: 0, background: "#05060e", zIndex: -5 }} />
-//       <Particles />
-//       <svg style={{ position: "fixed", inset: 0, width: "100%", height: "100%", opacity: .04, pointerEvents: "none", zIndex: 1 }}>
-//         <filter id="gr"><feTurbulence type="fractalNoise" baseFrequency=".68" numOctaves="4" stitchTiles="stitch" /><feColorMatrix type="saturate" values="0" /></filter>
-//         <rect width="100%" height="100%" filter="url(#gr)" />
-//       </svg>
-//       <div style={{ position: "fixed", inset: 0, zIndex: 1, pointerEvents: "none", backgroundImage: "radial-gradient(circle,rgba(0,247,255,.08) 1px,transparent 1px)", backgroundSize: "44px 44px", maskImage: "radial-gradient(ellipse 65% 65% at center,black 10%,transparent 78%)", WebkitMaskImage: "radial-gradient(ellipse 65% 65% at center,black 10%,transparent 78%)" }} />
-//       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 2, background: "repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.065) 2px,rgba(0,0,0,.065) 4px)" }} />
-//       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 3, background: "radial-gradient(ellipse at center,transparent 40%,rgba(5,6,14,.88) 100%)" }} />
-
-//       <main style={{ position: "relative", zIndex: 10, paddingTop: 80, opacity: vis ? 1 : 0, transition: "opacity 1s cubic-bezier(.4,0,.2,1)" }}>
-
-//         {/* ── HERO ── */}
-//         <Hero eyeRef={eyeRef} h1Ref={h1Ref} subRef={subRef} />
-
-//         {/* ── MARQUEE ── */}
-//         <CinematicSection id="marquee-section" enterFX="glitch-slam" exitFX="static-burst" enterStart="top 88%" exitStart="bottom 15%">
-//           <PremiumMarqueeSection />
-//         </CinematicSection>
-
-//         <section style={{ maxWidth: 1280, margin: "0 auto", padding: "80px 5vw 140px" }}>
-
-//           {/* ── TICKER ── */}
-//           <CinematicSection id="ticker-section" enterFX="scanline-wipe" exitFX="scan-erase" enterStart="top 87%" exitStart="bottom 18%">
-//             <Ticker />
-//           </CinematicSection>
-
-//           {/* ── STATS ── */}
-//           <CinematicSection id="stats-section" enterFX="iris-open" exitFX="implode" enterStart="top 85%" exitStart="bottom 16%">
-//             <StatsStrip />
-//           </CinematicSection>
-
-//           {/* ── HUD BAR ── */}
-//           <CinematicSection id="hud-bar-section" enterFX="light-sweep" exitFX="fold-up" enterStart="top 87%" exitStart="bottom 16%">
-//             <HudBar items={HUD_ITEMS} />
-//           </CinematicSection>
-
-//           {/* ── CARDS LABEL ── */}
-//           <CinematicSection id="cards-label" enterFX="data-stream" exitFX="glitch-out" enterStart="top 89%" exitStart="bottom 25%">
-//             <div style={{ marginBottom: 32, display: "flex", alignItems: "center", gap: 16 }}>
-//               <div style={{ width: 3, height: 28, background: "linear-gradient(to bottom, #00f7ff, transparent)" }} />
-//               <span style={{ fontFamily: F.hud, fontSize: 8, letterSpacing: 5, color: "#2a3548" }}>// SELECT TARGET LANGUAGE</span>
-//               <div style={{ flex: 1, height: 1, background: "linear-gradient(90deg, #00f7ff22, transparent)" }} />
-//               <span style={{ fontFamily: F.hud, fontSize: 7, letterSpacing: 3, color: "#1a2535" }}>3 FILES FOUND</span>
-//             </div>
-//           </CinematicSection>
-
-//           {/* ── CARDS GRID ── */}
-//           <CinematicSection id="cards-grid" enterFX="shatter-in" exitFX="shatter-apart" enterStart="top 83%" exitStart="bottom 10%">
-//             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))", gap: 3, marginBottom: 80, perspective: "1200px" }}>
-//               {LANGUAGES.map((lang, i) => <Card key={lang.id} lang={lang} index={i} onSelect={handleSelect} />)}
-//             </div>
-//           </CinematicSection>
-
-//           {/* ── FEATURES ── */}
-//           <CinematicSection id="features-section" enterFX="surge" exitFX="slide-left" enterStart="top 85%" exitStart="bottom 18%">
-//             <HorizontalFeatures />
-//           </CinematicSection>
-
-//           {/* ── WARNING ── */}
-//           <CinematicSection id="warning-section" enterFX="vhs-glitch" exitFX="vhs-collapse" enterStart="top 90%" exitStart="bottom 12%">
-//             <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 18px", border: "1px solid #ff3366aa", background: "rgba(255,51,102,.035)", fontFamily: F.mono, fontSize: 8, color: "#3a5060", letterSpacing: 2, position: "relative", overflow: "hidden", flexWrap: "wrap" }}>
-//               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,#ff336600,#ff3366aa,#ff336600)" }} />
-//               <span style={{ color: "#ff3366", fontSize: 11, animation: "bl 2s step-end infinite", flexShrink: 0 }}>!</span>
-//               WARNING: Once a language file is opened, full immersion begins. Proceed carefully.
-//               <span style={{ color: "#2a4050", marginLeft: "auto", flexShrink: 0, fontFamily: F.hud, fontSize: 7 }}> // VISUOSLAYER OS — AUTHORISED BY SAIF</span>
-//             </div>
-//           </CinematicSection>
-
-//         </section>
-
-//         {/* ── FOOTER ── */}
-//         <CinematicSection id="footer-section" enterFX="light-sweep" exitFX="dissolve" enterStart="top 95%" exitStart="bottom 5%">
-//           <footer style={{ borderTop: "2px solid rgba(0,247,255,0.3)", maxWidth: 1280, margin: "0 auto", padding: "20px 5vw", display: "flex", justifyContent: "space-between", alignItems: "center", fontFamily: F.hud, fontSize: 7, color: "#2a4050", letterSpacing: 3, flexWrap: "wrap", gap: 10 }}>
-//             <span style={{ fontFamily: F.display, fontSize: 14, letterSpacing: 6, color: "#1a3040" }}>VISUOSLAYER</span>
-//             <span>LANG_FILES — CASE #2026</span>
-//             <span>ALL FILES ENCRYPTED — AUTHORISED PERSONNEL ONLY</span>
-//             <span style={{ color: "#00f7ff44" }}>SYS.STABLE</span>
-//           </footer>
-//         </CinematicSection>
-
-//       </main>
-//     </>
-//   );
-// }
+"use client";
+
+import {
+  useState, useEffect, useRef, useCallback, useMemo,
+} from "react";
+import { motion, AnimatePresence } from "framer-motion";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DESIGN TOKENS
+// ─────────────────────────────────────────────────────────────────────────────
+const T = {
+  bg:      "#060A10",
+  bg1:     "#080D16",
+  bg2:     "#0C1520",
+  glass:   "rgba(8,14,26,0.88)",
+  border:  "rgba(255,100,0,0.10)",
+  neon:    "#FF6400",
+  neon2:   "#00D4FF",
+  neon3:   "#FF2D6B",
+  neon4:   "#B4FF00",
+  accent:  "#A855F7",
+  text:    "#E0E8F4",
+  muted:   "#3A506B",
+  dim:     "#101A28",
+  mono:    "'Fira Code', monospace",
+  display: "'Bebas Neue', sans-serif",
+};
+
+const NAV_ITEMS = [
+  { id: "hero",       label: "INTRO",         num: "00", icon: "◈" },
+  { id: "pointers",   label: "POINTERS",      num: "01", icon: "→" },
+  { id: "addr-deref", label: "ADDR & DEREF",  num: "02", icon: "⊕" },
+  { id: "ptr-arrays", label: "PTR + ARRAYS",  num: "03", icon: "⧖" },
+  { id: "structs",    label: "STRUCTS",        num: "04", icon: "⬡" },
+  { id: "unions",     label: "UNIONS",         num: "05", icon: "◎" },
+  { id: "preproc",    label: "PREPROCESSOR",  num: "06", icon: "#" },
+  { id: "dynmem",     label: "DYN MEMORY",    num: "07", icon: "∞" },
+  { id: "engine",     label: "MASTER ENGINE", num: "08", icon: "🚀" },
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED COMPONENTS
+// ─────────────────────────────────────────────────────────────────────────────
+function GlassCard({ children, style = {}, hover = true, glowColor = T.neon, onClick }) {
+  return (
+    <motion.div
+      onClick={onClick}
+      whileHover={hover ? {
+        scale: 1.002,
+        borderColor: `${glowColor}45`,
+        boxShadow: `0 8px 60px rgba(0,0,0,0.75), 0 0 35px ${glowColor}12`,
+      } : {}}
+      transition={{ type: "spring", stiffness: 280, damping: 28 }}
+      style={{
+        background: T.glass,
+        border: `1px solid ${T.border}`,
+        borderRadius: 16,
+        backdropFilter: "blur(28px)",
+        WebkitBackdropFilter: "blur(28px)",
+        boxShadow: "0 4px 50px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.035)",
+        ...style,
+      }}
+    >{children}</motion.div>
+  );
+}
+
+function Section({ id, children, style = {} }) {
+  return (
+    <section id={id} style={{ padding: "80px 0", borderBottom: `1px solid ${T.dim}`, ...style }}>
+      {children}
+    </section>
+  );
+}
+
+function SectionHeader({ num, tag, title, subtitle }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -30 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, amount: 0.4 }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      style={{ display: "flex", alignItems: "flex-end", gap: 22, marginBottom: 44 }}
+    >
+      <motion.span
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        style={{ fontFamily: T.mono, fontSize: 60, fontWeight: 700, color: T.dim, lineHeight: 1, letterSpacing: -2, userSelect: "none" }}
+      >{num}</motion.span>
+      <div>
+        <motion.div
+          initial={{ width: 0 }}
+          whileInView={{ width: "100%" }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, delay: 0.2 }}
+          style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, fontWeight: 600, marginBottom: 6, overflow: "hidden", whiteSpace: "nowrap" }}
+        >{tag}</motion.div>
+        <h2 style={{ fontFamily: T.display, fontSize: 38, fontWeight: 400, color: T.text, letterSpacing: 3, lineHeight: 1 }}>{title}</h2>
+        {subtitle && <p style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginTop: 7, lineHeight: 1.6 }}>{subtitle}</p>}
+      </div>
+    </motion.div>
+  );
+}
+
+function CodeBlock({ code, highlightLine = -1, style = {} }) {
+  const [copied, setCopied] = useState(false);
+  const lines = (code || "").split("\n");
+
+  const copy = () => {
+    navigator.clipboard?.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+
+  // Basic syntax highlighting
+  const highlight = (line) => {
+    const rules = [
+      // Comments
+      { re: /(\/\/.*$)/, color: "#4A6580" },
+      // Keywords
+      { re: /\b(int|float|char|double|void|struct|union|typedef|return|if|else|for|while|NULL|sizeof|static|const|unsigned|long|short|include|define|ifdef|ifndef|endif|pragma|malloc|calloc|realloc|free|printf|else)\b/g, color: "#FF6400" },
+      // Strings
+      { re: /(".*?"|'.')/g, color: "#B4FF00" },
+      // Numbers
+      { re: /\b(\d+\.?\d*[fF]?|0x[0-9A-Fa-f]+)\b/g, color: "#00D4FF" },
+      // Preprocessor
+      { re: /^(\s*#\w+)/g, color: "#A855F7" },
+      // Types + pointers
+      { re: /(\*+)/g, color: "#FF2D6B" },
+      // Functions
+      { re: /\b([a-zA-Z_]\w*)\s*(?=\()/g, color: "#FFD700" },
+    ];
+    return line; // return raw for now; coloring is done via spans below
+  };
+
+  const tokenize = (line) => {
+    // Simple tokenizer for colorful output
+    const segments = [];
+    let remaining = line;
+
+    // comment
+    const commentIdx = remaining.indexOf("//");
+    let commentPart = "";
+    if (commentIdx !== -1) {
+      commentPart = remaining.slice(commentIdx);
+      remaining = remaining.slice(0, commentIdx);
+    }
+
+    // Regex-based coloring on the non-comment part
+    const colored = remaining
+      .replace(/(&amp;|&lt;|&gt;)/g, m => m)
+      .split(/(\b(?:int|float|char|double|void|struct|union|typedef|return|if|else|for|while|NULL|sizeof|static|const|unsigned|long|short|include|define|ifdef|ifndef|endif|pragma|malloc|calloc|realloc|free|printf|else)\b|"[^"]*"|'[^']*'|\b0x[0-9A-Fa-f]+\b|\b\d+\.?\d*[fF]?\b|\*+|#\w+|\b[a-zA-Z_]\w*(?=\s*\())/g);
+
+    return { colored, commentPart };
+  };
+
+  const renderLine = (line) => {
+    // Detect comment
+    const commentMatch = line.match(/^(.*?)(\/\/.*)$/);
+    let main = line;
+    let comment = "";
+    if (commentMatch) { main = commentMatch[1]; comment = commentMatch[2]; }
+
+    const parts = main.split(/(\b(?:int|float|char|double|void|struct|union|typedef|return|if|else|for|while|NULL|sizeof|static|const|unsigned|long|short|malloc|calloc|realloc|free|printf)\b|"[^"]*"|'[^']*'|\b0x[0-9A-Fa-f]+\b|\b\d+\.?\d*[fF]?\b|#\w+|\*+(?!\s))/g);
+
+    return (
+      <>
+        {parts.map((p, i) => {
+          if (/^(int|float|char|double|void|struct|union|typedef|return|if|else|for|while|NULL|sizeof|static|const|unsigned|long|short|malloc|calloc|realloc|free|printf)$/.test(p))
+            return <span key={i} style={{ color: "#FF8C42" }}>{p}</span>;
+          if (/^"[^"]*"$/.test(p) || /^'[^']*'$/.test(p))
+            return <span key={i} style={{ color: "#B4FF00" }}>{p}</span>;
+          if (/^(0x[0-9A-Fa-f]+|\d+\.?\d*[fF]?)$/.test(p))
+            return <span key={i} style={{ color: "#00D4FF" }}>{p}</span>;
+          if (/^#\w+/.test(p))
+            return <span key={i} style={{ color: "#A855F7" }}>{p}</span>;
+          if (/^\*+$/.test(p))
+            return <span key={i} style={{ color: "#FF2D6B" }}>{p}</span>;
+          return <span key={i}>{p}</span>;
+        })}
+        {comment && <span style={{ color: "#3A5570", fontStyle: "italic" }}>{comment}</span>}
+      </>
+    );
+  };
+
+  return (
+    <div style={{
+      background: "rgba(0,0,0,0.6)", borderRadius: 14,
+      border: `1px solid ${T.dim}`, overflow: "hidden", ...style,
+    }}>
+      <div style={{
+        padding: "9px 16px", borderBottom: `1px solid ${T.dim}`,
+        display: "flex", gap: 6, alignItems: "center",
+        background: "rgba(0,0,0,0.3)",
+      }}>
+        {["#FF5F57", "#FEBC2E", "#28C840"].map((c, i) => (
+          <div key={i} style={{ width: 10, height: 10, borderRadius: "50%", background: c, opacity: 0.85 }} />
+        ))}
+        <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginLeft: 8, letterSpacing: 2 }}>main.c</span>
+        <motion.button
+          whileHover={{ opacity: 1 }}
+          whileTap={{ scale: 0.92 }}
+          onClick={copy}
+          style={{
+            marginLeft: "auto", fontFamily: T.mono, fontSize: 8, color: copied ? T.neon4 : T.muted,
+            background: "transparent", border: `1px solid ${copied ? T.neon4 : T.muted}40`,
+            borderRadius: 4, padding: "3px 10px", cursor: "pointer", letterSpacing: 1,
+            opacity: 0.7,
+          }}
+        >{copied ? "COPIED!" : "COPY"}</motion.button>
+      </div>
+      <div style={{ padding: "14px 0", overflowX: "auto" }}>
+        {lines.map((line, i) => (
+          <motion.div
+            key={i}
+            animate={{
+              background: highlightLine === i ? `${T.neon}18` : "transparent",
+            }}
+            style={{
+              display: "flex", alignItems: "center",
+              fontFamily: T.mono, fontSize: 12.5, lineHeight: 2,
+              paddingLeft: highlightLine === i ? 20 : 16, paddingRight: 18,
+              borderLeft: `3px solid ${highlightLine === i ? T.neon : "transparent"}`,
+              transition: "all 0.25s",
+              whiteSpace: "pre",
+            }}
+          >
+            <span style={{ color: "#1E2E3E", marginRight: 18, fontSize: 10, userSelect: "none", minWidth: 20, textAlign: "right" }}>
+              {i + 1}
+            </span>
+            <span style={{ color: highlightLine === i ? T.neon : T.text }}>
+              {renderLine(line)}
+            </span>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Pill({ children, color = T.neon, active = false, onClick }) {
+  return (
+    <motion.button
+      whileHover={{ scale: 1.06, y: -2 }}
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
+      style={{
+        fontFamily: T.mono, fontSize: 10, fontWeight: 600, letterSpacing: 2,
+        color: active ? "#000" : color,
+        background: active ? color : `${color}12`,
+        border: `1px solid ${active ? color : `${color}40`}`,
+        borderRadius: 7, padding: "8px 18px", cursor: "pointer",
+        transition: "all 0.18s",
+        boxShadow: active ? `0 0 22px ${color}50` : "none",
+      }}
+    >{children}</motion.button>
+  );
+}
+
+function InsightBlock({ title, color, icon, children }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      style={{
+        padding: "18px 20px", borderRadius: 13,
+        background: `${color}08`, border: `1px solid ${color}28`,
+      }}
+    >
+      <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+        <span>{icon}</span> {title}
+      </div>
+      <div style={{ fontFamily: T.mono, fontSize: 11.5, color: T.text, lineHeight: 2 }}>{children}</div>
+    </motion.div>
+  );
+}
+
+function AddrTag({ addr, color = T.neon2 }) {
+  return (
+    <motion.span
+      animate={{ boxShadow: [`0 0 8px ${color}60`, `0 0 18px ${color}90`, `0 0 8px ${color}60`] }}
+      transition={{ duration: 1.8, repeat: Infinity }}
+      style={{
+        fontFamily: T.mono, fontSize: 11, fontWeight: 700, color,
+        background: `${color}15`, border: `1px solid ${color}50`,
+        borderRadius: 5, padding: "2px 9px", display: "inline-block",
+      }}
+    >{addr}</motion.span>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MEMORY DIAGRAM — 2D animated replacement for 3D grid
+// ─────────────────────────────────────────────────────────────────────────────
+function MemoryDiagram({ cells = [], highlightAddr = null }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      {cells.map((cell, i) => {
+        const isHl = cell.addr === highlightAddr;
+        return (
+          <motion.div
+            key={i}
+            animate={{
+              background: isHl ? `${T.neon}18` : `rgba(0,0,0,0.3)`,
+              borderColor: isHl ? T.neon : `${T.dim}`,
+            }}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "90px 1fr 90px",
+              alignItems: "center",
+              border: "1px solid",
+              borderBottom: i < cells.length - 1 ? "none" : "1px solid",
+              padding: "10px 16px",
+              borderRadius: i === 0 ? "10px 10px 0 0" : i === cells.length - 1 ? "0 0 10px 10px" : 0,
+            }}
+          >
+            <span style={{ fontFamily: T.mono, fontSize: 10, color: isHl ? T.neon2 : T.muted }}>
+              {cell.addr}
+            </span>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, display: "block", marginBottom: 2 }}>
+                {cell.type} {cell.label}
+              </span>
+              <motion.span
+                key={String(cell.value)}
+                animate={isHl ? { textShadow: [`0 0 12px ${T.neon}`, `0 0 24px ${T.neon}`, `0 0 12px ${T.neon}`] } : {}}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                style={{
+                  fontFamily: T.mono, fontSize: 17, fontWeight: 700,
+                  color: isHl ? T.neon : cell.isPointer ? T.neon2 : T.text,
+                }}
+              >
+                {String(cell.value)}
+              </motion.span>
+            </div>
+            <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, textAlign: "right" }}>
+              {cell.size}B
+            </span>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 01 — POINTERS INTRO
+// ─────────────────────────────────────────────────────────────────────────────
+function PointersSection() {
+  const [showPointer, setShowPointer] = useState(false);
+  const [animPhase, setAnimPhase] = useState(0);
+
+  const memCells = [
+    { addr: "0x1000", label: "x",   value: 42,       type: "int",  size: 4 },
+    { addr: "0x1004", label: "y",   value: 99,       type: "int",  size: 4 },
+    { addr: "0x1008", label: "ptr", value: showPointer ? "0x1000" : "???", type: "int*", size: 8, isPointer: true },
+    { addr: "0x1010", label: "z",   value: 7,        type: "int",  size: 4 },
+  ];
+
+  const animatePointer = async () => {
+    setAnimPhase(1);
+    await new Promise(r => setTimeout(r, 600));
+    setShowPointer(true);
+    setAnimPhase(2);
+    await new Promise(r => setTimeout(r, 700));
+    setAnimPhase(3);
+    await new Promise(r => setTimeout(r, 900));
+    setAnimPhase(4);
+  };
+
+  const stepMessages = [
+    "int x = 42 lives at address 0x1000 in RAM. Press SHOW to animate.",
+    "Declaring int *ptr — allocating 8 bytes for an address on the stack…",
+    "ptr = &x — storing the address of x into ptr…",
+    <span key="3">ptr contains <AddrTag addr="0x1000" /> — it points to x!</span>,
+    <span key="4">*ptr dereferences: follow <AddrTag addr="0x1000" /> → read value <strong style={{ color: T.neon }}>42</strong></span>,
+  ];
+
+  return (
+    <Section id="pointers">
+      <SectionHeader num="01" tag="POINTERS · INTRODUCTION" title="ADDRESS MACHINE" subtitle="A pointer is a variable that stores a memory address — not the value itself. It is a level of indirection." />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+        <GlassCard style={{ padding: 32 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon, marginBottom: 24 }}>
+            → MEMORY LAYOUT VISUALIZER
+          </div>
+
+          <MemoryDiagram cells={memCells} highlightAddr={showPointer ? "0x1000" : null} />
+
+          {/* Arrow connecting ptr → x */}
+          <AnimatePresence>
+            {showPointer && (
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                style={{
+                  margin: "14px 0",
+                  padding: "10px 16px",
+                  borderRadius: 9,
+                  background: `${T.neon}10`,
+                  border: `1px solid ${T.neon}35`,
+                  fontFamily: T.mono, fontSize: 12,
+                  display: "flex", alignItems: "center", gap: 10,
+                }}
+              >
+                <span style={{ color: T.neon2 }}>ptr @ 0x1008</span>
+                <motion.span
+                  animate={{ x: [0, 6, 0] }}
+                  transition={{ duration: 1.2, repeat: Infinity }}
+                  style={{ color: T.neon, fontSize: 18 }}
+                >→</motion.span>
+                <span style={{ color: T.neon }}>x @ 0x1000 = 42</span>
+                <motion.div
+                  animate={{ scale: [1, 1.4, 1], opacity: [0.7, 1, 0.7] }}
+                  transition={{ duration: 1.2, repeat: Infinity }}
+                  style={{ width: 8, height: 8, borderRadius: "50%", background: T.neon, boxShadow: `0 0 10px ${T.neon}`, marginLeft: 4 }}
+                />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Status */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={animPhase}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              style={{
+                padding: "14px 18px", borderRadius: 10, marginBottom: 18,
+                background: `${T.neon}0A`, border: `1px solid ${T.neon}28`,
+                fontFamily: T.mono, fontSize: 11.5, color: T.text, lineHeight: 1.8,
+                minHeight: 46,
+              }}
+            >
+              {stepMessages[animPhase]}
+            </motion.div>
+          </AnimatePresence>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <motion.button
+              whileHover={{ scale: 1.04, boxShadow: `0 0 32px ${T.neon}55` }}
+              whileTap={{ scale: 0.97 }}
+              onClick={animatePointer}
+              style={{
+                flex: 1, fontFamily: T.display, fontWeight: 400, fontSize: 15, letterSpacing: 4,
+                color: "#000", background: `linear-gradient(135deg, ${T.neon}, #FF9200)`,
+                border: "none", borderRadius: 9, padding: "14px", cursor: "pointer",
+              }}
+            >SHOW POINTER CHAIN</motion.button>
+            <motion.button
+              whileTap={{ scale: 0.96 }}
+              onClick={() => { setShowPointer(false); setAnimPhase(0); }}
+              style={{ fontFamily: T.mono, fontSize: 13, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 9, padding: "14px 18px", cursor: "pointer" }}
+            >↺</motion.button>
+          </div>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <CodeBlock
+            code={`int x = 42;          // x lives at some address
+int y = 99;          // y lives at another
+
+// Declare a POINTER to int
+int *ptr;            // ptr holds an address (8 bytes on 64-bit)
+
+// Assign address of x to ptr
+ptr = &x;            // & = "address-of" operator
+
+// ptr now contains 0x1000 (wherever x lives)
+printf("%p\\n", ptr);   // prints the address (e.g. 0x1000)
+printf("%d\\n", *ptr);  // *ptr = dereference = 42
+
+// ptr can be re-pointed to any int
+ptr = &y;
+printf("%d\\n", *ptr);  // now prints 99`}
+            highlightLine={showPointer ? 7 : -1}
+          />
+
+          <InsightBlock title="THE POINTER CONTRACT" color={T.neon} icon="→">
+            A pointer holds an address. That's its only job.{"\n\n"}
+            <span style={{ color: T.neon }}>&x</span>{" = 'give me the address where x lives'\n"}
+            <span style={{ color: T.neon2 }}>*ptr</span>{" = 'go to the address in ptr, read what's there'\n\n"}
+            Pointer size is always <span style={{ color: T.neon4 }}>8 bytes on 64-bit</span> / 4 bytes on 32-bit — regardless of the pointed-to type. A pointer to int and a pointer to a 1MB struct are both 8 bytes.
+          </InsightBlock>
+
+          <InsightBlock title="COMMON MISTAKE — UNINITIALIZED POINTER" color={T.neon3} icon="⚠">
+            {"int *ptr;   // ptr contains GARBAGE address!\n*ptr = 42;  // CRASH — writing to unknown memory\n\n"}
+            Always initialize: <span style={{ color: T.neon }}>int *ptr = &x;</span> or <span style={{ color: T.neon4 }}>int *ptr = NULL;</span>
+            {"\n\nNULL is a safe sentinel — dereferencing it will segfault predictably."}
+          </InsightBlock>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 02 — ADDRESS & DEREFERENCE
+// ─────────────────────────────────────────────────────────────────────────────
+function AddrDerefSection() {
+  const [val, setVal] = useState(37);
+  const [phase, setPhase] = useState("idle");
+  const [derefResult, setDerefResult] = useState(null);
+  const [addrResult, setAddrResult] = useState(null);
+  const [step, setStep] = useState(-1);
+
+  const baseAddr = 0x2A44;
+
+  const simulate = async () => {
+    if (phase !== "idle") return;
+    setPhase("running");
+    setDerefResult(null);
+    setAddrResult(null);
+
+    setStep(0); await new Promise(r => setTimeout(r, 700));
+    setAddrResult(`0x${baseAddr.toString(16).toUpperCase()}`);
+    setStep(1); await new Promise(r => setTimeout(r, 750));
+    setStep(2); await new Promise(r => setTimeout(r, 700));
+    setDerefResult(val);
+    setStep(3); await new Promise(r => setTimeout(r, 600));
+    setStep(4);
+    setPhase("idle");
+  };
+
+  return (
+    <Section id="addr-deref">
+      <SectionHeader num="02" tag="POINTERS · & AND *" title="OPERATOR DUALITY" subtitle="& gives you the address of a variable. * follows an address to the value stored there. They are exact inverses." />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+        <GlassCard style={{ padding: 32 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2, marginBottom: 24 }}>
+            ⊕ ADDRESS & DEREFERENCE ENGINE
+          </div>
+
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>int x =</span>
+              <motion.span key={val} animate={{ scale: [1.4, 1] }}
+                style={{ fontFamily: T.mono, fontSize: 24, fontWeight: 700, color: T.neon4 }}>{val}</motion.span>
+            </div>
+            <input type="range" min={0} max={255} value={val}
+              onChange={e => { setVal(Number(e.target.value)); setStep(-1); setDerefResult(null); setAddrResult(null); setPhase("idle"); }}
+              style={{ width: "100%", accentColor: T.neon4 }} />
+            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 4 }}>
+              hex: 0x{val.toString(16).toUpperCase().padStart(2, "0")} | binary: {val.toString(2).padStart(8, "0")}
+            </div>
+          </div>
+
+          {/* Two-column operator visualization */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 12, alignItems: "center", marginBottom: 28 }}>
+            {/* Variable */}
+            <motion.div
+              animate={{ boxShadow: step >= 2 ? `0 0 28px ${T.neon4}70` : "none" }}
+              style={{ padding: "20px", borderRadius: 12, background: `${T.neon4}10`, border: `2px solid ${T.neon4}40`, textAlign: "center" }}
+            >
+              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginBottom: 6 }}>VARIABLE</div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginBottom: 4 }}>int x</div>
+              <motion.div key={val} initial={{ scale: 1.3 }} animate={{ scale: 1 }}
+                style={{ fontFamily: T.mono, fontSize: 30, fontWeight: 700, color: T.neon4, lineHeight: 1 }}>{val}</motion.div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 6 }}>
+                @ 0x{baseAddr.toString(16).toUpperCase()}
+              </div>
+            </motion.div>
+
+            {/* Operators */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center" }}>
+              <motion.div
+                animate={{
+                  boxShadow: step === 0 || step === 1 ? `0 0 22px ${T.neon2}80` : "none",
+                  background: step === 0 || step === 1 ? `${T.neon2}25` : `${T.neon2}10`,
+                }}
+                style={{ padding: "10px 14px", borderRadius: 9, border: `2px solid ${T.neon2}50`, textAlign: "center", transition: "all 0.3s", minWidth: 58 }}
+              >
+                <div style={{ fontFamily: T.mono, fontSize: 22, fontWeight: 700, color: T.neon2 }}>&</div>
+                <div style={{ fontFamily: T.mono, fontSize: 7, color: T.muted, letterSpacing: 1 }}>address-of</div>
+              </motion.div>
+              <motion.div
+                animate={{
+                  boxShadow: step === 2 || step === 3 ? `0 0 22px ${T.neon}80` : "none",
+                  background: step === 2 || step === 3 ? `${T.neon}25` : `${T.neon}10`,
+                }}
+                style={{ padding: "10px 14px", borderRadius: 9, border: `2px solid ${T.neon}50`, textAlign: "center", transition: "all 0.3s", minWidth: 58 }}
+              >
+                <div style={{ fontFamily: T.mono, fontSize: 22, fontWeight: 700, color: T.neon }}>*</div>
+                <div style={{ fontFamily: T.mono, fontSize: 7, color: T.muted, letterSpacing: 1 }}>deref</div>
+              </motion.div>
+            </div>
+
+            {/* Results */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <motion.div
+                animate={{ boxShadow: addrResult ? `0 0 20px ${T.neon2}50` : "none" }}
+                style={{ padding: "14px", borderRadius: 10, background: `${T.neon2}10`, border: `1px solid ${T.neon2}35`, textAlign: "center", minHeight: 64, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+              >
+                <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 4 }}>&x =</div>
+                <AnimatePresence mode="wait">
+                  {addrResult
+                    ? <motion.div key="a" initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ fontFamily: T.mono, fontSize: 11, fontWeight: 700, color: T.neon2 }}>{addrResult}</motion.div>
+                    : <div style={{ fontFamily: T.mono, fontSize: 14, color: T.muted }}>?</div>
+                  }
+                </AnimatePresence>
+              </motion.div>
+              <motion.div
+                animate={{ boxShadow: derefResult !== null ? `0 0 20px ${T.neon}50` : "none" }}
+                style={{ padding: "14px", borderRadius: 10, background: `${T.neon}10`, border: `1px solid ${T.neon}35`, textAlign: "center", minHeight: 64, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}
+              >
+                <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 4 }}>*(&x) =</div>
+                <AnimatePresence mode="wait">
+                  {derefResult !== null
+                    ? <motion.div key="d" initial={{ scale: 0 }} animate={{ scale: 1 }} style={{ fontFamily: T.mono, fontSize: 20, fontWeight: 700, color: T.neon }}>{derefResult}</motion.div>
+                    : <div style={{ fontFamily: T.mono, fontSize: 14, color: T.muted }}>?</div>
+                  }
+                </AnimatePresence>
+              </motion.div>
+            </div>
+          </div>
+
+          <div style={{ fontFamily: T.mono, fontSize: 11.5, color: T.text, marginBottom: 18, minHeight: 22, lineHeight: 1.75, padding: "10px 14px", borderRadius: 8, background: `${T.neon2}08`, border: `1px solid ${T.neon2}20` }}>
+            {step < 0 && "Set a value and press SIMULATE"}
+            {step === 0 && "Computing address of x using & operator…"}
+            {step === 1 && <span>&x resolved to <AddrTag addr={`0x${baseAddr.toString(16).toUpperCase()}`} color={T.neon2} /></span>}
+            {step === 2 && "Following address with * operator (dereference)…"}
+            {step === 3 && <span>*(&x) followed the address → found <strong style={{ color: T.neon }}>{val}</strong></span>}
+            {step === 4 && `Complete! *(&x) == x == ${val}. Always true.`}
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.04, boxShadow: `0 0 32px ${T.neon2}55` }}
+            whileTap={{ scale: 0.97 }}
+            onClick={simulate}
+            disabled={phase !== "idle"}
+            style={{
+              width: "100%", fontFamily: T.display, fontWeight: 400, fontSize: 15, letterSpacing: 4,
+              color: "#000", background: phase !== "idle" ? T.muted : `linear-gradient(135deg, ${T.neon2}, ${T.accent})`,
+              border: "none", borderRadius: 9, padding: "14px", cursor: phase !== "idle" ? "not-allowed" : "pointer",
+            }}
+          >{phase !== "idle" ? "RUNNING…" : "▶ SIMULATE & AND *"}</motion.button>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <CodeBlock
+            code={`int x = ${val};
+int *ptr = &x;       // ptr = address of x
+
+// & operator — gives you the address
+printf("%p\\n", &x);    // e.g. 0x${baseAddr.toString(16).toUpperCase()}
+printf("%p\\n", ptr);   // same — ptr HOLDS that address
+
+// * operator — follows the address to the value
+printf("%d\\n", *ptr);  // ${val} — the value AT that address
+printf("%d\\n", x);     // ${val} — same thing
+
+// Modify x through the pointer
+*ptr = 100;          // x is now 100!
+printf("%d\\n", x);  // 100
+
+// These identities always hold:
+// *(&x) == x
+// &(*ptr) == ptr`}
+            highlightLine={step >= 2 ? 8 : step >= 0 ? 4 : -1}
+          />
+          <InsightBlock title="& vs * — EXACT INVERSES" color={T.neon2} icon="⊕">
+            <span style={{ color: T.neon2 }}>&</span>{" = go UP: from value → address\n"}
+            <span style={{ color: T.neon }}>*</span>{" = go DOWN: from address → value\n\n"}
+            {"They cancel out: *(&x) == x and &(*ptr) == ptr\n\n"}
+            <span style={{ color: T.neon4 }}>int *ptr</span>{" in a declaration — the * is part of the type, NOT an operator. It means 'ptr is a pointer-to-int'."}
+          </InsightBlock>
+          <InsightBlock title="MODIFYING THROUGH A POINTER" color={T.neon} icon="💡">
+            {"*ptr = 100; modifies x directly — no copy.\n\nThis is how functions modify caller variables:\nvoid double_it(int *n) { *n *= 2; }\ndouble_it(&x); // x is now doubled!\n\nWithout pointers you'd need to return new values."}
+          </InsightBlock>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 03 — POINTERS + ARRAYS
+// ─────────────────────────────────────────────────────────────────────────────
+function PtrArraysSection() {
+  const arr = [10, 20, 30, 40, 50];
+  const [offset, setOffset] = useState(0);
+  const baseAddr = 0x3000;
+
+  const dereffed = arr[offset];
+  const currentAddr = `0x${(baseAddr + offset * 4).toString(16).toUpperCase()}`;
+
+  return (
+    <Section id="ptr-arrays">
+      <SectionHeader num="03" tag="POINTERS · ARRAYS" title="POINTER ARITHMETIC" subtitle="arr[i] is syntactic sugar for *(arr+i). Array indexing IS pointer arithmetic — the compiler does the same thing." />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+        <GlassCard style={{ padding: 32 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon4, marginBottom: 24 }}>
+            ⧖ POINTER ARITHMETIC DEMO
+          </div>
+
+          {/* Address row */}
+          <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+            {arr.map((_, i) => (
+              <div key={i} style={{ flex: 1, textAlign: "center", fontFamily: T.mono, fontSize: 8, color: T.dim }}>
+                0x{(baseAddr + i * 4).toString(16).toUpperCase()}
+              </div>
+            ))}
+          </div>
+
+          {/* Array cells */}
+          <div style={{ display: "flex", gap: 0, borderRadius: 10, overflow: "hidden", border: `2px solid ${T.neon4}30`, marginBottom: 8 }}>
+            {arr.map((v, i) => (
+              <motion.div
+                key={i}
+                animate={{
+                  background: i === offset ? `${T.neon4}28` : `${T.neon}06`,
+                  boxShadow: i === offset ? `inset 0 0 20px ${T.neon4}30` : "none",
+                }}
+                style={{
+                  flex: 1, height: 76, borderRight: i < arr.length - 1 ? `1px solid ${T.dim}` : "none",
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer",
+                }}
+                onClick={() => setOffset(i)}
+              >
+                <motion.span
+                  animate={{ scale: i === offset ? 1 : 1, color: i === offset ? T.neon4 : T.text }}
+                  style={{ fontFamily: T.mono, fontSize: 20, fontWeight: 700, lineHeight: 1 }}
+                >{v}</motion.span>
+                <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 4 }}>[{i}]</span>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Pointer arrow */}
+          <div style={{ position: "relative", height: 36, marginBottom: 18 }}>
+            <motion.div
+              animate={{ left: `${(offset / arr.length) * 100 + 10 / arr.length}%` }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              style={{ position: "absolute", display: "flex", flexDirection: "column", alignItems: "center", transform: "translateX(-50%)" }}
+            >
+              <motion.div
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 1.2, repeat: Infinity }}
+                style={{ width: 0, height: 0, borderLeft: "9px solid transparent", borderRight: "9px solid transparent", borderBottom: `14px solid ${T.neon4}` }}
+              />
+              <span style={{ fontFamily: T.mono, fontSize: 9, color: T.neon4, marginTop: 3 }}>ptr+{offset}</span>
+            </motion.div>
+          </div>
+
+          {/* Offset control */}
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>Offset i</span>
+              <motion.span key={offset} animate={{ scale: [1.4, 1] }}
+                style={{ fontFamily: T.mono, fontSize: 22, fontWeight: 700, color: T.neon4 }}>{offset}</motion.span>
+            </div>
+            <input type="range" min={0} max={4} value={offset}
+              onChange={e => setOffset(Number(e.target.value))}
+              style={{ width: "100%", accentColor: T.neon4 }} />
+          </div>
+
+          {/* Equivalence cards */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 10, letterSpacing: 3 }}>
+              ALL FOUR EXPRESSIONS ARE IDENTICAL:
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                { expr: `arr[${offset}]`,    desc: "index syntax",    note: "most readable" },
+                { expr: `*(arr+${offset})`,  desc: "ptr arithmetic",  note: "compiler sees this" },
+                { expr: `*(ptr+${offset})`,  desc: "ptr offset",      note: "same thing" },
+                { expr: `ptr[${offset}]`,    desc: "ptr as array",    note: "ptrs are indexable" },
+              ].map(({ expr, desc, note }) => (
+                <motion.div key={expr} whileHover={{ scale: 1.04 }}
+                  style={{ padding: "10px 12px", borderRadius: 9, background: `${T.neon}10`, border: `1px solid ${T.neon}25` }}
+                >
+                  <div style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 700, color: T.neon }}>{expr}</div>
+                  <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginTop: 2 }}>{desc}</div>
+                  <div style={{ fontFamily: T.mono, fontSize: 8, color: T.dim, marginTop: 1 }}>{note}</div>
+                  <div style={{ fontFamily: T.mono, fontSize: 13, color: T.neon4, marginTop: 4 }}>= {dereffed}</div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          <div style={{
+            fontFamily: T.mono, fontSize: 11.5, color: T.text, lineHeight: 1.8,
+            padding: "12px 16px", borderRadius: 9, background: `${T.neon2}08`, border: `1px solid ${T.neon2}20`,
+          }}>
+            Current address: <AddrTag addr={currentAddr} color={T.neon2} />
+            &nbsp;= 0x{baseAddr.toString(16).toUpperCase()} + {offset} × 4 bytes
+          </div>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <CodeBlock
+            code={`int arr[] = {10, 20, 30, 40, 50};
+int *ptr = arr;      // ptr = &arr[0] (implicit)
+
+// These four are COMPILED TO THE SAME THING:
+arr[2]               // index notation
+*(arr + 2)           // pointer + offset
+*(ptr + 2)           // ptr + offset
+ptr[2]               // ptr as array
+
+// Pointer arithmetic advances by sizeof(element):
+// ptr + 1 → adds 4 bytes (sizeof int)
+// ptr + 2 → adds 8 bytes
+ptr++;               // now points to arr[1]
+ptr += 2;            // now points to arr[3]
+
+// PROOF: arr is a pointer to its first element
+printf("%p %p\\n", arr, &arr[0]); // identical!
+
+// No bounds checking — danger zone:
+*(arr + 100);        // undefined behavior / crash`}
+            highlightLine={offset > 0 ? 12 : 4}
+          />
+          <InsightBlock title="WHY POINTER ARITHMETIC WORKS" color={T.neon4} icon="⧖">
+            {"When you write ptr + i, C adds i × sizeof(*ptr) bytes — not i bytes. This is why:\n\n"}
+            <span style={{ color: T.neon4 }}>int</span>{" ptr: ptr+1 adds 4 bytes\n"}
+            <span style={{ color: T.neon2 }}>double</span>{" ptr: ptr+1 adds 8 bytes\n"}
+            <span style={{ color: T.neon }}>char</span>{" ptr: ptr+1 adds 1 byte\n\n"}
+            {"The type of the pointer is what makes array indexing type-safe."}
+          </InsightBlock>
+          <InsightBlock title="ARRAY vs POINTER — KEY DIFFERENCES" color={T.neon3} icon="⚠">
+            <span style={{ color: T.neon }}>int arr[5]</span>{" — fixed size, can't reassign arr\n"}
+            <span style={{ color: T.neon2 }}>int *ptr = arr</span>{" — can be moved: ptr = &other\n\n"}
+            {"sizeof(arr) = 20 bytes (full array)\n"}
+            {"sizeof(ptr) = 8 bytes (just the address)\n\n"}
+            {"Once you pass arr to a function, it decays to a pointer and sizeof is lost forever."}
+          </InsightBlock>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 04 — STRUCTS
+// ─────────────────────────────────────────────────────────────────────────────
+function StructsSection() {
+  const [student, setStudent] = useState({ name: "Alice", age: 20, gpa: 3.8, id: 1001 });
+  const [editing, setEditing] = useState(null);
+  const [accessMode, setAccessMode] = useState("dot");
+  const [animField, setAnimField] = useState(null);
+
+  const fields = [
+    { key: "name", type: "char[20]", color: T.neon2,  size: 20, label: "Name",       offset: 0 },
+    { key: "age",  type: "int",      color: T.neon,   size: 4,  label: "Age",        offset: 20 },
+    { key: "gpa",  type: "float",    color: T.neon4,  size: 4,  label: "GPA",        offset: 24 },
+    { key: "id",   type: "int",      color: T.accent, size: 4,  label: "Student ID", offset: 28 },
+  ];
+  const totalSize = 32; // with padding
+
+  const accessField = async (key) => {
+    setAnimField(key);
+    await new Promise(r => setTimeout(r, 1200));
+    setAnimField(null);
+  };
+
+  return (
+    <Section id="structs">
+      <SectionHeader num="04" tag="STRUCTURES · BASICS" title="STRUCT MEMORY MODEL" subtitle="A struct groups related variables into one named block. Members are laid out sequentially in memory with possible padding for alignment." />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+        <GlassCard style={{ padding: 32 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.accent, marginBottom: 24 }}>
+            ⬡ STRUCT MEMORY LAYOUT — sizeof = {totalSize} bytes
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+            <Pill color={T.accent} active={accessMode === "dot"}   onClick={() => setAccessMode("dot")}>. DOT ACCESS</Pill>
+            <Pill color={T.neon2}  active={accessMode === "arrow"} onClick={() => setAccessMode("arrow")}>→ ARROW ACCESS</Pill>
+          </div>
+
+          {/* Memory layout bar */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 6, letterSpacing: 2 }}>
+              MEMORY LAYOUT (offset from struct base):
+            </div>
+            <div style={{ display: "flex", height: 32, borderRadius: 8, overflow: "hidden", border: `1px solid ${T.dim}`, marginBottom: 4 }}>
+              {fields.map((f) => (
+                <motion.div
+                  key={f.key}
+                  animate={{ opacity: animField === f.key ? 1 : animField ? 0.3 : 1 }}
+                  style={{ flex: f.size, background: `${f.color}28`, borderRight: `1px solid ${T.dim}`, display: "flex", alignItems: "center", justifyContent: "center" }}
+                >
+                  <span style={{ fontFamily: T.mono, fontSize: 8, color: f.color }}>{f.size}B</span>
+                </motion.div>
+              ))}
+            </div>
+            <div style={{ display: "flex" }}>
+              {fields.map((f) => (
+                <div key={f.key} style={{ flex: f.size, fontFamily: T.mono, fontSize: 7, color: f.color, textAlign: "center" }}>
+                  +{f.offset}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Fields */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+            {fields.map((f) => (
+              <motion.div key={f.key}
+                animate={{
+                  background: animField === f.key ? `${f.color}20` : `${f.color}08`,
+                  borderColor: animField === f.key ? f.color : `${f.color}25`,
+                  boxShadow: animField === f.key ? `0 0 28px ${f.color}50` : "none",
+                }}
+                style={{ borderRadius: 11, border: "2px solid", padding: "12px 16px", display: "flex", alignItems: "center", gap: 14 }}
+              >
+                <div style={{ width: 70, fontFamily: T.mono, fontSize: 8, color: f.color, letterSpacing: 1.5, lineHeight: 1.6 }}>
+                  {f.type}<br />
+                  <span style={{ color: T.muted }}>{f.key}</span>
+                </div>
+                <div style={{ flex: 1 }}>
+                  {editing === f.key ? (
+                    <input
+                      autoFocus
+                      defaultValue={student[f.key]}
+                      onBlur={e => {
+                        const v = e.target.value;
+                        setStudent(prev => ({ ...prev, [f.key]: f.type === "int" ? parseInt(v) || prev[f.key] : f.type === "float" ? parseFloat(v) || prev[f.key] : v }));
+                        setEditing(null);
+                      }}
+                      onKeyDown={e => e.key === "Enter" && e.target.blur()}
+                      style={{ background: "transparent", border: "none", outline: "none", fontFamily: T.mono, fontSize: 18, fontWeight: 700, color: f.color, width: "100%" }}
+                    />
+                  ) : (
+                    <motion.div key={String(student[f.key])} animate={{ scale: [1.12, 1] }}
+                      style={{ fontFamily: T.mono, fontSize: 18, fontWeight: 700, color: f.color, cursor: "text" }}
+                      onClick={() => setEditing(f.key)}
+                    >{String(student[f.key])}</motion.div>
+                  )}
+                  <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginTop: 2 }}>
+                    {accessMode === "dot" ? `s.${f.key}` : `ptr->${f.key}`}
+                  </div>
+                </div>
+                <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
+                  onClick={() => accessField(f.key)}
+                  style={{ fontFamily: T.mono, fontSize: 8, color: f.color, background: `${f.color}15`, border: `1px solid ${f.color}40`, borderRadius: 5, padding: "5px 12px", cursor: "pointer" }}>
+                  ACCESS
+                </motion.button>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div key={accessMode} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            style={{ padding: "14px 16px", borderRadius: 11, background: `${T.accent}0C`, border: `1px solid ${T.accent}30`, fontFamily: T.mono, fontSize: 12, color: T.text, lineHeight: 2 }}
+          >
+            {accessMode === "dot" ? (
+              <>
+                <span style={{ color: T.accent }}>struct Student s;</span><br />
+                s.name = <span style={{ color: T.neon2 }}>"{student.name}"</span><br />
+                s.age = <span style={{ color: T.neon }}>{student.age}</span> &nbsp;·&nbsp;
+                s.gpa = <span style={{ color: T.neon4 }}>{student.gpa}</span> &nbsp;·&nbsp;
+                s.id = <span style={{ color: T.accent }}>{student.id}</span>
+              </>
+            ) : (
+              <>
+                <span style={{ color: T.accent }}>struct Student *ptr = &s;</span><br />
+                ptr→name = <span style={{ color: T.neon2 }}>"{student.name}"</span><br />
+                ptr→age = <span style={{ color: T.neon }}>{student.age}</span> &nbsp;·&nbsp;
+                ptr→gpa = <span style={{ color: T.neon4 }}>{student.gpa}</span>
+                <br /><span style={{ color: T.muted, fontSize: 9 }}>ptr→field is shorthand for (*ptr).field</span>
+              </>
+            )}
+          </motion.div>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <CodeBlock
+            code={`// DEFINITION — creates a new type blueprint
+struct Student {
+  char  name[20];  // offset 0,  20 bytes
+  int   age;       // offset 20,  4 bytes
+  float gpa;       // offset 24,  4 bytes
+  int   id;        // offset 28,  4 bytes
+};                 // total: 32 bytes (incl. padding)
+
+// Use typedef to avoid writing 'struct' every time
+typedef struct Student Student;
+
+// Create and initialize an instance
+Student s = {"${student.name}", ${student.age}, ${student.gpa}f, ${student.id}};
+
+// DOT access — direct struct variable
+printf("%s\\n",  s.name);  // "${student.name}"
+printf("%d\\n",  s.age);   // ${student.age}
+printf("%.1f\\n",s.gpa);   // ${student.gpa}
+
+// ARROW access — pointer to struct
+Student *ptr = &s;
+printf("%s\\n", ptr->name);  // ptr->name == (*ptr).name
+ptr->age = 21;               // modifies s.age directly`}
+            highlightLine={animField ? fields.findIndex(f => f.key === animField) + 2 : -1}
+          />
+          <InsightBlock title="DOT vs ARROW — THE RULE" color={T.accent} icon="⬡">
+            <span style={{ color: T.accent }}>s.name</span>{" — s is the struct itself (value)\n"}
+            <span style={{ color: T.neon2 }}>ptr→name</span>{" — ptr is a pointer to a struct\n\n"}
+            {"ptr→name is EXACTLY (*ptr).name — dereference then dot.\nThe arrow exists purely for readability.\n\n"}
+            <span style={{ color: T.neon4 }}>Rule: dot when you have the thing, arrow when you have a pointer to the thing."}
+          </InsightBlock>
+          <InsightBlock title="STRUCT PADDING & ALIGNMENT" color={T.neon3} icon="⚠">
+            {"struct { char c; int i; } — 8 bytes, not 5!\n"}
+            {"The compiler inserts 3 padding bytes after char c so that int i is 4-byte aligned.\n\n"}
+            {"Reorder fields from largest to smallest to minimize wasted space:\nstruct { int i; char c; } — only 5–8 bytes instead of more."}
+          </InsightBlock>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 05 — UNIONS
+// ─────────────────────────────────────────────────────────────────────────────
+function UnionsSection() {
+  const [activeType, setActiveType] = useState("i");
+  const [intVal, setIntVal] = useState(1078530011);
+
+  const floatBits = useMemo(() => {
+    const buf = new ArrayBuffer(4);
+    const view = new DataView(buf);
+    view.setInt32(0, intVal, true);
+    return view.getFloat32(0, true).toFixed(6);
+  }, [intVal]);
+
+  const charVal = String.fromCharCode(intVal & 0xFF);
+  const hexVal = `0x${(intVal >>> 0).toString(16).toUpperCase().padStart(8, "0")}`;
+
+  const members = [
+    { key: "i", label: "int i",   type: "int",   size: 4, color: T.neon,  value: intVal },
+    { key: "f", label: "float f", type: "float", size: 4, color: T.neon4, value: floatBits },
+    { key: "c", label: "char c",  type: "char",  size: 1, color: T.neon2, value: `'${charVal}'` },
+  ];
+
+  const activeMember = members.find(m => m.key === activeType);
+
+  const bytes = [0, 1, 2, 3].map(i => ({
+    hex: ((intVal >> (i * 8)) & 0xFF).toString(16).toUpperCase().padStart(2, "0"),
+    dec: (intVal >> (i * 8)) & 0xFF,
+    active: activeType === "c" ? i === 0 : true,
+  }));
+
+  return (
+    <Section id="unions">
+      <SectionHeader num="05" tag="UNIONS · SHARED MEMORY" title="ONE MEMORY, MANY TYPES" subtitle="A union allocates one block of memory large enough for its biggest member. All members share that same block." />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+        <GlassCard style={{ padding: 32 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon3, marginBottom: 24 }}>
+            ◎ UNION MEMORY VISUALIZER
+          </div>
+
+          <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
+            {members.map(m => (
+              <Pill key={m.key} color={m.color} active={activeType === m.key} onClick={() => setActiveType(m.key)}>
+                {m.label}
+              </Pill>
+            ))}
+          </div>
+
+          {/* 4 byte cells */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 8, letterSpacing: 2 }}>
+              SHARED MEMORY — 4 BYTES TOTAL
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {bytes.map((b, i) => (
+                <motion.div
+                  key={i}
+                  animate={{
+                    background: b.active ? `${activeMember.color}22` : `${T.dim}80`,
+                    borderColor: b.active ? activeMember.color : T.muted,
+                    opacity: b.active ? 1 : 0.35,
+                  }}
+                  style={{ flex: 1, height: 82, borderRadius: 10, border: "2px solid", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2 }}
+                >
+                  <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted }}>byte {i}</div>
+                  <div style={{ fontFamily: T.mono, fontSize: 15, fontWeight: 700, color: b.active ? activeMember.color : T.muted }}>
+                    {b.hex}
+                  </div>
+                  <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>{b.dec}</div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+
+          {/* Struct vs Union comparison */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 22 }}>
+            <div style={{ padding: "14px", borderRadius: 10, background: `${T.neon3}08`, border: `1px solid ${T.neon3}25` }}>
+              <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon3, marginBottom: 8, letterSpacing: 2 }}>STRUCT = SEPARATE</div>
+              <div style={{ display: "flex", gap: 3, marginBottom: 6 }}>
+                {members.map(m => (
+                  <div key={m.key} style={{ flex: m.size, height: 20, borderRadius: 4, background: `${m.color}30`, border: `1px solid ${m.color}50` }} />
+                ))}
+              </div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>9+ bytes, all coexist</div>
+            </div>
+            <div style={{ padding: "14px", borderRadius: 10, background: `${T.neon}08`, border: `1px solid ${T.neon}25` }}>
+              <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon, marginBottom: 8, letterSpacing: 2 }}>UNION = SHARED</div>
+              <div style={{ position: "relative", height: 20, marginBottom: 6 }}>
+                {members.map((m, i) => (
+                  <div key={m.key} style={{ position: "absolute", inset: 0, borderRadius: 4, background: `${m.color}${i === 0 ? "30" : "18"}`, border: `1px solid ${m.color}50` }} />
+                ))}
+              </div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>4 bytes, one at a time</div>
+            </div>
+          </div>
+
+          {/* Slider */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>u.i raw value</span>
+              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.neon4 }}>{hexVal}</span>
+            </div>
+            <input type="range" min={0} max={2147483647} step={1000000} value={intVal}
+              onChange={e => setIntVal(Number(e.target.value))}
+              style={{ width: "100%", accentColor: T.neon }} />
+          </div>
+
+          {/* All interpretations */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {members.map(m => (
+              <motion.div key={m.key}
+                animate={{
+                  background: activeType === m.key ? `${m.color}18` : `${m.color}06`,
+                  borderColor: activeType === m.key ? m.color : `${m.color}25`,
+                  boxShadow: activeType === m.key ? `0 0 22px ${m.color}40` : "none",
+                }}
+                style={{ padding: "12px 16px", borderRadius: 10, border: "2px solid", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}
+                onClick={() => setActiveType(m.key)}
+              >
+                <span style={{ fontFamily: T.mono, fontSize: 10, color: m.color }}>{m.label}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 15, fontWeight: 700, color: m.color }}>{String(m.value)}</span>
+              </motion.div>
+            ))}
+          </div>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <CodeBlock
+            code={`union Data {
+  int   i;    // 4 bytes
+  float f;    // 4 bytes
+  char  c;    // 1 byte
+};
+// sizeof(union Data) = 4 (largest member wins)
+
+union Data u;
+u.i = ${intVal};     // write as int
+
+// SAME 4 BYTES interpreted differently:
+printf("%d\\n",   u.i);   // int:   ${intVal}
+printf("%.4f\\n", u.f);   // float: ${floatBits}
+printf("%c\\n",   u.c);   // char:  '${charVal}'
+
+// Real use case: type punning (IEEE 754 trick)
+// 0x3F800000 stored as int → read as float → 1.0f
+// This is how you inspect floating point bits!
+
+// Safer pattern: tagged union
+struct Tagged {
+  int type;        // 0=int, 1=float, 2=char
+  union Data val;
+};`}
+            highlightLine={activeType === "i" ? 11 : activeType === "f" ? 12 : 13}
+          />
+          <InsightBlock title="UNION vs STRUCT — THE DIFFERENCE" color={T.neon3} icon="◎">
+            <span style={{ color: T.neon }}>struct</span>{" — each member has its own memory. Size = sum of members + padding.\n"}
+            <span style={{ color: T.neon4 }}>union</span>{" — all members share one block. Size = largest member.\n\n"}
+            {"Writing u.i and then reading u.f is 'type punning' — valid in C (C99 allows it via union). This is how embedded systems read raw hardware bytes as typed values."}
+          </InsightBlock>
+          <InsightBlock title="TAGGED UNION — THE SAFE PATTERN" color={T.neon2} icon="💡">
+            {"Combine union with an integer 'tag' to track which member is active:\n\n"}
+            {"struct { int type; union { int i; float f; char c; } val; }\n\n"}
+            {"This is the foundation of 'sum types', 'variants', and 'tagged unions' in Rust, Haskell, Swift, and TypeScript — all inspired by C unions."}
+          </InsightBlock>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 06 — PREPROCESSOR
+// ─────────────────────────────────────────────────────────────────────────────
+function PreprocessorSection() {
+  const [activeDirective, setActiveDirective] = useState("include");
+  const [macroN, setMacroN] = useState(7);
+  const [showExpanded, setShowExpanded] = useState(false);
+
+  const directives = {
+    include: {
+      color: T.neon2,
+      label: "#include",
+      desc: "Inserts the entire content of another file at this exact point — before the compiler ever sees your code.",
+      before: `#include <stdio.h>
+#include <stdlib.h>
+#include "mymath.h"
+
+int main() {
+  printf("Hello!");
+  return 0;
+}`,
+      after: `// [contents of stdio.h — ~800 lines]
+// int printf(const char *format, ...);
+// int scanf(const char *format, ...);
+// FILE *fopen(const char *path, ...);
+// ... hundreds more declarations
+
+// [contents of stdlib.h — ~600 lines]
+// void *malloc(size_t size);
+// void free(void *ptr);
+// ...
+
+// [contents of mymath.h]
+// int add(int a, int b);
+
+int main() {
+  printf("Hello!");
+  return 0;
+}`,
+    },
+    define: {
+      color: T.neon4,
+      label: "#define",
+      desc: "Textual substitution before compilation. Not a variable, not a function — pure find-and-replace with no type safety.",
+      before: `#define PI 3.14159265
+#define MAX(a,b) ((a)>(b)?(a):(b))
+#define SQ(x) ((x)*(x))
+
+double area = PI * r * r;
+int m = MAX(3, 7);
+int s = SQ(${macroN});`,
+      after: `// PI → 3.14159265 (pure text replacement)
+// MAX(a,b) → ((a)>(b)?(a):(b))
+// SQ(x) → ((x)*(x))
+
+double area = 3.14159265 * r * r;
+int m = ((3)>(7)?(3):(7));        // = 7
+int s = ((${macroN})*(${macroN}));          // = ${macroN * macroN}`,
+    },
+    ifdef: {
+      color: T.accent,
+      label: "#ifdef",
+      desc: "Conditional compilation — entire sections of code are included or excluded based on whether a macro is defined.",
+      before: `#define DEBUG   // comment this to disable
+
+int main() {
+#ifdef DEBUG
+  printf("Debug mode\\n");
+  log_verbose();
+#else
+  // production path — no logging
+#endif
+  return 0;
+}`,
+      after: `// DEBUG is defined → keep the #ifdef branch
+// #else branch is completely removed
+
+int main() {
+  printf("Debug mode\\n");
+  log_verbose();
+  return 0;
+}`,
+    },
+  };
+
+  const d = directives[activeDirective];
+
+  return (
+    <Section id="preproc">
+      <SectionHeader num="06" tag="PREPROCESSOR · #DIRECTIVES" title="PRE-COMPILE TRANSFORM" subtitle="The preprocessor runs BEFORE the compiler. It transforms your source code through text substitution, file inclusion, and conditional removal." />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+        <GlassCard style={{ padding: 32 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2, marginBottom: 24 }}>
+            # PREPROCESSOR PIPELINE
+          </div>
+
+          {/* Pipeline */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 28, flexWrap: "wrap" }}>
+            {[
+              { label: "source.c", color: T.muted, icon: "📄" },
+              { label: "→", color: T.dim },
+              { label: "preprocessor", color: T.neon2, icon: "#" },
+              { label: "→", color: T.dim },
+              { label: "compiler", color: T.neon, icon: "⚙" },
+              { label: "→", color: T.dim },
+              { label: "linker", color: T.accent, icon: "⧖" },
+              { label: "→", color: T.dim },
+              { label: "binary", color: T.neon4, icon: "⬡" },
+            ].map((step, i) => (
+              <motion.div key={i} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                style={{
+                  fontFamily: T.mono, fontSize: step.icon ? 10 : 14, fontWeight: 700,
+                  color: step.color, padding: step.icon ? "6px 10px" : "0 2px",
+                  background: step.icon ? `${step.color}12` : "transparent",
+                  border: step.icon ? `1px solid ${step.color}28` : "none",
+                  borderRadius: 6,
+                }}>
+                {step.icon ? `${step.icon} ${step.label}` : step.label}
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Directive selector */}
+          <div style={{ display: "flex", gap: 8, marginBottom: 22 }}>
+            {Object.entries(directives).map(([k, v]) => (
+              <Pill key={k} color={v.color} active={activeDirective === k} onClick={() => { setActiveDirective(k); setShowExpanded(false); }}>
+                {v.label}
+              </Pill>
+            ))}
+          </div>
+
+          {activeDirective === "define" && (
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>SQ(x) where x =</span>
+                <motion.span key={macroN} animate={{ scale: [1.4, 1] }}
+                  style={{ fontFamily: T.mono, fontSize: 18, fontWeight: 700, color: T.neon4 }}>{macroN}</motion.span>
+              </div>
+              <input type="range" min={1} max={20} value={macroN}
+                onChange={e => { setMacroN(Number(e.target.value)); setShowExpanded(false); }}
+                style={{ width: "100%", accentColor: T.neon4 }} />
+            </div>
+          )}
+
+          {/* Before/After */}
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 8, letterSpacing: 3 }}>
+              {showExpanded ? "▼ AFTER PREPROCESSING" : "▲ ORIGINAL SOURCE"}
+            </div>
+            <motion.div key={`${activeDirective}-${showExpanded}-${macroN}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+              style={{
+                background: "rgba(0,0,0,0.55)", borderRadius: 12,
+                border: `1px solid ${showExpanded ? d.color + "45" : T.dim}`,
+                padding: "16px 18px", minHeight: 176,
+                fontFamily: T.mono, fontSize: 11.5, lineHeight: 1.9,
+                color: T.text, whiteSpace: "pre", overflowX: "auto",
+                boxShadow: showExpanded ? `0 0 22px ${d.color}18` : "none",
+              }}
+            >{showExpanded ? d.after : d.before}</motion.div>
+          </div>
+
+          <div style={{ fontFamily: T.mono, fontSize: 11.5, color: T.text, lineHeight: 1.8, marginBottom: 18, padding: "12px 14px", borderRadius: 9, background: `${d.color}0A`, border: `1px solid ${d.color}25` }}>
+            {d.desc}
+          </div>
+
+          <motion.button
+            whileHover={{ scale: 1.04, boxShadow: `0 0 28px ${d.color}50` }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setShowExpanded(prev => !prev)}
+            style={{
+              width: "100%", fontFamily: T.display, fontWeight: 400, fontSize: 15, letterSpacing: 4,
+              color: "#000", background: `linear-gradient(135deg, ${d.color}, ${T.neon2})`,
+              border: "none", borderRadius: 9, padding: "14px", cursor: "pointer",
+            }}
+          >{showExpanded ? "↺ SHOW SOURCE" : "▶ EXPAND PREPROCESSOR"}</motion.button>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <CodeBlock
+            code={`// ── #include — file text insertion ──────────────
+#include <stdio.h>    // angle brackets: system headers
+#include "myfile.h"   // quotes: local project headers
+
+// ── #define — object macro (constant-like) ───────
+#define PI     3.14159265358979
+#define MAXN   1000
+#define TRUE   1
+
+// ── #define — function macro ─────────────────────
+// CRITICAL: wrap both args AND result in ()
+#define SQ(x)     ((x) * (x))
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define ABS(x)    ((x) < 0 ? -(x) : (x))
+
+// ── Conditional compilation ───────────────────────
+#ifdef DEBUG
+  #define LOG(fmt, ...) printf(fmt, ##__VA_ARGS__)
+#else
+  #define LOG(fmt, ...)   // compiled out entirely
+#endif
+
+// ── Include guard (prevents double-inclusion) ─────
+#ifndef MYHEADER_H
+  #define MYHEADER_H
+  // ... header contents ...
+#endif`}
+            highlightLine={activeDirective === "include" ? 1 : activeDirective === "define" ? 10 : 16}
+          />
+          <InsightBlock title="THE PARENTHESES RULE — CRITICAL" color={T.neon3} icon="⚠">
+            <span style={{ color: T.neon3 }}>Wrong:</span>{" #define SQ(x) x*x\n"}
+            {"SQ(3+1) → 3+1*3+1 = 7, not 16!\n\n"}
+            <span style={{ color: T.neon4 }}>Correct:</span>{" #define SQ(x) ((x)*(x))\n"}
+            {"SQ(3+1) → ((3+1)*(3+1)) = 16 ✓\n\n"}
+            {"Wrap every argument and the entire macro body in parentheses. Without this, operator precedence creates silent bugs."}
+          </InsightBlock>
+          <InsightBlock title="PREFER CONST AND INLINE OVER MACROS" color={T.neon2} icon="💡">
+            <span style={{ color: T.neon }}>const int MAX = 1000;</span>{" instead of #define MAX 1000\n→ Type-checked, appears in debugger, respects scope\n\n"}
+            <span style={{ color: T.neon2 }}>inline int sq(int x) { return x*x; }</span>{"\n→ Same speed as macro, but type-safe and debuggable\n\nMacros are still necessary for include guards, LOG wrappers, and platform-specific code."}
+          </InsightBlock>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 07 — DYNAMIC MEMORY
+// ─────────────────────────────────────────────────────────────────────────────
+function DynMemSection() {
+  const [heapBlocks, setHeapBlocks] = useState([]);
+  const [allocSize, setAllocSize] = useState(5);
+  const [phase, setPhase] = useState("idle");
+  const [log, setLog] = useState([]);
+  const [leakWarning, setLeakWarning] = useState(false);
+  const nextId = useRef(1);
+
+  const addLog = (msg, color = T.text) => setLog(prev => [...prev.slice(-7), { msg, color, id: Math.random() }]);
+
+  const malloc_ = async () => {
+    if (phase !== "idle" || heapBlocks.length >= 6) return;
+    setPhase("alloc");
+    addLog(`malloc(${allocSize} * sizeof(int)) = ${allocSize * 4} bytes…`, T.neon2);
+    await new Promise(r => setTimeout(r, 450));
+    const id = nextId.current++;
+    const addr = `0x${(0x8000 + id * 100).toString(16).toUpperCase()}`;
+    setHeapBlocks(prev => [...prev, { id, size: allocSize, freed: false, addr, zeroed: false }]);
+    addLog(`→ allocated at ${addr} ✓`, T.neon4);
+    setPhase("idle");
+  };
+
+  const calloc_ = async () => {
+    if (phase !== "idle" || heapBlocks.length >= 6) return;
+    setPhase("alloc");
+    addLog(`calloc(${allocSize}, sizeof(int)) — alloc + zero init…`, T.neon2);
+    await new Promise(r => setTimeout(r, 450));
+    const id = nextId.current++;
+    const addr = `0x${(0x8000 + id * 100).toString(16).toUpperCase()}`;
+    setHeapBlocks(prev => [...prev, { id, size: allocSize, freed: false, addr, zeroed: true }]);
+    addLog(`→ zero-initialized ${allocSize * 4} bytes at ${addr} ✓`, T.neon);
+    setPhase("idle");
+  };
+
+  const free_ = async (id) => {
+    if (phase !== "idle") return;
+    setPhase("free");
+    const block = heapBlocks.find(b => b.id === id);
+    addLog(`free(${block.addr})…`, T.neon3);
+    await new Promise(r => setTimeout(r, 350));
+    setHeapBlocks(prev => prev.map(b => b.id === id ? { ...b, freed: true } : b));
+    await new Promise(r => setTimeout(r, 400));
+    setHeapBlocks(prev => prev.filter(b => b.id !== id));
+    addLog(`→ ${block.size * 4} bytes returned to heap ✓`, T.neon4);
+    setPhase("idle");
+    setLeakWarning(false);
+  };
+
+  const liveBlocks = heapBlocks.filter(b => !b.freed);
+  const leakedBytes = liveBlocks.reduce((a, b) => a + b.size * 4, 0);
+
+  return (
+    <Section id="dynmem">
+      <SectionHeader num="07" tag="DYNAMIC MEMORY · malloc/calloc/free" title="HEAP ENGINE" subtitle="Stack memory is automatic. Heap memory is manual — you request it, use it, and must return it. Forgetting to free is a memory leak." />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+        <GlassCard style={{ padding: 32 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2, marginBottom: 22 }}>
+            ∞ HEAP ALLOCATOR SIMULATION
+          </div>
+
+          {/* Size control */}
+          <div style={{ marginBottom: 22 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>Array elements</span>
+              <motion.span key={allocSize} animate={{ scale: [1.4, 1] }}
+                style={{ fontFamily: T.mono, fontSize: 20, fontWeight: 700, color: T.neon2 }}>{allocSize}</motion.span>
+            </div>
+            <input type="range" min={1} max={12} value={allocSize}
+              onChange={e => setAllocSize(Number(e.target.value))}
+              style={{ width: "100%", accentColor: T.neon2 }} />
+            <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 4 }}>
+              = {allocSize * 4} bytes (int × {allocSize})
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 24 }}>
+            {[
+              { label: "malloc()", fn: malloc_, color: T.neon2, desc: "uninitialized — faster" },
+              { label: "calloc()", fn: calloc_, color: T.neon,  desc: "zero-init — safer" },
+            ].map(({ label, fn, color, desc }) => (
+              <motion.button key={label}
+                whileHover={{ scale: 1.04, boxShadow: `0 0 25px ${color}50` }}
+                whileTap={{ scale: 0.97 }}
+                onClick={fn}
+                disabled={phase !== "idle" || liveBlocks.length >= 6}
+                style={{
+                  fontFamily: T.display, fontWeight: 400, fontSize: 14, letterSpacing: 3,
+                  color: "#000", background: phase !== "idle" || liveBlocks.length >= 6 ? T.muted : `linear-gradient(135deg, ${color}, ${color}99)`,
+                  border: "none", borderRadius: 9, padding: "13px", cursor: "pointer",
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 4,
+                }}
+              >
+                {label}
+                <span style={{ fontFamily: T.mono, fontSize: 8, color: "rgba(0,0,0,0.6)", letterSpacing: 1 }}>{desc}</span>
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Heap visualization */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 2 }}>
+                HEAP — {liveBlocks.length} BLOCKS · {leakedBytes} BYTES ALLOCATED
+              </div>
+              {leakWarning && (
+                <motion.span animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 0.8, repeat: Infinity }}
+                  style={{ fontFamily: T.mono, fontSize: 8, color: T.neon3 }}>⚠ LEAK!</motion.span>
+              )}
+            </div>
+            <div style={{
+              minHeight: 140, background: "rgba(0,0,0,0.4)", borderRadius: 12,
+              border: `2px solid ${leakWarning ? T.neon3 : T.dim}`,
+              padding: "14px", display: "flex", flexWrap: "wrap", gap: 10, alignContent: "flex-start",
+              transition: "border-color 0.3s",
+            }}>
+              <AnimatePresence>
+                {liveBlocks.map(block => (
+                  <motion.div key={block.id}
+                    initial={{ scale: 0, opacity: 0, y: -16 }}
+                    animate={{ scale: 1, opacity: 1, y: 0 }}
+                    exit={{ scale: 0, opacity: 0, y: 16 }}
+                    transition={{ type: "spring", stiffness: 320, damping: 24 }}
+                    whileHover={{ scale: 1.06 }}
+                    onClick={() => free_(block.id)}
+                    style={{
+                      padding: "10px 14px", borderRadius: 10, cursor: "pointer",
+                      background: block.zeroed ? `${T.neon}22` : `${T.neon2}1C`,
+                      border: `2px solid ${block.zeroed ? T.neon : T.neon2}`,
+                      boxShadow: `0 0 16px ${block.zeroed ? T.neon : T.neon2}35`,
+                    }}
+                  >
+                    <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 3 }}>{block.addr}</div>
+                    <div style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 700, color: block.zeroed ? T.neon : T.neon2 }}>
+                      int[{block.size}]
+                    </div>
+                    <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted }}>{block.size * 4}B {block.zeroed ? "· 0-init" : ""}</div>
+                    <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon3, marginTop: 3 }}>click → free()</div>
+                  </motion.div>
+                ))}
+                {liveBlocks.length === 0 && (
+                  <div style={{ fontFamily: T.mono, fontSize: 11, color: T.dim, padding: "10px" }}>
+                    Heap is empty. Allocate blocks above…
+                  </div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          {/* Log */}
+          <div style={{
+            background: "rgba(0,0,0,0.5)", borderRadius: 10, border: `1px solid ${T.dim}`,
+            padding: "10px 14px", marginBottom: 14, minHeight: 72, maxHeight: 88, overflowY: "auto",
+          }}>
+            {log.length === 0
+              ? <div style={{ fontFamily: T.mono, fontSize: 10, color: T.dim }}>allocator log…</div>
+              : log.map(entry => (
+                <motion.div key={entry.id} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                  style={{ fontFamily: T.mono, fontSize: 10, color: entry.color, marginBottom: 2, lineHeight: 1.6 }}>
+                  {entry.msg}
+                </motion.div>
+              ))
+            }
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <motion.button whileTap={{ scale: 0.96 }}
+              onClick={() => { setLeakWarning(true); addLog("EXIT without free() — memory leak!", T.neon3); addLog(`${leakedBytes} bytes leaked — use Valgrind to detect`, T.neon3); }}
+              disabled={liveBlocks.length === 0}
+              style={{ flex: 1, fontFamily: T.mono, fontSize: 10, color: T.neon3, background: `${T.neon3}10`, border: `1px solid ${T.neon3}40`, borderRadius: 9, padding: "11px", cursor: "pointer" }}>
+              ⚠ SIMULATE EXIT (LEAK)
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.96 }}
+              onClick={() => { setHeapBlocks([]); setLog([]); setLeakWarning(false); setPhase("idle"); }}
+              style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 9, padding: "11px 16px", cursor: "pointer" }}>
+              ↺ RESET
+            </motion.button>
+          </div>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          <CodeBlock
+            code={`#include <stdlib.h>
+
+// malloc — allocate n bytes, UNINITIALIZED
+int *arr = malloc(${allocSize} * sizeof(int));
+
+// ALWAYS check for NULL (out of memory)
+if (arr == NULL) {
+  fprintf(stderr, "malloc failed!\\n");
+  return 1;
+}
+
+// calloc — allocate AND zero-initialize
+int *arr2 = calloc(${allocSize}, sizeof(int));
+// all elements guaranteed to be 0
+
+// realloc — resize an existing allocation
+arr = realloc(arr, ${allocSize * 2} * sizeof(int));
+if (arr == NULL) { /* original freed, handle error */ }
+
+// free — MUST call when done
+free(arr);
+arr = NULL;   // prevent dangling pointer use
+
+free(arr2);
+arr2 = NULL;`}
+            highlightLine={liveBlocks.length > 0 ? 3 : 19}
+          />
+          <InsightBlock title="THE 4 RULES OF HEAP MEMORY" color={T.neon2} icon="∞">
+            {"1. "}
+            <span style={{ color: T.neon }}>Always check malloc's return for NULL</span>
+            {"\n2. Every malloc/calloc must have exactly one matching free()\n3. "}
+            <span style={{ color: T.neon3 }}>Never free() the same pointer twice</span>
+            {" — double-free is a security vulnerability\n4. Set ptr = NULL after free — prevents accidental use-after-free"}
+          </InsightBlock>
+          <InsightBlock title="STACK vs HEAP — WHEN TO USE EACH" color={T.neon4} icon="💡">
+            <span style={{ color: T.neon }}>Stack:</span>{" automatic, fast, limited (~8MB), freed when function returns\n"}
+            <span style={{ color: T.neon2 }}>Heap:</span>{" manual, slower, huge (GBs), lasts as long as you need it\n\n"}
+            {"Use stack for: local variables, small arrays, function args\nUse heap for: large data, unknown-size arrays, data that outlives the function that created it"}
+          </InsightBlock>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 08 — MASTER ENGINE
+// ─────────────────────────────────────────────────────────────────────────────
+const ENGINE_PROGS = [
+  {
+    name: "PTR + STRUCT",
+    color: T.accent,
+    lines: [
+      "struct Point { int x, y; };",
+      "struct Point p = {3, 7};",
+      "struct Point *ptr = &p;",
+      "ptr->x = 10;",
+      "int dist = ptr->x + ptr->y;",
+      'printf("%d\\n", dist);',
+    ],
+    steps: [
+      { line: 0, mem: {}, out: "" },
+      { line: 1, mem: { "p.x": 3, "p.y": 7 }, out: "" },
+      { line: 2, mem: { "p.x": 3, "p.y": 7, ptr: "&p" }, out: "" },
+      { line: 3, mem: { "p.x": 10, "p.y": 7, ptr: "&p" }, out: "" },
+      { line: 4, mem: { "p.x": 10, "p.y": 7, ptr: "&p", dist: 17 }, out: "" },
+      { line: 5, mem: { "p.x": 10, "p.y": 7, dist: 17 }, out: "17" },
+    ],
+    explain: [
+      "Defining struct Point type blueprint",
+      "Creating p at some address — p.x=3, p.y=7",
+      "ptr holds the address of p (ptr = &p)",
+      "ptr→x = (*ptr).x = p.x — modifies to 10",
+      "dist = p.x + p.y = 10 + 7 = 17",
+      "Output: 17",
+    ],
+  },
+  {
+    name: "MALLOC ARRAY",
+    color: T.neon2,
+    lines: [
+      "int n = 5;",
+      "int *arr = malloc(n * sizeof(int));",
+      "if (!arr) return 1;",
+      "for (int i = 0; i < n; i++)",
+      "  arr[i] = i * i;",
+      'printf("%d\\n", arr[3]);',
+      "free(arr); arr = NULL;",
+    ],
+    steps: [
+      { line: 0, mem: { n: 5 }, out: "" },
+      { line: 1, mem: { n: 5, arr: "0x8100" }, out: "" },
+      { line: 2, mem: { n: 5, arr: "0x8100 ✓" }, out: "" },
+      { line: 3, mem: { n: 5, arr: "0x8100", i: "0→4" }, out: "" },
+      { line: 4, mem: { n: 5, "arr[0..4]": "0,1,4,9,16" }, out: "" },
+      { line: 5, mem: { n: 5, "arr[3]": 9 }, out: "9" },
+      { line: 6, mem: { n: 5, arr: "NULL (freed)" }, out: "9" },
+    ],
+    explain: [
+      "n = 5 on the stack",
+      "malloc(20 bytes) on the heap → arr points to 0x8100",
+      "NULL check — heap can return NULL if out of memory",
+      "Loop: i goes from 0 to 4",
+      "arr[i] = *(arr+i) = i² → {0, 1, 4, 9, 16}",
+      "arr[3] = *(arr+3) = 9",
+      "free() returns memory to heap. NULL prevents dangling use.",
+    ],
+  },
+  {
+    name: "UNION TRICK",
+    color: T.neon4,
+    lines: [
+      "union { int i; float f; } u;",
+      "u.i = 0x3F800000;",
+      "// same 4 bytes, read as float:",
+      'printf("%.1f\\n", u.f);',
+      "// IEEE 754: 0x3F800000 = 1.0f",
+      "// sign=0 exp=127 mantissa=0",
+    ],
+    steps: [
+      { line: 0, mem: { "union size": "4 bytes" }, out: "" },
+      { line: 1, mem: { "u.i": "0x3F800000", "raw bytes": "00 00 80 3F" }, out: "" },
+      { line: 3, mem: { "u.i": "0x3F800000", "u.f": "1.0 (same bytes!)" }, out: "1.0" },
+    ],
+    explain: [
+      "Union: int i and float f share the same 4 bytes",
+      "Writing u.i = 0x3F800000 stores 4 bytes on the heap",
+      "Reading u.f interprets those same bytes as IEEE 754 float = 1.0",
+    ],
+  },
+];
+
+function EngineSection() {
+  const [progIdx, setProgIdx] = useState(0);
+  const [step, setStep] = useState(-1);
+  const [memory, setMemory] = useState({});
+  const [output, setOutput] = useState("");
+  const [running, setRunning] = useState(false);
+  const runningRef = useRef(false);
+  const prog = ENGINE_PROGS[progIdx];
+
+  const reset = () => {
+    runningRef.current = false;
+    setStep(-1); setMemory({}); setOutput(""); setRunning(false);
+  };
+
+  const run = async () => {
+    if (runningRef.current) return;
+    reset();
+    await new Promise(r => setTimeout(r, 80));
+    runningRef.current = true;
+    setRunning(true);
+    for (let i = 0; i < prog.steps.length; i++) {
+      if (!runningRef.current) break;
+      const s = prog.steps[i];
+      setStep(s.line);
+      setMemory({ ...s.mem });
+      if (s.out) setOutput(s.out);
+      await new Promise(r => setTimeout(r, 900));
+    }
+    setStep(-1);
+    setRunning(false);
+    runningRef.current = false;
+  };
+
+  const currentExplain = step >= 0 && prog.explain[step] ? prog.explain[step] : null;
+
+  return (
+    <Section id="engine">
+      <SectionHeader num="08" tag="MASTER ENGINE · FULL SIMULATION" title="C CHAPTER 5 ENGINE" subtitle="Step-by-step execution of programs combining pointers, structs, unions, and heap memory together." />
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 30, flexWrap: "wrap" }}>
+        {ENGINE_PROGS.map((p, i) => (
+          <Pill key={p.name} color={p.color} active={progIdx === i}
+            onClick={() => { setProgIdx(i); reset(); }}>
+            {p.name}
+          </Pill>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
+        {/* Code editor */}
+        <GlassCard style={{ overflow: "hidden" }}>
+          <div style={{
+            background: "rgba(0,0,0,0.45)", borderBottom: `1px solid ${T.dim}`,
+            padding: "12px 18px", display: "flex", alignItems: "center", justifyContent: "space-between",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <motion.div
+                animate={{ background: running ? prog.color : T.muted, boxShadow: running ? `0 0 14px ${prog.color}` : "none" }}
+                style={{ width: 8, height: 8, borderRadius: "50%" }}
+              />
+              <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, letterSpacing: 1 }}>
+                {prog.name.toLowerCase().replace(/ /g, "_")}.c
+              </span>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <motion.button whileTap={{ scale: 0.95 }} onClick={run} disabled={running}
+                style={{
+                  fontFamily: T.display, fontWeight: 400, fontSize: 12, letterSpacing: 3,
+                  color: "#000", background: running ? T.muted : prog.color,
+                  border: "none", borderRadius: 6, padding: "7px 18px", cursor: running ? "not-allowed" : "pointer",
+                }}>
+                {running ? "RUNNING…" : "▶ RUN"}
+              </motion.button>
+              <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
+                style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 6, padding: "7px 14px", cursor: "pointer" }}>
+                RESET
+              </motion.button>
+            </div>
+          </div>
+          <div style={{ padding: "14px 0" }}>
+            {prog.lines.map((line, i) => {
+              const isActive = step === i;
+              return (
+                <motion.div key={i}
+                  animate={{ background: isActive ? `${prog.color}18` : "transparent", paddingLeft: isActive ? 22 : 16 }}
+                  style={{ display: "flex", alignItems: "center", paddingRight: 16, paddingTop: 4, paddingBottom: 4, borderLeft: `3px solid ${isActive ? prog.color : "transparent"}`, transition: "border-color 0.2s" }}
+                >
+                  <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, minWidth: 26, textAlign: "right", marginRight: 16, userSelect: "none" }}>{i + 1}</span>
+                  <span style={{ fontFamily: T.mono, fontSize: 12.5, color: isActive ? prog.color : T.text, whiteSpace: "pre", flex: 1 }}>{line}</span>
+                  {isActive && (
+                    <motion.span animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 0.5, repeat: Infinity }}
+                      style={{ fontFamily: T.mono, fontSize: 8, color: prog.color, letterSpacing: 2, marginLeft: 8 }}>◀ EXEC</motion.span>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* Explanation */}
+          <div style={{ padding: "12px 18px", borderTop: `1px solid ${T.dim}`, minHeight: 46 }}>
+            <AnimatePresence mode="wait">
+              {currentExplain && (
+                <motion.div key={step} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                  style={{ fontFamily: T.mono, fontSize: 11, color: prog.color, lineHeight: 1.7 }}>
+                  → {currentExplain}
+                </motion.div>
+              )}
+              {!currentExplain && (
+                <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>
+                  {running ? "executing…" : "press ▶ RUN to step through"}
+                </div>
+              )}
+            </AnimatePresence>
+          </div>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Memory state */}
+          <GlassCard style={{ padding: 0, overflow: "hidden", flex: 1 }}>
+            <div style={{ background: "rgba(0,0,0,0.4)", borderBottom: `1px solid ${T.dim}`, padding: "12px 18px", fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon2 }}>
+              MEMORY STATE
+            </div>
+            <div style={{ padding: "18px", minHeight: 130 }}>
+              <AnimatePresence>
+                {Object.keys(memory).length === 0
+                  ? <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>No variables yet…</div>
+                  : Object.entries(memory).map(([k, v]) => (
+                    <motion.div key={k} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
+                      style={{ display: "flex", alignItems: "center", gap: 14, fontFamily: T.mono, fontSize: 12, marginBottom: 12 }}>
+                      <span style={{ color: T.neon2, minWidth: 85 }}>{k}</span>
+                      <motion.div key={String(v)} initial={{ scale: 1.4, color: prog.color }} animate={{ scale: 1, color: T.text }}
+                        style={{ background: `${prog.color}18`, border: `1px solid ${prog.color}40`, borderRadius: 6, padding: "4px 14px", fontWeight: 700, fontFamily: T.mono, fontSize: 11.5 }}>
+                        {String(v)}
+                      </motion.div>
+                    </motion.div>
+                  ))
+                }
+              </AnimatePresence>
+            </div>
+          </GlassCard>
+
+          {/* Output */}
+          <GlassCard style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ background: "rgba(0,0,0,0.4)", borderBottom: `1px solid ${T.dim}`, padding: "12px 18px", fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon3 }}>
+              TERMINAL OUTPUT
+            </div>
+            <div style={{ padding: "16px 18px", minHeight: 60 }}>
+              {output ? (
+                <motion.pre initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                  style={{ fontFamily: T.mono, fontSize: 18, color: T.neon4, lineHeight: 1.8 }}>
+                  {output}
+                </motion.pre>
+              ) : (
+                <span style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>
+                  {running ? "executing…" : "press ▶ RUN"}
+                </span>
+              )}
+            </div>
+          </GlassCard>
+
+          {/* Quick reference */}
+          <GlassCard style={{ padding: 20 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon, letterSpacing: 3, marginBottom: 14 }}>
+              CHAPTER 5 QUICK REFERENCE
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                { op: "int *p = &x", desc: "pointer to x" },
+                { op: "*p", desc: "dereference" },
+                { op: "p->field", desc: "(*p).field" },
+                { op: "arr[i]", desc: "*(arr+i)" },
+                { op: "malloc(n)", desc: "heap alloc" },
+                { op: "free(p)", desc: "return heap" },
+                { op: "#define X 1", desc: "macro const" },
+                { op: "union { }", desc: "shared mem" },
+              ].map(({ op, desc }) => (
+                <div key={op} style={{ padding: "7px 10px", borderRadius: 7, background: `${T.neon}08`, border: `1px solid ${T.neon}18` }}>
+                  <div style={{ fontFamily: T.mono, fontSize: 10, fontWeight: 700, color: T.neon }}>{op}</div>
+                  <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginTop: 2 }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HERO SECTION
+// ─────────────────────────────────────────────────────────────────────────────
+function HeroSection() {
+  const [phase, setPhase] = useState(0);
+  const phases = [
+    "pointers hold addresses, not values",
+    "malloc gives you heap memory — you must free it",
+    "structs pack related data, unions share memory",
+    "#define transforms source before compilation",
+    "arr[i] and *(arr+i) compile to the same thing",
+  ];
+
+  useEffect(() => {
+    const iv = setInterval(() => setPhase(p => (p + 1) % phases.length), 2800);
+    return () => clearInterval(iv);
+  }, []);
+
+  const TOPICS = [
+    { label: "Pointers",        icon: "→",  color: T.neon },
+    { label: "& Address-of",    icon: "&",  color: T.neon2 },
+    { label: "* Dereference",   icon: "*",  color: T.neon3 },
+    { label: "Ptr + Arrays",    icon: "⧖", color: T.neon4 },
+    { label: "Structs",         icon: "⬡", color: T.accent },
+    { label: "Unions",          icon: "◎", color: T.neon },
+    { label: "#include",        icon: "#",  color: T.neon2 },
+    { label: "#define",         icon: "#",  color: T.neon4 },
+    { label: "malloc / calloc", icon: "∞",  color: T.accent },
+    { label: "free()",          icon: "✕",  color: T.neon3 },
+  ];
+
+  return (
+    <section id="hero" style={{
+      minHeight: "100vh", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden",
+      background: `
+        radial-gradient(ellipse 80% 50% at 50% -5%, rgba(255,100,0,0.10) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 35% at 85% 75%, rgba(168,85,247,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse 35% 25% at 10% 85%, rgba(0,212,255,0.06) 0%, transparent 55%),
+        ${T.bg}
+      `,
+    }}>
+      {/* Animated grid background */}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 0,
+        backgroundImage: `
+          linear-gradient(rgba(255,100,0,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,100,0,0.04) 1px, transparent 1px)
+        `,
+        backgroundSize: "48px 48px",
+      }} />
+
+      {/* Scanlines */}
+      <div style={{
+        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
+        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,100,0,0.015) 2px, rgba(255,100,0,0.015) 4px)",
+      }} />
+
+      {/* Floating code snippets background decoration */}
+      {["int *p = &x;", "*ptr = 42;", "malloc(n)", "free(ptr);", "ptr->name", "arr[i]", "#define", "struct {}", "union { }"].map((snip, i) => (
+        <motion.div key={i}
+          animate={{ y: [0, -12, 0], opacity: [0.04, 0.09, 0.04] }}
+          transition={{ duration: 4 + i * 0.7, repeat: Infinity, delay: i * 0.4 }}
+          style={{
+            position: "absolute", zIndex: 1,
+            left: `${8 + (i * 11) % 88}%`, top: `${10 + (i * 17) % 80}%`,
+            fontFamily: T.mono, fontSize: 11, color: T.neon,
+            transform: `rotate(${-15 + i * 7}deg)`,
+            pointerEvents: "none", userSelect: "none",
+          }}
+        >{snip}</motion.div>
+      ))}
+
+      <div style={{ position: "relative", zIndex: 10, textAlign: "center", maxWidth: 960, padding: "0 28px" }}>
+        {/* Badge */}
+        <motion.div initial={{ opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 10,
+            fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon,
+            border: `1px solid ${T.border}`, background: "rgba(255,100,0,0.06)",
+            padding: "8px 24px", borderRadius: 100, marginBottom: 32,
+          }}>
+          <motion.span animate={{ opacity: [1, 0.1, 1], scale: [1, 0.6, 1] }} transition={{ duration: 1.1, repeat: Infinity }}
+            style={{ width: 5, height: 5, borderRadius: "50%", background: T.neon, display: "inline-block" }} />
+          C LANGUAGE · CHAPTER 5 · INTERACTIVE ENGINE
+        </motion.div>
+
+        {/* Title */}
+        <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            fontFamily: T.display, fontWeight: 400,
+            fontSize: "clamp(52px, 9vw, 110px)",
+            lineHeight: 0.88, letterSpacing: 6, color: T.text, marginBottom: 24,
+          }}>
+          C
+          <br />
+          <motion.span
+            animate={{ textShadow: [`0 0 55px ${T.neon}90`, `0 0 90px ${T.neon}B0`, `0 0 55px ${T.neon}90`] }}
+            transition={{ duration: 2.4, repeat: Infinity }}
+            style={{ color: T.neon }}>
+            CHAPTER 5
+          </motion.span>
+          <br />
+          <span style={{ color: T.muted, fontSize: "0.25em", letterSpacing: 9, fontFamily: T.mono }}>
+            POINTERS · STRUCTS · UNIONS · PREPROCESSOR · DYNAMIC MEMORY
+          </span>
+        </motion.h1>
+
+        {/* Rotating tagline */}
+        <div style={{ height: 32, marginBottom: 36, overflow: "hidden" }}>
+          <AnimatePresence mode="wait">
+            <motion.p key={phase} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
+              transition={{ duration: 0.32 }}
+              style={{ fontFamily: T.mono, fontSize: 13, color: T.neon2, letterSpacing: 1 }}>
+              → {phases[phase]}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+
+        {/* Topic pills */}
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}
+          style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 9, marginBottom: 48 }}>
+          {TOPICS.map((t, i) => (
+            <motion.div key={t.label}
+              initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.65 + i * 0.06, type: "spring", stiffness: 280 }}
+              whileHover={{ y: -5, boxShadow: `0 12px 36px ${t.color}50` }}
+              style={{
+                padding: "9px 20px", borderRadius: 8,
+                background: `${t.color}10`, border: `1px solid ${t.color}35`,
+                fontFamily: T.mono, fontSize: 10, color: t.color,
+                display: "flex", alignItems: "center", gap: 8,
+                transition: "box-shadow 0.2s",
+              }}>
+              <span style={{ fontSize: 13 }}>{t.icon}</span> {t.label}
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.button initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.1 }}
+          whileHover={{ scale: 1.07, boxShadow: `0 0 60px ${T.neon}70` }}
+          whileTap={{ scale: 0.96 }}
+          onClick={() => document.getElementById("pointers")?.scrollIntoView({ behavior: "smooth" })}
+          style={{
+            fontFamily: T.display, fontWeight: 400, fontSize: 15, letterSpacing: 6,
+            color: "#000", background: `linear-gradient(135deg, ${T.neon}, ${T.neon2})`,
+            border: "none", borderRadius: 9, padding: "17px 54px", cursor: "pointer",
+          }}>
+          ENTER THE ENGINE
+        </motion.button>
+      </div>
+
+      <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 2.4, repeat: Infinity }}
+        style={{ position: "absolute", bottom: 32, zIndex: 10, fontFamily: T.mono, fontSize: 8, letterSpacing: 6, color: T.muted }}>
+        SCROLL DOWN ↓
+      </motion.div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PREV / NEXT PAGINATION FOOTER
+// ─────────────────────────────────────────────────────────────────────────────
+function PaginationFooter() {
+  return (
+    <div style={{
+      padding: "60px 0 80px",
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 24,
+    }}>
+      {/* PREV */}
+      <motion.a
+        href="/c-4"
+        whileHover={{ scale: 1.03, boxShadow: `0 0 40px ${T.neon}30` }}
+        whileTap={{ scale: 0.97 }}
+        style={{
+          display: "flex", alignItems: "center", gap: 18, textDecoration: "none",
+          padding: "22px 32px", borderRadius: 14,
+          background: T.glass, border: `1px solid ${T.border}`,
+          backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+          boxShadow: "0 4px 40px rgba(0,0,0,0.5)",
+          cursor: "pointer", minWidth: 220,
+        }}
+      >
+        <motion.span
+          animate={{ x: [0, -4, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity }}
+          style={{ fontSize: 22, color: T.neon }}
+        >←</motion.span>
+        <div>
+          <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.muted, marginBottom: 4 }}>PREVIOUS</div>
+          <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 400, color: T.text, letterSpacing: 3 }}>CHAPTER 4</div>
+          <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 2 }}>Functions & Scope</div>
+        </div>
+      </motion.a>
+
+      {/* Chapter indicator */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "0 8px" }}>
+        <div style={{ display: "flex", gap: 6 }}>
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(n => (
+            <motion.div key={n}
+              animate={{
+                background: n === 5 ? T.neon : `${T.muted}50`,
+                width: n === 5 ? 24 : 8,
+                boxShadow: n === 5 ? `0 0 10px ${T.neon}70` : "none",
+              }}
+              style={{ height: 8, borderRadius: 4 }}
+            />
+          ))}
+        </div>
+        <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, letterSpacing: 3 }}>
+          CH. 5 / 8
+        </div>
+      </div>
+
+      {/* NEXT */}
+      <motion.a
+        href="/c-6"
+        whileHover={{ scale: 1.03, boxShadow: `0 0 40px ${T.neon2}30` }}
+        whileTap={{ scale: 0.97 }}
+        style={{
+          display: "flex", alignItems: "center", gap: 18, textDecoration: "none",
+          padding: "22px 32px", borderRadius: 14,
+          background: T.glass, border: `1px solid rgba(0,212,255,0.12)`,
+          backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
+          boxShadow: "0 4px 40px rgba(0,0,0,0.5)",
+          cursor: "pointer", minWidth: 220, justifyContent: "flex-end",
+        }}
+      >
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.muted, marginBottom: 4 }}>NEXT</div>
+          <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 400, color: T.text, letterSpacing: 3 }}>CHAPTER 6</div>
+          <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 2 }}>File I/O & Strings</div>
+        </div>
+        <motion.span
+          animate={{ x: [0, 4, 0] }}
+          transition={{ duration: 1.8, repeat: Infinity }}
+          style={{ fontSize: 22, color: T.neon2 }}
+        >→</motion.span>
+      </motion.a>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SIDEBAR
+// ─────────────────────────────────────────────────────────────────────────────
+function Sidebar({ activeSection }) {
+  return (
+    <aside style={{
+      width: 220, minWidth: 220, flexShrink: 0,
+      background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
+      borderRight: `1px solid ${T.dim}`,
+      display: "flex", flexDirection: "column",
+      padding: "28px 0", position: "sticky", top: 0, height: "100vh", overflow: "hidden",
+    }}>
+      <div style={{ padding: "0 20px 22px" }}>
+        <div style={{ fontFamily: T.display, fontWeight: 400, fontSize: 20, letterSpacing: 4, color: T.neon }}>C LANG</div>
+        <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.muted, marginTop: 3 }}>CHAPTER 5 · INTERACTIVE ENGINE</div>
+      </div>
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}40, transparent)`, marginBottom: 14 }} />
+      <nav style={{ overflowY: "auto", flex: 1 }}>
+        {NAV_ITEMS.map(item => {
+          const isActive = activeSection === item.id;
+          return (
+            <motion.a key={item.id} href={`#${item.id}`}
+              onClick={e => { e.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" }); }}
+              animate={{ color: isActive ? T.neon : T.muted, background: isActive ? `${T.neon}08` : "transparent" }}
+              whileHover={{ color: T.text, paddingLeft: 28 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "11px 20px", fontFamily: T.mono, fontSize: 10,
+                fontWeight: 600, letterSpacing: 1.5, textDecoration: "none",
+                borderLeft: `2px solid ${isActive ? T.neon : "transparent"}`,
+              }}
+            >
+              <span style={{ fontSize: 12, opacity: 0.8 }}>{item.icon}</span>
+              <div>
+                <div style={{ fontSize: 7, opacity: 0.4, marginBottom: 1, letterSpacing: 2 }}>{item.num}</div>
+                {item.label}
+              </div>
+              {isActive && (
+                <motion.div layoutId="nav-dot"
+                  style={{ width: 4, height: 4, borderRadius: "50%", background: T.neon, marginLeft: "auto", boxShadow: `0 0 8px ${T.neon}` }} />
+              )}
+            </motion.a>
+          );
+        })}
+      </nav>
+
+      {/* Prev/Next mini in sidebar */}
+      <div style={{ padding: "16px 20px", borderTop: `1px solid ${T.dim}`, display: "flex", gap: 8 }}>
+        {[{ href: "/c-4", label: "← C4" }, { href: "/c-6", label: "C6 →" }].map(link => (
+          <motion.a key={link.href} href={link.href} whileHover={{ color: T.neon }}
+            style={{
+              flex: 1, textAlign: "center", padding: "8px", borderRadius: 7,
+              background: "transparent", border: `1px solid ${T.dim}`,
+              fontFamily: T.mono, fontSize: 9, color: T.muted, textDecoration: "none",
+            }}>
+            {link.label}
+          </motion.a>
+        ))}
+      </div>
+
+      <div style={{ padding: "10px 20px 0", fontFamily: T.mono, fontSize: 8, color: T.dim, letterSpacing: 2, lineHeight: 2 }}>
+        C VISUAL SIM v5.0
+      </div>
+    </aside>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RIGHT PANEL
+// ─────────────────────────────────────────────────────────────────────────────
+const DEEP = {
+  hero:         { title: "Chapter 5",    color: T.neon,   why: "Pointers, structs and dynamic memory are what make C powerful and dangerous. Master these and you understand how every high-level language works at the machine level.", mistake: "Treating pointers as magic. They are just integers that hold addresses. Once you demystify them, everything clicks.", model: "Every variable is a named box at a known address. A pointer is a sticky note with that box's address written on it." },
+  pointers:     { title: "Pointers",     color: T.neon,   why: "Pointers let you pass large structs by reference instead of copying, build dynamic data structures (linked lists, trees), and interact with hardware registers directly.", mistake: "int *p; *p = 5; — p is uninitialized. It contains garbage. Writing to it is undefined behavior and will likely crash.", model: "'int *p' means: p is a variable whose value is an address of an int. That's the complete mental model." },
+  "addr-deref": { title: "& and *",      color: T.neon2,  why: "& and * are the only two ways to bridge between values and addresses. Everything else (array indexing, arrow operator) is built on these two primitives.", mistake: "Confusing *p in a declaration (type annotation: 'p is a pointer') vs *p in an expression (operator: 'dereference p').", model: "& goes UP the abstraction ladder (value → address). * goes DOWN (address → value). They are perfect inverses." },
+  "ptr-arrays": { title: "Ptr + Arrays", color: T.neon4,  why: "Understanding that arr[i] compiles to *(arr+i) lets you reason about memory, pass arrays to functions correctly, and understand buffer overflows.", mistake: "Assuming sizeof(ptr) gives the array size. sizeof(ptr) = 8. Once an array decays to a pointer, its size is lost forever.", model: "An array name is a pointer that cannot be reassigned. That is the only difference between int arr[5] and int *ptr." },
+  structs:      { title: "Structs",      color: T.accent, why: "Structs let you create compound types. They are the building block of every complex data structure: linked lists, trees, queues, hash maps.", mistake: "Comparing structs with == — it does not work in C. You must compare field by field. C has no operator overloading.", model: "A struct is a blueprint. Declaring 'struct Point p' builds an instance from that blueprint at a fixed memory address." },
+  unions:       { title: "Unions",       color: T.neon3,  why: "Unions save memory when only one member is active at a time. They enable type punning — interpreting raw bytes as different types — critical for embedded and network code.", mistake: "Writing one member and reading another is 'type punning'. Valid in C99 via union, but undefined behavior in C++ without memcpy.", model: "A union is one box with multiple labels. Writing through any label puts data in the same bytes; reading through another label reinterprets those bytes." },
+  preproc:      { title: "Preprocessor", color: T.neon2,  why: "The preprocessor enables code reuse (#include), named constants (#define), and platform/build-specific code (#ifdef). It runs before any type-checking occurs.", mistake: "#define MAX(a,b) a>b?a:b — missing parentheses causes operator precedence bugs that are extremely hard to debug.", model: "The preprocessor is a smart find-and-replace that runs before the compiler. It knows nothing about types or scope." },
+  dynmem:       { title: "Dyn Memory",   color: T.neon2,  why: "Dynamic memory is the only way to allocate arrays whose size is unknown at compile time, or data that must outlive the function that created it.", mistake: "Calling malloc without free = memory leak. Calling free twice = double-free (security vulnerability). Both are silent in small programs.", model: "Stack manages itself. Heap is your responsibility. Think of malloc as checking out a library book — you must return it." },
+  engine:       { title: "Full Engine",  color: T.neon,   why: "Real C programs combine all these: structs of pointers to heap-allocated arrays, processed by macros, in functions that handle their own memory. This engine shows all that at once.", mistake: "After learning pointers, beginners overuse them. Prefer value semantics when the data is small. Pointers introduce indirection and bugs.", model: "Master C chapter 5 and you will understand how Python objects, Rust borrows, Go slices, and C++ references actually work in memory." },
+};
+
+function RightPanel({ activeSection }) {
+  const data = DEEP[activeSection] || DEEP.hero;
+  const [liveTime, setLiveTime] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setLiveTime(t => t + 1), 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  return (
+    <aside style={{
+      width: 290, minWidth: 290, flexShrink: 0,
+      background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
+      borderLeft: `1px solid ${T.dim}`,
+      padding: "28px 16px",
+      display: "flex", flexDirection: "column", gap: 14,
+      overflowY: "auto", overflowX: "hidden",
+      position: "sticky", top: 0, height: "100vh",
+    }}>
+      <div>
+        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, marginBottom: 10 }}>DEEP UNDERSTANDING</div>
+        <div style={{ height: 1, background: `linear-gradient(90deg, ${T.neon}40, transparent)` }} />
+      </div>
+
+      {/* Live stats */}
+      <div style={{ background: `${T.neon}05`, border: `1px solid ${T.neon}18`, borderRadius: 10, padding: "12px 14px" }}>
+        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon, marginBottom: 10 }}>⚙ LIVE STATUS</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          {[
+            { label: "SECTION", value: (activeSection || "hero").toUpperCase().slice(0, 8), color: data.color },
+            { label: "UPTIME",  value: `${liveTime}s`, color: T.neon2 },
+            { label: "TOPICS",  value: "8",          color: T.neon4 },
+            { label: "ENGINE",  value: "LIVE",       color: T.neon },
+          ].map(({ label, value, color }) => (
+            <div key={label}>
+              <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 2, color: T.muted, marginBottom: 2 }}>{label}</div>
+              <motion.div key={value} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }}
+                style={{ fontFamily: T.mono, fontSize: 13, fontWeight: 700, color }}>{value}</motion.div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div key={activeSection} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
+          transition={{ duration: 0.28 }}
+          style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+
+          <div style={{ padding: "13px 16px", borderRadius: 11, background: `${data.color}10`, border: `1px solid ${data.color}35` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: data.color, marginBottom: 5 }}>CURRENT TOPIC</div>
+            <div style={{ fontFamily: T.display, fontSize: 22, fontWeight: 400, letterSpacing: 3, color: data.color }}>{data.title}</div>
+          </div>
+
+          <div style={{ padding: "15px 16px", borderRadius: 11, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.dim}` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon, marginBottom: 9 }}>💡 WHY THIS MATTERS</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9 }}>{data.why}</div>
+          </div>
+
+          <div style={{ padding: "15px 16px", borderRadius: 11, background: `${T.neon3}08`, border: `1px solid ${T.neon3}25` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon3, marginBottom: 9 }}>⚠ COMMON MISTAKE</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9 }}>{data.mistake}</div>
+          </div>
+
+          <div style={{ padding: "15px 16px", borderRadius: 11, background: `${data.color}08`, border: `1px solid ${data.color}22` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: data.color, marginBottom: 9 }}>🧠 MENTAL MODEL</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9, fontStyle: "italic" }}>"{data.model}"</div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </aside>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROOT PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+export default function C5Page() {
+  const [activeSection, setActiveSection] = useState("hero");
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }),
+      { threshold: 0.2, rootMargin: "-10% 0px -10% 0px" }
+    );
+    NAV_ITEMS.forEach(item => {
+      const el = document.getElementById(item.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fira+Code:wght@300;400;500;600;700&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { background: ${T.bg}; color: ${T.text}; overflow-x: hidden; }
+        ::-webkit-scrollbar { width: 3px; }
+        ::-webkit-scrollbar-track { background: ${T.bg}; }
+        ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 2px; }
+        input[type=range] { height: 4px; cursor: pointer; border-radius: 2px; }
+        a { text-decoration: none; }
+        button { outline: none; }
+      `}</style>
+
+      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: T.bg }}>
+        <Sidebar activeSection={activeSection} />
+
+        <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
+          <div style={{ maxWidth: "100%", padding: "0 40px" }}>
+            <HeroSection />
+            <PointersSection />
+            <AddrDerefSection />
+            <PtrArraysSection />
+            <StructsSection />
+            <UnionsSection />
+            <PreprocessorSection />
+            <DynMemSection />
+            <EngineSection />
+            <PaginationFooter />
+          </div>
+        </main>
+
+        <RightPanel activeSection={activeSection} />
+      </div>
+    </>
+  );
+}
