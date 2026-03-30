@@ -6,6 +6,7 @@ import {
 import {
   motion, AnimatePresence,
 } from "framer-motion";
+import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars, Float, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -2520,22 +2521,36 @@ function HeroSection() {
 function Sidebar({ activeSection }) {
   return (
     <aside style={{
-      width: 210, minWidth: 210, flexShrink: 0,
+      width: "16%",                 // 18% - 10% of 18% ≈ 16.2% → using 16%
+      minWidth: 160,               // adjusted minimum
+      flexShrink: 0,
       background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
       borderRight: `1px solid ${T.dim}`,
       display: "flex", flexDirection: "column",
-      padding: "26px 0", position: "sticky", top: 0, height: "100vh", overflow: "hidden",
+      padding: "26px 0",
+      position: "sticky", top: 0, height: "100vh",
+      overflow: "hidden",
     }}>
+      {/* Header */}
       <div style={{ padding: "0 16px 20px" }}>
-        <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 16, letterSpacing: 2, color: T.neon }}>C LANG</div>
-        <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.muted, marginTop: 2 }}>CH.4 · DATA ENGINE</div>
+        <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 16, letterSpacing: 2, color: T.neon }}>
+          C LANG
+        </div>
+        <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.muted, marginTop: 2 }}>
+          CH.4 · DATA ENGINE
+        </div>
       </div>
+
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}35, transparent)`, marginBottom: 12 }} />
+
+      {/* Navigation */}
       <nav style={{ overflowY: "auto", flex: 1 }}>
         {NAV_ITEMS.map(item => {
           const isActive = activeSection === item.id;
           return (
-            <motion.a key={item.id} href={`#${item.id}`}
+            <motion.a
+              key={item.id}
+              href={`#${item.id}`}
               onClick={e => { e.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" }); }}
               animate={{ color: isActive ? T.neon : T.muted, background: isActive ? `${T.neon}07` : "transparent" }}
               whileHover={{ color: T.text, paddingLeft: 22 }}
@@ -2545,22 +2560,88 @@ function Sidebar({ activeSection }) {
                 padding: "9px 16px", fontFamily: T.mono, fontSize: 10,
                 fontWeight: 700, letterSpacing: 1.5, textDecoration: "none",
                 borderLeft: `2px solid ${isActive ? T.neon : "transparent"}`,
-              }}>
+              }}
+            >
               <span style={{ fontSize: 10 }}>{item.icon}</span>
               <div>
                 <div style={{ fontSize: 7, opacity: 0.4, marginBottom: 1 }}>{item.num}</div>
                 {item.label}
               </div>
               {isActive && (
-                <motion.div layoutId="nav-dot-c4"
-                  style={{ width: 4, height: 4, borderRadius: "50%", background: T.neon, marginLeft: "auto" }} />
+                <motion.div
+                  layoutId="nav-dot-c4"
+                  style={{ width: 4, height: 4, borderRadius: "50%", background: T.neon, marginLeft: "auto" }}
+                />
               )}
             </motion.a>
           );
         })}
       </nav>
-      <div style={{ padding: "14px 16px", fontFamily: T.mono, fontSize: 9, color: T.dim, letterSpacing: 2, lineHeight: 1.9 }}>
-        C VISUAL SIM<br />v4.0 · /c4
+
+      {/* Progress & Prev/Next Buttons */}
+      <div style={{
+        marginTop: "auto",
+        padding: "14px 16px 20px",
+        borderTop: `1px solid ${T.dim}`,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}>
+        {/* Progress indicator: 4/7 */}
+        <div>
+          <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 3, color: T.muted, marginBottom: 6 }}>
+            COURSE PROGRESS
+          </div>
+          <div style={{ height: 2, background: T.dim, borderRadius: 2, overflow: "hidden" }}>
+            <motion.div
+              style={{
+                height: "100%",
+                width: "57.1%",   // 4/7 ≈ 57.1%
+                background: `linear-gradient(90deg, ${T.neon}, ${T.neon2})`,
+                borderRadius: 2,
+              }}
+            />
+          </div>
+          <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon, marginTop: 4 }}>4 / 7 complete</div>
+        </div>
+
+        {/* Prev button - Operators & Control Flow */}
+        <Link href="/c-3" passHref legacyBehavior>
+          <motion.a
+            whileHover={{ x: -4, borderColor: T.neon }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              fontFamily: T.mono, fontSize: 8, letterSpacing: 1.5, fontWeight: 700,
+              color: T.neon2, textDecoration: "none", background: "rgba(0,212,255,0.05)",
+              border: `1px solid ${T.neon2}30`, borderRadius: 6, padding: "6px 10px",
+              transition: "all 0.2s",
+            }}
+          >
+            <span>← PREV</span>
+            <span style={{ color: T.text, letterSpacing: 0, fontSize: 7 }}>
+              OPERATORS &amp; CONTROL FLOW
+            </span>
+          </motion.a>
+        </Link>
+
+        {/* Next button - Pointers & Structs */}
+        <Link href="/c-5" passHref legacyBehavior>
+          <motion.a
+            whileHover={{ x: 4, borderColor: T.neon }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              fontFamily: T.mono, fontSize: 8, letterSpacing: 1.5, fontWeight: 700,
+              color: T.neon, textDecoration: "none", background: "rgba(0,255,163,0.05)",
+              border: `1px solid ${T.neon}30`, borderRadius: 6, padding: "6px 10px",
+              transition: "all 0.2s",
+            }}
+          >
+            <span>NEXT →</span>
+            <span style={{ color: T.text, letterSpacing: 0, fontSize: 7 }}>
+              POINTERS &amp; STRUCTS
+            </span>
+          </motion.a>
+        </Link>
       </div>
     </aside>
   );
@@ -2596,7 +2677,7 @@ function RightPanel({ activeSection }) {
 
   return (
     <aside style={{
-      width: 280, minWidth: 280, flexShrink: 0,
+      width: 378, minWidth: 378, flexShrink: 0,
       background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
       borderLeft: `1px solid ${T.dim}`,
       padding: "26px 14px",
@@ -2653,23 +2734,6 @@ function RightPanel({ activeSection }) {
           </div>
         </motion.div>
       </AnimatePresence>
-
-      <div style={{ marginTop: "auto" }}>
-        <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.dim}, transparent)`, marginBottom: 12 }} />
-        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.muted, marginBottom: 8 }}>CHAPTER NAVIGATION</div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {[{ label: "← C3", href: "/c3" }, { label: "C5 →", href: "/c5" }].map(link => (
-            <motion.a key={link.href} href={link.href} whileHover={{ color: T.neon }}
-              style={{
-                flex: 1, textAlign: "center", padding: "7px", borderRadius: 6,
-                background: "transparent", border: `1px solid ${T.dim}`,
-                fontFamily: T.mono, fontSize: 9, color: T.muted, textDecoration: "none",
-              }}>
-              {link.label}
-            </motion.a>
-          ))}
-        </div>
-      </div>
     </aside>
   );
 }

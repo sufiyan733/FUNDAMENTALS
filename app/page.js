@@ -10,10 +10,11 @@ if (typeof window !== "undefined") gsap.registerPlugin(ScrollTrigger);
 // ─── DATA ────────────────────────────────────────────────────────────────────
 
 const BOOT_NORMAL = [
-  { t: "Memory: 256 GB DDR5 ECC Registered @ 4800 MT/s",          c: "dim" },
-  { t: "Network: eth0 10.0.4.22/24  gw 10.0.4.1",                  c: "dim" },
+  { t: "Memory: 256 GB DDR5 ECC Registered @ 4800 MT/s",            c: "dim" },
+  { t: "Network: eth0 10.0.4.22/24  gw 10.0.4.1",                   c: "dim" },
   { t: "  -> C_PROGRAM ............ [DECRYPTED]  0.2ms",            c: "ok"  },
-  { t: "  -> PYTHON_CORE .......... [DECRYPTED]  0.8ms",               c: "ok"  },
+  { t: "  -> PYTHON    ............... [DECRYPTED]  0.8ms",            c: "ok"  },
+  { t: "  -> JAVA      ................. [DECRYPTED]  0.8ms",            c: "ok"  },
   { t: "Initialising VisuoSlayer security layer: [ OK ]",           c: "ok"  },
 ];
 

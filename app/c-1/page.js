@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars, Float, MeshDistortMaterial } from "@react-three/drei";
-import { gsap } from "gsap";
+import Link from "next/link";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DESIGN TOKENS
@@ -84,12 +84,12 @@ const C_KEYWORDS = {
 const KEYWORD_SET = new Set(Object.keys(C_KEYWORDS));
 
 const COMPILE_STAGES = [
-  { id:"source",    label:"SOURCE",    sublabel:".c file",     icon:"📄", color:T.neon,  input:`#include <stdio.h>\n// Say hello\n#define GREETING "Hello, C!"\n\nint main() {\n    printf(GREETING);\n    return 0;\n}`, output:`Unchanged .c file\nHuman-readable text\nComments present\nMacros unexpanded\nHeaders not inlined`, transformLabel:"YOU WRITE", transformIcon:"✏️", desc:"You write human-readable C source in a .c file. This is the only stage you directly author — everything else is automated." },
-  { id:"preprocess",label:"PREPROCESS",sublabel:"cpp / gcc -E",icon:"🔍", color:T.neon2, input:`Source .c file\n#include <stdio.h>\n#define GREETING "Hello, C!"\n// Say hello`, output:`// Comments stripped\n// #include replaced with\n// full stdio.h contents (~800 lines)\n// GREETING → "Hello, C!"\nint main() {\n    printf("Hello, C!");\n    return 0;\n}`, transformLabel:"EXPAND MACROS", transformIcon:"📋", desc:"The C Preprocessor (cpp) runs first. It strips comments, expands #define macros inline, and replaces #include with the full contents of the header file." },
-  { id:"compile",   label:"COMPILE",   sublabel:"gcc -S → .s", icon:"⚙️", color:T.neon4, input:`Preprocessed .c\n(pure C code)\n\nint main() {\n    printf("Hello, C!");\n    return 0;\n}`, output:`.section .text\n.globl main\nmain:\n    pushq %rbp\n    movq  %rsp, %rbp\n    leaq  .LC0(%rip), %rdi\n    call  printf\n    movl  $0, %eax\n    popq  %rbp\n    ret\n.LC0: .string "Hello, C!"`, transformLabel:"→ ASSEMBLY", transformIcon:"🔧", desc:"GCC parses the C into an AST, optimises, then emits human-readable x86-64 Assembly (.s). You can see the actual CPU instructions." },
-  { id:"assemble",  label:"ASSEMBLE",  sublabel:"as → .o",     icon:"🔢", color:T.accent,input:`Assembly text (.s)\nHuman-readable mnemonics:\npushq, movq, call, ret...\n\n~16 lines of assembly`, output:`Binary Object File (.o)\nELF format\n\nB8 01 00 00 00  ← MOV EAX,1\nCD 80           ← INT 0x80\n48 89 E5        ← MOV RBP,RSP\n[relocatable — not runnable yet]`, transformLabel:"→ BINARY", transformIcon:"💾", desc:"The Assembler (as) converts assembly mnemonics into raw binary machine code and packages it into an object file (.o)." },
-  { id:"link",      label:"LINK",      sublabel:"ld / gcc → exe",icon:"🔗",color:T.neon3, input:`main.o (your code)\n+\nlibc.a (printf, stdlib)\n+\ncrt0.o (startup code)\n\nAll relocatable objects`, output:`a.out / main (ELF executable)\n\n• All symbols resolved\n• Addresses fixed\n• Startup code added\n• Ready to run on OS`, transformLabel:"→ EXECUTABLE", transformIcon:"⛓️", desc:"The Linker (ld) combines your .o with libc, resolves all symbol references, fixes memory addresses, and adds OS startup code." },
-  { id:"execute",   label:"EXECUTE",   sublabel:"OS → CPU",    icon:"🚀", color:T.neon,  input:`./main (executable)\n\nOS loads into RAM\nKernel sets up:\n• Stack\n• Heap  \n• Text segment\n• Calls main()`, output:`CPU executes binary:\n\nFetch → Decode → Execute\n\nRegisters fire\nprintf syscall → kernel\nkernel → stdout\n\n> Hello, C!`, transformLabel:"CPU RUNS", transformIcon:"⚡", desc:"The OS kernel loads your executable into RAM and jumps to main(). The CPU executes your binary instructions at billions of ops/sec. Pure metal." },
+  { id:"source",    label:"SOURCE",    sublabel:".c file",      icon:"📄", color:T.neon,  input:`#include <stdio.h>\n// Say hello\n#define GREETING "Hello, C!"\n\nint main() {\n    printf(GREETING);\n    return 0;\n}`, output:`Unchanged .c file\nHuman-readable text\nComments present\nMacros unexpanded\nHeaders not inlined`, transformLabel:"YOU WRITE", transformIcon:"✏️", desc:"You write human-readable C source in a .c file. This is the only stage you directly author — everything else is automated." },
+  { id:"preprocess",label:"PREPROCESS",sublabel:"cpp / gcc -E", icon:"🔍", color:T.neon2, input:`Source .c file\n#include <stdio.h>\n#define GREETING "Hello, C!"\n// Say hello`, output:`// Comments stripped\n// #include replaced with\n// full stdio.h contents (~800 lines)\n// GREETING → "Hello, C!"\nint main() {\n    printf("Hello, C!");\n    return 0;\n}`, transformLabel:"EXPAND MACROS", transformIcon:"📋", desc:"The C Preprocessor (cpp) runs first. It strips comments, expands #define macros inline, and replaces #include with the full contents of the header file." },
+  { id:"compile",   label:"COMPILE",   sublabel:"gcc -S → .s",  icon:"⚙️", color:T.neon4, input:`Preprocessed .c\n(pure C code)\n\nint main() {\n    printf("Hello, C!");\n    return 0;\n}`, output:`.section .text\n.globl main\nmain:\n    pushq %rbp\n    movq  %rsp, %rbp\n    leaq  .LC0(%rip), %rdi\n    call  printf\n    movl  $0, %eax\n    popq  %rbp\n    ret\n.LC0: .string "Hello, C!"`, transformLabel:"→ ASSEMBLY", transformIcon:"🔧", desc:"GCC parses the C into an AST, optimises, then emits human-readable x86-64 Assembly (.s). You can see the actual CPU instructions." },
+  { id:"assemble",  label:"ASSEMBLE",  sublabel:"as → .o",      icon:"🔢", color:T.accent,input:`Assembly text (.s)\nHuman-readable mnemonics:\npushq, movq, call, ret...\n\n~16 lines of assembly`, output:`Binary Object File (.o)\nELF format\n\nB8 01 00 00 00  ← MOV EAX,1\nCD 80           ← INT 0x80\n48 89 E5        ← MOV RBP,RSP\n[relocatable — not runnable yet]`, transformLabel:"→ BINARY", transformIcon:"💾", desc:"The Assembler (as) converts assembly mnemonics into raw binary machine code and packages it into an object file (.o)." },
+  { id:"link",      label:"LINK",      sublabel:"ld / gcc → exe",icon:"🔗", color:T.neon3, input:`main.o (your code)\n+\nlibc.a (printf, stdlib)\n+\ncrt0.o (startup code)\n\nAll relocatable objects`, output:`a.out / main (ELF executable)\n\n• All symbols resolved\n• Addresses fixed\n• Startup code added\n• Ready to run on OS`, transformLabel:"→ EXECUTABLE", transformIcon:"⛓️", desc:"The Linker (ld) combines your .o with libc, resolves all symbol references, fixes memory addresses, and adds OS startup code." },
+  { id:"execute",   label:"EXECUTE",   sublabel:"OS → CPU",     icon:"🚀", color:T.neon,  input:`./main (executable)\n\nOS loads into RAM\nKernel sets up:\n• Stack\n• Heap  \n• Text segment\n• Calls main()`, output:`CPU executes binary:\n\nFetch → Decode → Execute\n\nRegisters fire\nprintf syscall → kernel\nkernel → stdout\n\n> Hello, C!`, transformLabel:"CPU RUNS", transformIcon:"⚡", desc:"The OS kernel loads your executable into RAM and jumps to main(). The CPU executes your binary instructions at billions of ops/sec. Pure metal." },
 ];
 
 const PROGRAM_PARTS = [
@@ -169,7 +169,7 @@ function tokenize(code) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THREE.JS
+// THREE.JS BACKGROUND
 // ─────────────────────────────────────────────────────────────────────────────
 function ParticleField() {
   const mesh = useRef();
@@ -219,9 +219,10 @@ function GlowOrb() {
 // ─────────────────────────────────────────────────────────────────────────────
 // SHARED COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
-function GlassCard({ children, style={}, hover=true, glowColor=T.neon, ...props }) {
+function GlassCard({ children, style={}, hover=true, glowColor=T.neon, onClick, ...props }) {
   return (
     <motion.div
+      onClick={onClick}
       whileHover={hover ? { scale:1.005, borderColor:`${glowColor}35`, boxShadow:`0 8px 40px rgba(0,0,0,0.5),0 0 20px ${glowColor}0A` } : {}}
       transition={{ type:"spring", stiffness:280, damping:28 }}
       style={{
@@ -245,20 +246,27 @@ function Section({ id, children, style={} }) {
   );
 }
 
-function SectionHeader({ num, tag, title }) {
+function SectionHeader({ num, tag, title, subtitle }) {
   return (
     <motion.div
       initial={{ opacity:0, x:-24 }} whileInView={{ opacity:1, x:0 }}
       viewport={{ once:true, amount:0.5 }} transition={{ duration:0.7, ease:[0.22,1,0.36,1] }}
-      style={{ display:"flex", alignItems:"flex-end", gap:"clamp(10px,3vw,18px)", marginBottom:"clamp(20px,4vw,36px)" }}
+      style={{ marginBottom:"clamp(20px,4vw,36px)" }}
     >
-      <span style={{ fontFamily:T.mono, fontSize:"clamp(32px,8vw,56px)", fontWeight:700, color:T.dim, lineHeight:1, letterSpacing:-2 }}>
-        {num}
-      </span>
-      <div>
-        <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:5, color:T.neon, fontWeight:500, marginBottom:4 }}>{tag}</div>
-        <h2 style={{ fontFamily:T.display, fontSize:"clamp(18px,4vw,28px)", fontWeight:800, color:T.text, letterSpacing:-0.5, lineHeight:1 }}>{title}</h2>
+      <div style={{ display:"flex", alignItems:"flex-end", gap:"clamp(10px,3vw,18px)", marginBottom: subtitle ? 10 : 0 }}>
+        <span style={{ fontFamily:T.mono, fontSize:"clamp(32px,8vw,56px)", fontWeight:700, color:T.dim, lineHeight:1, letterSpacing:-2 }}>
+          {num}
+        </span>
+        <div>
+          <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:5, color:T.neon, fontWeight:500, marginBottom:4 }}>{tag}</div>
+          <h2 style={{ fontFamily:T.display, fontSize:"clamp(18px,4vw,28px)", fontWeight:800, color:T.text, letterSpacing:-0.5, lineHeight:1 }}>{title}</h2>
+        </div>
       </div>
+      {subtitle && (
+        <p style={{ fontFamily:T.mono, fontSize:"clamp(11px,2vw,13px)", color:T.muted, lineHeight:1.8, maxWidth:600, marginLeft:"clamp(42px,8vw,74px)" }}>
+          {subtitle}
+        </p>
+      )}
     </motion.div>
   );
 }
@@ -281,17 +289,47 @@ function ScanLine() {
   );
 }
 
+// Animated counter
+function Counter({ to, duration=2, suffix="" }) {
+  const [val, setVal] = useState(0);
+  const ref = useRef(null);
+  useEffect(() => {
+    let start = null;
+    const step = (ts) => {
+      if (!start) start = ts;
+      const p = Math.min((ts - start) / (duration * 1000), 1);
+      setVal(Math.floor(p * to));
+      if (p < 1) ref.current = requestAnimationFrame(step);
+    };
+    ref.current = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(ref.current);
+  }, [to, duration]);
+  return <>{val.toLocaleString()}{suffix}</>;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HERO
 // ─────────────────────────────────────────────────────────────────────────────
 function HeroSection({ isMobile }) {
   const [phase, setPhase] = useState(0);
-  const phases = ["C → compiled to machine code","machine code → CPU instructions","CPU executes in nanoseconds","no runtime overhead. pure metal."];
+  const phases = [
+    "C → compiled directly to machine code",
+    "machine code → CPU instructions",
+    "CPU executes in nanoseconds",
+    "no runtime. no VM. pure metal."
+  ];
   useEffect(() => {
     const iv = setInterval(() => setPhase(p => (p+1)%phases.length), 2400);
     return () => clearInterval(iv);
   }, []);
   const binaryChars = useMemo(() => Array.from({length:360},()=>Math.round(Math.random())).join(""), []);
+
+  const statsRow = [
+    { label:"BORN", val:"1972", color:T.neon },
+    { label:"KEYWORDS", val:"32", color:T.neon2 },
+    { label:"LINUX LOC", val:"27M+", color:T.neon4 },
+    { label:"OVERHEAD", val:"0ms", color:T.neon3 },
+  ];
 
   return (
     <section id="hero" style={{
@@ -302,6 +340,7 @@ function HeroSection({ isMobile }) {
         radial-gradient(ellipse 50% 30% at 90% 60%,rgba(0,212,255,0.05) 0%,transparent 60%),
         ${T.bg}`,
     }}>
+      {/* 3D Canvas bg */}
       <div style={{ position:"absolute", inset:0, zIndex:0 }}>
         {!isMobile && (
           <Canvas camera={{ position:[0,0,8], fov:60 }}>
@@ -310,36 +349,44 @@ function HeroSection({ isMobile }) {
           </Canvas>
         )}
       </div>
+
+      {/* Grid overlay */}
       <div style={{ position:"absolute", inset:0, zIndex:1, pointerEvents:"none", backgroundImage:`linear-gradient(rgba(0,255,163,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,163,0.018) 1px,transparent 1px)`, backgroundSize:"52px 52px" }} />
       <div style={{ position:"absolute", inset:0, zIndex:1, overflow:"hidden", pointerEvents:"none" }}><ScanLine /></div>
+
+      {/* Floating binary */}
       <div style={{ position:"absolute", inset:0, zIndex:1, overflow:"hidden", pointerEvents:"none", opacity:0.055 }}>
         <div style={{ fontFamily:T.mono, fontSize:10, color:T.neon, wordBreak:"break-all", lineHeight:1.9, padding:"0 24px", animation:"scrollUp 28s linear infinite" }}>
           {binaryChars.repeat(8)}
         </div>
       </div>
 
-      <div style={{ position:"relative", zIndex:10, textAlign:"center", maxWidth:820, padding:"0 clamp(16px,5vw,24px)", width:"100%" }}>
+      <div style={{ position:"relative", zIndex:10, textAlign:"center", maxWidth:880, padding:"0 clamp(16px,5vw,24px)", width:"100%" }}>
+        {/* Badge */}
         <motion.div initial={{ opacity:0, y:-12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2, duration:0.6 }}
           style={{ display:"inline-flex", alignItems:"center", gap:8, fontFamily:T.mono, fontSize:9, letterSpacing:5, color:T.neon, border:`1px solid ${T.border}`, background:"rgba(0,255,163,0.04)", padding:"6px 20px", borderRadius:100, marginBottom:30 }}>
           <motion.span animate={{ opacity:[1,0.2,1], scale:[1,0.7,1] }} transition={{ duration:1.2, repeat:Infinity }}
             style={{ width:5, height:5, borderRadius:"50%", background:T.neon, display:"inline-block" }} />
-          VISUAL SIM ENGINE · v2.0
+          VISUAL LEARNING ENGINE · LESSON 01
         </motion.div>
 
+        {/* Big C */}
         <motion.h1 initial={{ opacity:0, y:36 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.35, duration:0.9, ease:[0.22,1,0.36,1] }}
-          style={{ fontFamily:T.display, fontWeight:800, fontSize:"clamp(52px,14vw,118px)", lineHeight:0.92, letterSpacing:-4, color:T.text, marginBottom:22 }}>
-          <motion.span animate={{ textShadow:[`0 0 60px ${T.neon}80,0 0 120px ${T.neon}20`,`0 0 80px ${T.neon}A0,0 0 160px ${T.neon}30`,`0 0 60px ${T.neon}80,0 0 120px ${T.neon}20`] }}
-            transition={{ duration:2.5, repeat:Infinity }} style={{ color:T.neon }}>
-            C
-          </motion.span>{" "}LANG
+          style={{ fontFamily:T.display, fontWeight:800, fontSize:"clamp(72px,18vw,140px)", lineHeight:0.88, letterSpacing:-6, color:T.text, marginBottom:16 }}>
+          <motion.span
+            animate={{ textShadow:[`0 0 60px ${T.neon}80,0 0 120px ${T.neon}20`,`0 0 80px ${T.neon}A0,0 0 160px ${T.neon}30`,`0 0 60px ${T.neon}80,0 0 120px ${T.neon}20`] }}
+            transition={{ duration:2.5, repeat:Infinity }}
+            style={{ color:T.neon }}>C
+          </motion.span>
           <br />
-          <span style={{ color:T.muted, fontSize:"clamp(0.28em,3vw,0.34em)", letterSpacing:"clamp(3px,2vw,9px)", fontWeight:400, fontFamily:T.mono }}>
-            THE MOTHER TONGUE
+          <span style={{ color:T.muted, fontSize:"clamp(0.2em,2.5vw,0.28em)", letterSpacing:"clamp(4px,2vw,12px)", fontWeight:400, fontFamily:T.mono }}>
+            PROGRAMMING LANGUAGE
           </span>
         </motion.h1>
 
+        {/* Rotating subtitle */}
         <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.6 }}
-          style={{ height:32, marginBottom:28, overflow:"hidden" }}>
+          style={{ height:32, marginBottom:36, overflow:"hidden" }}>
           <AnimatePresence mode="wait">
             <motion.p key={phase} initial={{ y:18, opacity:0 }} animate={{ y:0, opacity:1 }} exit={{ y:-18, opacity:0 }} transition={{ duration:0.35 }}
               style={{ fontFamily:T.mono, fontSize:"clamp(11px,3vw,14px)", color:T.neon2, letterSpacing:1 }}>
@@ -348,18 +395,31 @@ function HeroSection({ isMobile }) {
           </AnimatePresence>
         </motion.div>
 
-        {/* Pipeline — horizontal on desktop, 2x2 grid on mobile */}
+        {/* Stats row */}
+        <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.7, duration:0.6 }}
+          style={{ display:"flex", justifyContent:"center", gap:"clamp(16px,4vw,48px)", marginBottom:40, flexWrap:"wrap" }}>
+          {statsRow.map((s, i) => (
+            <motion.div key={s.label} initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.8+i*0.1 }}
+              style={{ textAlign:"center" }}>
+              <div style={{ fontFamily:T.display, fontWeight:800, fontSize:"clamp(22px,5vw,36px)", color:s.color, lineHeight:1 }}>{s.val}</div>
+              <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.muted, marginTop:4 }}>{s.label}</div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Pipeline mini */}
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.8, duration:0.7 }}
           style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:isMobile?8:0, alignItems:"center", marginBottom:44, justifyContent:"center" }}>
           {PIPELINE_STAGES.map((stage,i) => (
             <div key={stage.id} style={{ display:"flex", alignItems:"center" }}>
-              <motion.div whileHover={{ y:-6, boxShadow:`0 12px 40px ${stage.color}45` }} transition={{ type:"spring", stiffness:300 }}
+              <motion.div
+                whileHover={{ y:-6, boxShadow:`0 12px 40px ${stage.color}45` }}
+                transition={{ type:"spring", stiffness:300 }}
                 style={{ background:T.bg2, border:`1px solid ${stage.color}35`, borderRadius:12, padding:isMobile?"10px 8px":"14px 18px", textAlign:"center", flex:1 }}>
                 <div style={{ fontSize:isMobile?18:24, marginBottom:6 }}>{stage.icon}</div>
                 <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:2, color:stage.color, fontWeight:700 }}>{stage.label}</div>
                 <div style={{ fontFamily:T.mono, fontSize:8, color:T.muted, marginTop:3 }}>{stage.sample}</div>
               </motion.div>
-              {/* Arrow only on desktop between items */}
               {!isMobile && i < PIPELINE_STAGES.length-1 && (
                 <div style={{ width:44, position:"relative", height:2, flexShrink:0 }}>
                   <div style={{ height:1, width:"100%", background:`linear-gradient(90deg,${PIPELINE_STAGES[i].color}80,${PIPELINE_STAGES[i+1].color}80)` }} />
@@ -371,14 +431,16 @@ function HeroSection({ isMobile }) {
           ))}
         </motion.div>
 
+        {/* CTA */}
         <motion.button initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:1.1 }}
           whileHover={{ scale:1.06, boxShadow:`0 0 50px ${T.neon}60` }} whileTap={{ scale:0.96 }}
           onClick={() => document.getElementById("whatIsc")?.scrollIntoView({ behavior:"smooth" })}
           style={{ fontFamily:T.display, fontWeight:700, fontSize:"clamp(10px,3vw,12px)", letterSpacing:4, color:"#000", background:`linear-gradient(135deg,${T.neon},${T.neon2})`, border:"none", borderRadius:7, padding:"clamp(12px,3vw,15px) clamp(28px,8vw,44px)", cursor:"pointer" }}>
-          START EXPLORING
+          START EXPLORING →
         </motion.button>
       </div>
 
+      {/* Scroll indicator */}
       <motion.div animate={{ y:[0,9,0] }} transition={{ duration:2.2, repeat:Infinity }}
         style={{ position:"absolute", bottom:30, zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", gap:6, fontFamily:T.mono, fontSize:8, letterSpacing:5, color:T.muted }}>
         SCROLL
@@ -394,11 +456,12 @@ function HeroSection({ isMobile }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WHAT IS C
+// WHAT IS C — enhanced with memory model diagram
 // ─────────────────────────────────────────────────────────────────────────────
 function WhatIsC({ isMobile }) {
   const [activeStage, setActiveStage] = useState(null);
   const active = PIPELINE_STAGES.find(s => s.id === activeStage);
+
   const speedData = [
     { lang:"C",      value:97, color:T.neon,  label:"COMPILED" },
     { lang:"Go",     value:85, color:T.neon2, label:"COMPILED" },
@@ -406,27 +469,31 @@ function WhatIsC({ isMobile }) {
     { lang:"JS",     value:26, color:"#FF6B35",label:"JIT" },
     { lang:"Python", value:9,  color:T.accent, label:"INTERPRETED" },
   ];
+
   const useCases = [
-    { name:"Linux Kernel", icon:"🐧", size:"~27M lines" },
-    { name:"SQLite",       icon:"🗄️", size:"~150K lines" },
-    { name:"Git",          icon:"🌿", size:"~500K lines" },
-    { name:"Python VM",    icon:"🐍", size:"~400K lines" },
-    { name:"nginx",        icon:"🌐", size:"~140K lines" },
-    { name:"Redis",        icon:"⚡", size:"~60K lines" },
+    { name:"Linux Kernel", icon:"🐧", size:"~27M lines", color:T.neon },
+    { name:"SQLite",       icon:"🗄️", size:"~150K lines", color:T.neon2 },
+    { name:"Git",          icon:"🌿", size:"~500K lines", color:T.neon4 },
+    { name:"Python VM",    icon:"🐍", size:"~400K lines", color:T.accent },
+    { name:"nginx",        icon:"🌐", size:"~140K lines", color:T.neon3 },
+    { name:"Redis",        icon:"⚡", size:"~60K lines",  color:T.neon },
   ];
 
   return (
     <Section id="whatIsc">
-      <SectionHeader num="01" tag="FOUNDATION · WHAT IS C" title="A Language That Speaks CPU" />
+      <SectionHeader num="01" tag="FOUNDATION · WHAT IS C" title="A Language That Speaks CPU"
+        subtitle="C is the closest you can get to hardware without writing assembly. Every other mainstream language has C in its DNA." />
 
-      {/* Pipeline tabs — scrollable on mobile */}
+      {/* Pipeline clickable tabs */}
       <div style={{ marginBottom:28 }}>
-        <div style={{ fontFamily:T.mono, fontSize:9, color:T.muted, marginBottom:14, letterSpacing:3 }}>↓ CLICK EACH STAGE</div>
+        <div style={{ fontFamily:T.mono, fontSize:9, color:T.muted, marginBottom:14, letterSpacing:3 }}>↓ CLICK A STAGE TO LEARN MORE</div>
         <div style={{ display:"flex", alignItems:"stretch", overflowX:"auto", borderRadius:14, border:`1px solid ${T.dim}`, WebkitOverflowScrolling:"touch" }}>
           {PIPELINE_STAGES.map((stage,i) => (
-            <motion.button key={stage.id} whileHover={{ background:`${stage.color}10` }} whileTap={{ scale:0.98 }}
+            <motion.button key={stage.id}
+              whileHover={{ background:`${stage.color}10` }}
+              whileTap={{ scale:0.98 }}
               onClick={() => setActiveStage(activeStage===stage.id?null:stage.id)}
-              style={{ flex:"0 0 auto", minWidth:isMobile?80:0, flex:isMobile?"0 0 80px":1, padding:isMobile?"14px 10px":"22px 14px", border:"none", cursor:"pointer",
+              style={{ flex:"0 0 auto", minWidth:isMobile?80:0, ...(isMobile?{flex:"0 0 80px"}:{flex:1}), padding:isMobile?"14px 10px":"22px 14px", border:"none", cursor:"pointer",
                 borderRight:i<PIPELINE_STAGES.length-1?`1px solid ${T.dim}`:"none",
                 background:activeStage===stage.id?`${stage.color}12`:T.bg2,
                 borderBottom:activeStage===stage.id?`2px solid ${stage.color}`:"2px solid transparent",
@@ -454,8 +521,8 @@ function WhatIsC({ isMobile }) {
         </AnimatePresence>
       </div>
 
-      {/* Speed + use-cases — stack on mobile */}
-      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:20 }}>
+      {/* Speed + use-cases */}
+      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:20, marginBottom:20 }}>
         <GlassCard style={{ padding:"clamp(16px,4vw,24px)" }}>
           <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:4, color:T.neon, fontWeight:700, marginBottom:20 }}>⚡ RELATIVE EXECUTION SPEED</div>
           {speedData.map((d,i) => (
@@ -481,7 +548,8 @@ function WhatIsC({ isMobile }) {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
             {useCases.map((uc,i) => (
               <motion.div key={uc.name} initial={{ opacity:0, y:10 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:i*0.08 }}
-                whileHover={{ x:3 }} style={{ background:"rgba(0,255,163,0.04)", border:`1px solid ${T.dim}`, borderRadius:8, padding:"12px 14px" }}>
+                whileHover={{ x:3, borderColor:`${uc.color}40` }}
+                style={{ background:"rgba(0,255,163,0.04)", border:`1px solid ${T.dim}`, borderRadius:8, padding:"12px 14px", transition:"border-color 0.2s" }}>
                 <div style={{ fontSize:18, marginBottom:5 }}>{uc.icon}</div>
                 <div style={{ fontFamily:T.mono, fontSize:11, color:T.text, fontWeight:700 }}>{uc.name}</div>
                 <div style={{ fontFamily:T.mono, fontSize:9, color:T.muted, marginTop:2 }}>{uc.size}</div>
@@ -490,24 +558,52 @@ function WhatIsC({ isMobile }) {
           </div>
         </GlassCard>
       </div>
+
+      {/* Memory model visual */}
+      <GlassCard style={{ padding:"clamp(16px,4vw,24px)" }} hover={false}>
+        <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:4, color:T.accent, fontWeight:700, marginBottom:18 }}>🧠 C MEMORY LAYOUT — EVERY RUNNING PROGRAM</div>
+        <div style={{ display:"flex", gap:8, alignItems:"stretch", overflowX:"auto" }}>
+          {[
+            { label:"TEXT", sub:"Compiled instructions", color:T.neon, note:"Read-only" },
+            { label:"DATA", sub:"Global & static vars", color:T.neon2, note:"Read-write" },
+            { label:"BSS", sub:"Uninit globals (zeroed)", color:T.neon4, note:"Auto-zero" },
+            { label:"HEAP", sub:"malloc() lives here", color:T.accent, note:"Grows ↑", grow:true },
+            { label:"STACK", sub:"Local vars & calls", color:T.neon3, note:"Grows ↓", grow:true },
+          ].map((seg, i) => (
+            <motion.div key={seg.label}
+              initial={{ opacity:0, scaleY:0 }} whileInView={{ opacity:1, scaleY:1 }}
+              viewport={{ once:true }} transition={{ delay:i*0.1, duration:0.5 }}
+              style={{ flex: seg.grow ? 1.5 : 1, minWidth:70, background:`${seg.color}0D`, border:`1px solid ${seg.color}35`, borderRadius:8, padding:"14px 10px", textAlign:"center", transformOrigin:"bottom" }}>
+              <div style={{ fontFamily:T.mono, fontSize:10, fontWeight:700, color:seg.color, marginBottom:4 }}>{seg.label}</div>
+              <div style={{ fontFamily:T.mono, fontSize:9, color:T.muted, lineHeight:1.5 }}>{seg.sub}</div>
+              {seg.grow && <div style={{ fontFamily:T.mono, fontSize:8, color:seg.color, marginTop:6, opacity:0.7 }}>{seg.note}</div>}
+            </motion.div>
+          ))}
+        </div>
+        <div style={{ fontFamily:T.mono, fontSize:9, color:T.muted, marginTop:10, textAlign:"center" }}>
+          Low address (0x0000) ←————————————————→ High address (0xFFFF)
+        </div>
+      </GlassCard>
     </Section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PROGRAM STRUCTURE
+// PROGRAM STRUCTURE — enhanced
 // ─────────────────────────────────────────────────────────────────────────────
 function ProgramStructure({ isMobile }) {
   const [selectedPart, setSelectedPart] = useState(null);
   const [execStep, setExecStep] = useState(-1);
   const [isRunning, setIsRunning] = useState(false);
+  const [output, setOutput] = useState("");
 
   const runExecution = async () => {
     if (isRunning) return;
-    setIsRunning(true); setExecStep(-1);
+    setIsRunning(true); setExecStep(-1); setOutput("");
     for (let i = 0; i < PROGRAM_CODE_LINES.length; i++) {
       await new Promise(r => setTimeout(r, 700));
       setExecStep(i);
+      if (i === 2) await new Promise(r => setTimeout(r, 200)).then(() => setOutput("Hello, World!\n"));
     }
     await new Promise(r => setTimeout(r, 1200));
     setExecStep(-1); setIsRunning(false);
@@ -523,7 +619,8 @@ function ProgramStructure({ isMobile }) {
 
   return (
     <Section id="structure">
-      <SectionHeader num="02" tag="ANATOMY · PROGRAM STRUCTURE" title="Dissect a C Program" />
+      <SectionHeader num="02" tag="ANATOMY · PROGRAM STRUCTURE" title="Dissect a C Program"
+        subtitle="Every C program follows the same skeleton. Click any part to understand exactly what it does." />
       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:24 }}>
         <div>
           <GlassCard style={{ overflow:"hidden" }}>
@@ -542,7 +639,8 @@ function ProgramStructure({ isMobile }) {
                 const part = getPartForLine(i);
                 const isExecActive = execStep===i;
                 return (
-                  <motion.div key={i} animate={{ background:isExecActive?`${T.neon}14`:"transparent", paddingLeft:isExecActive?22:16 }}
+                  <motion.div key={i}
+                    animate={{ background:isExecActive?`${T.neon}14`:"transparent", paddingLeft:isExecActive?22:16 }}
                     onClick={() => part && setSelectedPart(selectedPart===part.id?null:part.id)}
                     style={{ fontFamily:T.mono, fontSize:"clamp(11px,2.5vw,13px)", lineHeight:2.1, color:getLineColor(i), paddingRight:20,
                       borderLeft:`2px solid ${isExecActive?T.neon:(part&&selectedPart===part.id?part.color:"transparent")}`,
@@ -562,7 +660,18 @@ function ProgramStructure({ isMobile }) {
                 );
               })}
             </div>
+            {/* Terminal output */}
+            <AnimatePresence>
+              {output && (
+                <motion.div initial={{ height:0, opacity:0 }} animate={{ height:"auto", opacity:1 }} exit={{ height:0, opacity:0 }}
+                  style={{ borderTop:`1px solid ${T.dim}`, background:"rgba(0,0,0,0.4)", padding:"12px 18px" }}>
+                  <div style={{ fontFamily:T.mono, fontSize:8, color:T.neon3, letterSpacing:3, marginBottom:6 }}>TERMINAL OUTPUT</div>
+                  <pre style={{ fontFamily:T.mono, fontSize:13, color:"#C3E88D" }}>{output}</pre>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </GlassCard>
+
           <GlassCard style={{ padding:"14px 18px", marginTop:14 }} hover={false}>
             <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.neon, fontWeight:700, marginBottom:10 }}>EXECUTION ORDER</div>
             <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:6 }}>
@@ -575,7 +684,9 @@ function ProgramStructure({ isMobile }) {
             </div>
           </GlassCard>
         </div>
+
         <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+          <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.muted, marginBottom:4 }}>↓ CLICK TO INSPECT</div>
           {PROGRAM_PARTS.map(part => (
             <motion.div key={part.id} whileHover={{ x:4 }}
               onClick={() => setSelectedPart(selectedPart===part.id?null:part.id)}
@@ -597,6 +708,14 @@ function ProgramStructure({ isMobile }) {
               </AnimatePresence>
             </motion.div>
           ))}
+
+          {/* Pro tip card */}
+          <GlassCard style={{ padding:"14px 18px", background:`${T.accent}08`, border:`1px solid ${T.accent}25`, marginTop:4 }} hover={false}>
+            <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.accent, marginBottom:8 }}>💡 PRO TIP</div>
+            <div style={{ fontFamily:T.mono, fontSize:11, color:T.text, lineHeight:1.75 }}>
+              Every valid C program <span style={{ color:T.neon }}>must</span> have exactly one <span style={{ color:"#82AAFF" }}>main()</span>. It's not optional — the OS needs a fixed entry point to call when your program starts.
+            </div>
+          </GlassCard>
         </div>
       </div>
     </Section>
@@ -604,7 +723,7 @@ function ProgramStructure({ isMobile }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// KEYWORDS
+// KEYWORDS — enhanced
 // ─────────────────────────────────────────────────────────────────────────────
 function KeywordsIdentifiers({ isMobile }) {
   const [code, setCode] = useState(`int main() {\n    int age = 25;\n    float score = 99.5;\n    char grade = 'A';\n    return 0;\n}`);
@@ -632,8 +751,10 @@ function KeywordsIdentifiers({ isMobile }) {
         const tokStart = tok.start - lineStart;
         if (tokStart > cursor) parts.push(<span key={`g${i}`} style={{ color:T.text }}>{line.slice(cursor,tokStart)}</span>);
         parts.push(
-          <motion.span key={`t${i}`} animate={hoveredKw===tok.val&&tok.type==="keyword"?{ background:"rgba(137,221,255,0.2)" }:{ background:"transparent" }}
-            style={{ color:getTokenColor(tok.type), borderRadius:2, padding:"0 1px", cursor:tok.type==="keyword"?"help":"default", textDecoration:tok.type==="keyword"?"underline dotted rgba(137,221,255,0.4)":"none" }}
+          <motion.span key={`t${i}`}
+            animate={hoveredKw===tok.val&&tok.type==="keyword"?{ background:"rgba(137,221,255,0.2)" }:{ background:"transparent" }}
+            style={{ color:getTokenColor(tok.type), borderRadius:2, padding:"0 1px", cursor:tok.type==="keyword"?"help":"default",
+              textDecoration:tok.type==="keyword"?"underline dotted rgba(137,221,255,0.4)":"none" }}
             onMouseEnter={() => tok.type==="keyword" && setHoveredKw(tok.val)}
             onMouseLeave={() => setHoveredKw(null)}>
             {tok.val}
@@ -651,10 +772,19 @@ function KeywordsIdentifiers({ isMobile }) {
     });
   };
 
+  // All 32 keywords grouped
+  const kwGroups = [
+    { label:"Data Types", color:"#89DDFF", items:["int","float","double","char","void","short","long","signed","unsigned"] },
+    { label:"Control Flow", color:"#C3E88D", items:["if","else","while","for","do","break","continue","return","switch","case","default","goto"] },
+    { label:"Storage", color:"#F78C6C", items:["auto","static","extern","register","const","volatile"] },
+    { label:"Structures", color:T.accent, items:["struct","union","enum","typedef","sizeof"] },
+  ];
+
   return (
     <Section id="keywords">
-      <SectionHeader num="03" tag="PARSER LAB · KEYWORDS & IDENTIFIERS" title="Live Token Classifier" />
-      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 300px", gap:22 }}>
+      <SectionHeader num="03" tag="PARSER LAB · KEYWORDS & IDENTIFIERS" title="Live Token Classifier"
+        subtitle="C has only 32 reserved keywords — yet builds entire operating systems. Type code below to see every token classified in real time." />
+      <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 300px", gap:22, marginBottom:28 }}>
         <div>
           <GlassCard style={{ overflow:"hidden" }}>
             <div style={{ background:"rgba(0,0,0,0.45)", borderBottom:`1px solid ${T.dim}`, padding:"10px 18px", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8 }}>
@@ -677,7 +807,7 @@ function KeywordsIdentifiers({ isMobile }) {
           <div style={{ display:"flex", gap:12, marginTop:14, flexWrap:"wrap" }}>
             {[{ label:"KEYWORDS", color:"#89DDFF", items:stats.keywords },{ label:"IDENTIFIERS", color:"#C3E88D", items:stats.identifiers }].map(({ label,color,items }) => (
               <GlassCard key={label} style={{ flex:1, minWidth:140, padding:"13px 16px" }} hover={false}>
-                <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color, marginBottom:8 }}>{label}</div>
+                <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color, marginBottom:8 }}>{label} · {items.length}</div>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                   {items.length===0 ? <span style={{ fontFamily:T.mono, fontSize:10, color:T.muted }}>none</span>
                     : items.map(kw => (
@@ -695,7 +825,7 @@ function KeywordsIdentifiers({ isMobile }) {
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           <GlassCard style={{ padding:16 }} hover={false}>
             <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.neon, fontWeight:700, marginBottom:10 }}>IDENTIFIER RULES</div>
-            {[["✅ Start with letter or _",true],["✅ Can contain letters, digits, _",true],["✅ Case-sensitive: a ≠ A",true],["❌ Cannot start with a digit",false],["❌ Cannot be a keyword",false],["❌ No spaces or special chars",false]].map(([rule,ok]) => (
+            {[["✅ Start with letter or _",true],["✅ Letters, digits, _",true],["✅ Case-sensitive: a ≠ A",true],["❌ Cannot start with digit",false],["❌ Cannot be a keyword",false],["❌ No spaces/special chars",false]].map(([rule,ok]) => (
               <div key={rule} style={{ fontFamily:T.mono, fontSize:10, color:ok?"#C3E88D":T.neon3, lineHeight:1.95 }}>{rule}</div>
             ))}
           </GlassCard>
@@ -710,12 +840,32 @@ function KeywordsIdentifiers({ isMobile }) {
             ) : (
               <motion.div key="hint" initial={{ opacity:0 }} animate={{ opacity:1 }}
                 style={{ background:"rgba(255,255,255,0.02)", border:`1px solid ${T.dim}`, borderRadius:10, padding:16, fontFamily:T.mono, fontSize:11, color:T.muted, textAlign:"center", lineHeight:1.8 }}>
-                Hover a <span style={{ color:"#89DDFF" }}>keyword</span> in the editor to see its definition.
+                Hover a <span style={{ color:"#89DDFF" }}>keyword</span> in the editor to see its definition
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
+
+      {/* All 32 keywords grid */}
+      <GlassCard style={{ padding:"clamp(16px,4vw,24px)" }} hover={false}>
+        <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:4, color:T.neon4, fontWeight:700, marginBottom:18 }}>ALL 32 C KEYWORDS — GROUPED BY PURPOSE</div>
+        <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:16 }}>
+          {kwGroups.map(g => (
+            <div key={g.label}>
+              <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color:g.color, marginBottom:10 }}>{g.label}</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                {g.items.map(kw => (
+                  <motion.span key={kw} whileHover={{ scale:1.1, background:`${g.color}22` }}
+                    style={{ fontFamily:T.mono, fontSize:10, color:g.color, background:`${g.color}0D`, border:`1px solid ${g.color}20`, padding:"2px 7px", borderRadius:3, cursor:"default" }}>
+                    {kw}
+                  </motion.span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </GlassCard>
     </Section>
   );
 }
@@ -742,12 +892,20 @@ function CompilationPipeline({ isMobile }) {
 
   return (
     <Section id="compilation">
-      <SectionHeader num="04" tag="DEEP PIPELINE · HOW C COMPILES" title="The 6-Stage Transformation" />
-      {/* Tab bar — scrollable on mobile */}
+      <SectionHeader num="04" tag="DEEP PIPELINE · HOW C COMPILES" title="The 6-Stage Transformation"
+        subtitle="Your .c file goes through six distinct transformations before the CPU ever sees it. Each stage strips abstraction until only raw machine instructions remain." />
+
+      {/* Progress bar */}
+      <div style={{ height:3, background:T.dim, borderRadius:2, marginBottom:24, overflow:"hidden" }}>
+        <motion.div animate={{ width:`${((step+1)/COMPILE_STAGES.length)*100}%`, background:current.color }}
+          transition={{ duration:0.4 }} style={{ height:"100%", borderRadius:2 }} />
+      </div>
+
+      {/* Stage tabs */}
       <div style={{ display:"flex", background:"rgba(0,0,0,0.4)", border:`1px solid ${T.dim}`, borderRadius:10, padding:5, gap:3, marginBottom:24, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
         {COMPILE_STAGES.map((s,i) => (
           <motion.button key={s.id} whileTap={{ scale:0.95 }} onClick={() => goTo(i)}
-            style={{ flex:"0 0 auto", minWidth:isMobile?60:0, flex:isMobile?"0 0 60px":1, padding:isMobile?"7px 4px":"9px 5px", border:"none", cursor:"pointer", borderRadius:7, fontFamily:T.mono, fontSize:isMobile?7:8, fontWeight:700, letterSpacing:1.5, textAlign:"center",
+            style={{ flex:"0 0 auto", minWidth:isMobile?60:0, ...(isMobile?{flex:"0 0 60px"}:{flex:1}), padding:isMobile?"7px 4px":"9px 5px", border:"none", cursor:"pointer", borderRadius:7, fontFamily:T.mono, fontSize:isMobile?7:8, fontWeight:700, letterSpacing:1.5, textAlign:"center",
               background:step===i?`${s.color}1A`:"transparent", color:step===i?s.color:T.muted,
               borderBottom:step===i?`2px solid ${s.color}`:"2px solid transparent", transition:"all 0.2s" }}>
             <div style={{ fontSize:isMobile?12:14, marginBottom:3 }}>{s.icon}</div>
@@ -759,7 +917,6 @@ function CompilationPipeline({ isMobile }) {
 
       <AnimatePresence mode="wait" custom={animDir}>
         <motion.div key={step} custom={animDir} variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration:0.32, ease:[0.22,1,0.36,1] }}>
-          {/* On mobile: stack input/output vertically */}
           <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr auto 1fr", gap:18, alignItems:"center", marginBottom:16 }}>
             <GlassCard style={{ padding:"clamp(14px,4vw,20px)" }} hover={false}>
               <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.muted, marginBottom:10 }}>INPUT</div>
@@ -779,7 +936,7 @@ function CompilationPipeline({ isMobile }) {
             style={{ background:`${current.color}0A`, border:`1px solid ${current.color}25`, borderRadius:10, padding:"14px 20px", fontFamily:T.mono, fontSize:"clamp(11px,2.5vw,12px)", color:T.text, lineHeight:1.85, display:"flex", gap:12, alignItems:"flex-start" }}>
             <span style={{ fontSize:18, flexShrink:0 }}>{current.icon}</span>
             <div>
-              <div style={{ color:current.color, fontWeight:700, marginBottom:4, fontSize:10, letterSpacing:1 }}>{current.label}</div>
+              <div style={{ color:current.color, fontWeight:700, marginBottom:4, fontSize:10, letterSpacing:1 }}>{current.label} · STAGE {step+1} OF 6</div>
               {current.desc}
             </div>
           </motion.div>
@@ -811,7 +968,7 @@ function CompilationPipeline({ isMobile }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EXECUTION VISUALIZER
+// EXECUTION VISUALIZER — enhanced
 // ─────────────────────────────────────────────────────────────────────────────
 function ExecutionVisualizer({ isMobile }) {
   const [running, setRunning] = useState(false);
@@ -820,13 +977,19 @@ function ExecutionVisualizer({ isMobile }) {
   const [output, setOutput] = useState("");
   const [phase, setPhase] = useState("");
   const [done, setDone] = useState(false);
-  const reset = () => { setRunning(false); setCurrentLine(-1); setMemory({}); setOutput(""); setPhase(""); setDone(false); };
+  const [callStack, setCallStack] = useState([]);
+
+  const reset = () => { setRunning(false); setCurrentLine(-1); setMemory({}); setOutput(""); setPhase(""); setDone(false); setCallStack([]); };
   const run = async () => {
     if (running) return;
     reset(); await new Promise(r => setTimeout(r, 80)); setRunning(true);
     const pm = { preprocessor:"PREPROCESS", entry:"ENTER MAIN", stmt:"ALLOCATE", output:"CALL printf", return:"RETURN 0", close:"EXIT" };
+    const csMap = { preprocessor:[], entry:["main()"], stmt:["main()"], output:["main()","printf()"], return:["main()"], close:[] };
     for (let i = 0; i < EV_CODE.length; i++) {
-      setCurrentLine(i); const step = EV_CODE[i]; setPhase(pm[step.type]||"");
+      setCurrentLine(i);
+      const step = EV_CODE[i];
+      setPhase(pm[step.type]||"");
+      setCallStack(csMap[step.type]||[]);
       if (step.mem) setMemory({...step.mem});
       if (step.out) setOutput(prev => prev+step.out);
       await new Promise(r => setTimeout(r, 880));
@@ -836,8 +999,9 @@ function ExecutionVisualizer({ isMobile }) {
   const typeColor = { preprocessor:T.accent, entry:T.neon2, stmt:T.neon4, output:"#C3E88D", return:T.neon3, close:T.neon2 };
 
   return (
-    <Section id="execution">
-      <SectionHeader num="05" tag="RUNTIME SIM · EXECUTION VISUALIZER" title="Watch Code Run Line by Line" />
+    <Section id="execution" style={{ borderBottom:"none" }}>
+      <SectionHeader num="05" tag="RUNTIME SIM · EXECUTION VISUALIZER" title="Watch Code Run Live"
+        subtitle="Step through a real C program. See memory being allocated, the call stack growing, and output appearing — in real time." />
       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:22 }}>
         <GlassCard style={{ overflow:"hidden" }}>
           <div style={{ background:"rgba(0,0,0,0.45)", borderBottom:`1px solid ${T.dim}`, padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
@@ -879,6 +1043,24 @@ function ExecutionVisualizer({ isMobile }) {
         </GlassCard>
 
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          {/* Call Stack */}
+          <GlassCard style={{ padding:0, overflow:"hidden" }}>
+            <div style={{ background:"rgba(0,0,0,0.4)", borderBottom:`1px solid ${T.dim}`, padding:"10px 16px", fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.accent }}>CALL STACK</div>
+            <div style={{ padding:"10px 16px", minHeight:52 }}>
+              <AnimatePresence>
+                {callStack.length === 0 ? (
+                  <span style={{ fontFamily:T.mono, fontSize:11, color:T.muted }}>empty</span>
+                ) : [...callStack].reverse().map((fn, i) => (
+                  <motion.div key={fn+i} initial={{ opacity:0, x:-10 }} animate={{ opacity:1, x:0 }} exit={{ opacity:0, x:10 }}
+                    style={{ fontFamily:T.mono, fontSize:12, color:i===0?T.accent:T.muted, padding:"4px 10px", background:i===0?`${T.accent}14`:"transparent", border:`1px solid ${i===0?T.accent+"40":T.dim}`, borderRadius:4, marginBottom:4 }}>
+                    {fn} {i===0?"← TOP":""}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </GlassCard>
+
+          {/* Stack Memory */}
           <GlassCard style={{ padding:0, overflow:"hidden", flex:1 }}>
             <div style={{ background:"rgba(0,0,0,0.4)", borderBottom:`1px solid ${T.dim}`, padding:"10px 16px", fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.neon2 }}>STACK MEMORY</div>
             <div style={{ padding:"14px 16px" }}>
@@ -900,6 +1082,8 @@ function ExecutionVisualizer({ isMobile }) {
               })}
             </div>
           </GlassCard>
+
+          {/* Terminal */}
           <GlassCard style={{ padding:0, overflow:"hidden" }}>
             <div style={{ background:"rgba(0,0,0,0.4)", borderBottom:`1px solid ${T.dim}`, padding:"10px 16px", fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.neon3 }}>TERMINAL OUTPUT</div>
             <div style={{ padding:"14px 16px", minHeight:68 }}>
@@ -908,6 +1092,7 @@ function ExecutionVisualizer({ isMobile }) {
               {running && <motion.span animate={{ opacity:[1,0,1] }} transition={{ duration:0.65, repeat:Infinity }} style={{ display:"inline-block", width:7, height:13, background:T.neon, verticalAlign:"middle", marginLeft:2 }} />}
             </div>
           </GlassCard>
+
           <AnimatePresence>
             {done && (
               <motion.div initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} exit={{ opacity:0 }}
@@ -923,20 +1108,20 @@ function ExecutionVisualizer({ isMobile }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SIDEBAR — desktop only
+// RIGHT SIDEBAR (Navigation with Next Lesson button) — previously left
 // ─────────────────────────────────────────────────────────────────────────────
-function Sidebar({ activeSection }) {
+function RightSidebar({ activeSection }) {
   return (
-    <aside style={{ width:240, minWidth:240, background:`linear-gradient(180deg,${T.bg1} 0%,${T.bg} 100%)`, borderRight:`1px solid ${T.dim}`, display:"flex", flexDirection:"column", padding:"26px 0", position:"sticky", top:0, height:"100vh", overflow:"hidden", flexShrink:0 }}>
+    <aside style={{ width:240, minWidth:240, background:`linear-gradient(180deg,${T.bg1} 0%,${T.bg} 100%)`, borderLeft:`1px solid ${T.dim}`, display:"flex", flexDirection:"column", padding:"26px 0", position:"sticky", top:0, height:"100vh", overflow:"hidden", flexShrink:0 }}>
       <div style={{ padding:"0 18px 22px" }}>
         <motion.div animate={{ textShadow:[`0 0 20px ${T.neon}60`,`0 0 30px ${T.neon}80`,`0 0 20px ${T.neon}60`] }} transition={{ duration:2.5, repeat:Infinity }}
           style={{ fontFamily:T.display, fontWeight:800, fontSize:18, letterSpacing:2, color:T.neon }}>
           C LANG
         </motion.div>
-        <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:5, color:T.muted, marginTop:2 }}>VISUAL SIM</div>
+        <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:5, color:T.muted, marginTop:2 }}>LESSON 01 / 05</div>
       </div>
       <div style={{ height:1, background:`linear-gradient(90deg,transparent,${T.neon}35,transparent)`, marginBottom:14 }} />
-      <nav>
+      <nav style={{ flex:1 }}>
         {NAV_ITEMS.map(item => {
           const isActive = activeSection===item.id;
           return (
@@ -955,17 +1140,36 @@ function Sidebar({ activeSection }) {
           );
         })}
       </nav>
-      <div style={{ marginTop:"auto", padding:"18px", fontFamily:T.mono, fontSize:10, color:T.dim, letterSpacing:2, lineHeight:1.9 }}>
-        C VISUAL SIM<br />v2.0
+      {/* Sidebar footer progress + Next button */}
+      <div style={{ padding:"14px 18px", borderTop:`1px solid ${T.dim}` }}>
+        <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.muted, marginBottom:8 }}>COURSE PROGRESS</div>
+        <div style={{ height:3, background:T.dim, borderRadius:2, overflow:"hidden" }}>
+          <motion.div style={{ height:"100%", width:"20%", background:`linear-gradient(90deg,${T.neon},${T.neon2})`, borderRadius:2 }} />
+        </div>
+        <div style={{ fontFamily:T.mono, fontSize:9, color:T.neon, marginTop:6, marginBottom:16 }}>1 / 7 complete</div>
+
+        {/* Updated Next button matching the provided design */}
+        <Link href="/c-2" passHref legacyBehavior>
+          <motion.a whileHover={{ x: 4, borderColor: T.neon }} style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            fontFamily: T.mono, fontSize: 10, letterSpacing: 2, fontWeight: 700,
+            color: T.neon, textDecoration: "none", background: "rgba(0,255,163,0.05)",
+            border: `1px solid ${T.neon}30`, borderRadius: 8, padding: "12px 16px",
+            transition: "all 0.2s",
+          }}>
+            <span>NEXT →</span>
+            <span style={{ color: T.text, letterSpacing: 0 }}>MEMORY &amp; DATA</span>
+          </motion.a>
+        </Link>
       </div>
     </aside>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// INSIGHT PANEL — desktop right panel / mobile bottom drawer
+// LEFT INSIGHT PANEL
 // ─────────────────────────────────────────────────────────────────────────────
-function InsightPanel({ isMobile, isOpen, onClose }) {
+function LeftInsightPanel({ isMobile, isOpen, onClose }) {
   const [expanded, setExpanded] = useState(null);
   const [liveTime, setLiveTime] = useState(0);
   useEffect(() => {
@@ -983,7 +1187,7 @@ function InsightPanel({ isMobile, isOpen, onClose }) {
       <motion.div style={{ background:"rgba(0,255,163,0.04)", border:`1px solid ${T.neon}18`, borderRadius:8, padding:"10px 12px", marginBottom:14 }}>
         <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:4, color:T.neon, marginBottom:8 }}>⚙ LIVE STATS</div>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-          {[{ label:"UPTIME",value:`${liveTime}s`,color:T.neon },{ label:"C KEYWORDS",value:"32",color:T.neon2 },{ label:"OPS SIM",value:opsCount,color:T.neon4 },{ label:"STAGE",value:"READY",color:T.accent }].map(({ label,value,color }) => (
+          {[{ label:"UPTIME",value:`${liveTime}s`,color:T.neon },{ label:"KEYWORDS",value:"32",color:T.neon2 },{ label:"OPS SIM",value:opsCount,color:T.neon4 },{ label:"STAGE",value:"READY",color:T.accent }].map(({ label,value,color }) => (
             <div key={label}>
               <div style={{ fontFamily:T.mono, fontSize:10, letterSpacing:2, color:T.text, fontWeight:600 }}>{label}</div>
               <motion.div key={value} initial={{ opacity:0.5, y:-4 }} animate={{ opacity:1, y:0 }}
@@ -996,8 +1200,8 @@ function InsightPanel({ isMobile, isOpen, onClose }) {
         {INSIGHTS.map((ins,i) => {
           const isExpanded = expanded===i;
           return (
-            <motion.div key={i} initial={{ opacity:0, x:18 }} animate={{ opacity:1, x:0 }} transition={{ delay:i*0.06 }}
-              whileHover={{ x:-3 }} onClick={() => setExpanded(isExpanded?null:i)}
+            <motion.div key={i} initial={{ opacity:0, x:-18 }} animate={{ opacity:1, x:0 }} transition={{ delay:i*0.06 }}
+              whileHover={{ x:3 }} onClick={() => setExpanded(isExpanded?null:i)}
               style={{ background:isExpanded?`${ins.color}0E`:(ins.tip?`${ins.color}07`:"rgba(255,255,255,0.015)"), border:`1px solid ${isExpanded?`${ins.color}40`:(ins.tip?`${ins.color}25`:T.dim)}`, borderRadius:9, padding:"12px", cursor:"pointer", transition:"border-color 0.2s,background 0.2s" }}>
               <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
                 <span style={{ fontSize:16, flexShrink:0, marginTop:1 }}>{ins.icon}</span>
@@ -1035,12 +1239,10 @@ function InsightPanel({ isMobile, isOpen, onClose }) {
       <AnimatePresence>
         {isOpen && (
           <>
-            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }}
-              onClick={onClose}
+            <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} onClick={onClose}
               style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:200, backdropFilter:"blur(4px)" }} />
             <motion.div initial={{ y:"100%" }} animate={{ y:0 }} exit={{ y:"100%" }} transition={{ type:"spring", damping:28, stiffness:300 }}
               style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:201, background:T.bg1, borderTop:`1px solid ${T.neon}30`, borderRadius:"20px 20px 0 0", padding:"20px 16px 40px", maxHeight:"80vh", overflowY:"auto" }}>
-              {/* Drag handle */}
               <div onClick={onClose} style={{ width:36, height:4, background:T.dim, borderRadius:2, margin:"0 auto 20px" }} />
               {content}
             </motion.div>
@@ -1051,7 +1253,7 @@ function InsightPanel({ isMobile, isOpen, onClose }) {
   }
 
   return (
-    <aside style={{ width:350, minWidth:350, background:`linear-gradient(180deg,${T.bg1} 0%,${T.bg} 100%)`, borderLeft:`1px solid ${T.dim}`, padding:"26px 14px", display:"flex", flexDirection:"column", gap:0, overflowY:"auto", overflowX:"hidden", position:"sticky", top:0, height:"100vh", flexShrink:0 }}>
+    <aside style={{ width:320, minWidth:320, background:`linear-gradient(180deg,${T.bg1} 0%,${T.bg} 100%)`, borderRight:`1px solid ${T.dim}`, padding:"26px 14px", display:"flex", flexDirection:"column", gap:0, overflowY:"auto", overflowX:"hidden", position:"sticky", top:0, height:"100vh", flexShrink:0 }}>
       {content}
     </aside>
   );
@@ -1074,7 +1276,6 @@ function MobileBottomNav({ activeSection, onInsightOpen }) {
           </a>
         );
       })}
-      {/* Insights button */}
       <button onClick={onInsightOpen}
         style={{ flex:"0 0 auto", minWidth:56, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"8px 4px 10px", background:"transparent", border:"none", borderTop:`2px solid transparent`, gap:3, cursor:"pointer" }}>
         <span style={{ fontSize:14 }}>💡</span>
@@ -1085,26 +1286,90 @@ function MobileBottomNav({ activeSection, onInsightOpen }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// NEXT PAGE BUTTON (for mobile/tablet only)
+// ─────────────────────────────────────────────────────────────────────────────
+function NextPageButton({ isMobile, isTablet }) {
+  const [hovered, setHovered] = useState(false);
+  const [pulse, setPulse] = useState(false);
+
+  useEffect(() => {
+    const iv = setInterval(() => setPulse(p => !p), 2000);
+    return () => clearInterval(iv);
+  }, []);
+
+  const goToNext = () => {
+    window.location.href = "/c-2";
+  };
+
+  if (!isMobile && !isTablet) return null;
+
+  return (
+    <motion.div
+      initial={{ y: 100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ delay: 1.5, duration: 0.6, ease: [0.22,1,0.36,1] }}
+      style={{
+        position: "fixed",
+        bottom: isMobile ? 68 : 16,
+        left: isMobile ? 0 : "auto",
+        right: isMobile ? 0 : 16,
+        zIndex: 200,
+        padding: isMobile ? "0 12px 8px" : "0",
+      }}
+    >
+      <motion.button
+        onClick={goToNext}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        whileTap={{ scale: 0.96 }}
+        animate={{
+          boxShadow: pulse
+            ? `0 0 30px ${T.neon}60, 0 0 60px ${T.neon}20`
+            : `0 0 15px ${T.neon}30`,
+        }}
+        transition={{ duration: 1, ease: "easeInOut" }}
+        style={{
+          width: isMobile ? "100%" : "auto",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 12,
+          fontFamily: T.display, fontWeight: 700,
+          fontSize: "clamp(11px,3vw,13px)", letterSpacing: 3,
+          color: "#000",
+          background: `linear-gradient(135deg, ${T.neon}, ${T.neon2})`,
+          border: "none", borderRadius: isMobile ? 10 : 12,
+          padding: "14px 28px",
+          cursor: "pointer",
+        }}
+      >
+        <span>NEXT: MEMORY & DATA</span>
+        <motion.span animate={{ x: hovered ? 4 : 0 }} transition={{ type:"spring", stiffness:300 }}
+          style={{ fontSize: 18 }}>→</motion.span>
+        <span style={{ fontFamily: T.mono, fontSize: 9, opacity: 0.7, letterSpacing: 2 }}>LESSON 02</span>
+      </motion.button>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ROOT PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 export default function CIntroPage() {
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
-  const showSidebar = isDesktop;
-  const showInsightPanel = isDesktop;
+  const showLeftPanel = isDesktop;      // Insight panel on left
+  const showRightSidebar = isDesktop;   // Navigation on right
   const [activeSection, setActiveSection] = useState("hero");
   const [insightOpen, setInsightOpen] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => { entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }); },
-      { threshold:0.3 }
+      { threshold: 0.3 }
     );
-    NAV_ITEMS.forEach(item => { const el=document.getElementById(item.id); if (el) observer.observe(el); });
+    NAV_ITEMS.forEach(item => { const el = document.getElementById(item.id); if (el) observer.observe(el); });
     return () => observer.disconnect();
   }, []);
 
   const mainPadding = isMobile ? "0 16px" : isTablet ? "0 24px" : "0 36px";
-  const bottomPad   = isMobile ? 80 : 0; // room for bottom nav
+  const bottomPad = isMobile ? 148 : isTablet ? 88 : 0;
 
   return (
     <>
@@ -1120,8 +1385,10 @@ export default function CIntroPage() {
       `}</style>
 
       <div style={{ display:"flex", height:isMobile||isTablet?"auto":"100vh", overflow:isMobile||isTablet?"visible":"hidden", background:T.bg }}>
-        {showSidebar && <Sidebar activeSection={activeSection} />}
+        {/* LEFT: Insight Panel */}
+        {showLeftPanel && <LeftInsightPanel isMobile={false} isOpen={false} onClose={() => {}} />}
 
+        {/* MAIN CONTENT */}
         <main style={{ flex:7, overflowY:isMobile||isTablet?"visible":"auto", overflowX:"hidden", minWidth:0, paddingBottom:bottomPad }}>
           <div style={{ maxWidth:"100%", padding:mainPadding }}>
             <HeroSection isMobile={isMobile} />
@@ -1130,20 +1397,24 @@ export default function CIntroPage() {
             <KeywordsIdentifiers isMobile={isMobile} />
             <CompilationPipeline isMobile={isMobile} />
             <ExecutionVisualizer isMobile={isMobile} />
-            <div style={{ height:80 }} />
+            <div style={{ height:48 }} />
           </div>
         </main>
 
-        {showInsightPanel && <InsightPanel isMobile={false} isOpen={false} onClose={() => {}} />}
+        {/* RIGHT: Navigation Sidebar */}
+        {showRightSidebar && <RightSidebar activeSection={activeSection} />}
       </div>
 
-      {/* Mobile: bottom nav + drawer */}
+      {/* Mobile nav + drawer */}
       {(isMobile || isTablet) && (
         <>
           <MobileBottomNav activeSection={activeSection} onInsightOpen={() => setInsightOpen(true)} />
-          <InsightPanel isMobile={true} isOpen={insightOpen} onClose={() => setInsightOpen(false)} />
+          <LeftInsightPanel isMobile={true} isOpen={insightOpen} onClose={() => setInsightOpen(false)} />
         </>
       )}
+
+      {/* Next button only for mobile/tablet (desktop version is inside right sidebar) */}
+      <NextPageButton isMobile={isMobile} isTablet={isTablet} />
     </>
   );
 }

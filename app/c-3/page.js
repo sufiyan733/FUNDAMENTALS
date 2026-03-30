@@ -14,6 +14,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import { motion, AnimatePresence, useAnimation, useMotionValue, useTransform, useSpring } from "framer-motion";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import Link from "next/link";
 import { Stars, Float, Line, Html, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { gsap } from "gsap";
@@ -2670,81 +2671,9 @@ function HeroSection() {
 // ─────────────────────────────────────────────────────────────────────────────
 // SIDEBAR
 // ─────────────────────────────────────────────────────────────────────────────
+
+
 function Sidebar({ activeSection }) {
-  return (
-    <aside style={{
-      width: 220, minWidth: 220, flexShrink: 0,
-      background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
-      borderRight: `1px solid ${T.dim}`,
-      display: "flex", flexDirection: "column",
-      padding: "26px 0", position: "sticky",
-      top: 0, height: "100vh", overflow: "hidden",
-    }}>
-      <div style={{ padding: "0 16px 20px" }}>
-        <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 16, letterSpacing: 2, color: T.neon }}>
-          C LANG
-        </div>
-        <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.muted, marginTop: 2 }}>
-          CH.3 · LOGIC ENGINE
-        </div>
-      </div>
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}35, transparent)`, marginBottom: 12 }} />
-      <nav style={{ overflowY: "auto", flex: 1 }}>
-        {NAV_ITEMS.map(item => {
-          const isActive = activeSection === item.id;
-          return (
-            <motion.a
-              key={item.id}
-              href={`#${item.id}`}
-              onClick={e => { e.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" }); }}
-              animate={{ color: isActive ? T.neon : T.muted, background: isActive ? `${T.neon}07` : "transparent", borderLeftColor: isActive ? T.neon : "transparent" }}
-              whileHover={{ color: T.text, paddingLeft: 22 }}
-              transition={{ duration: 0.2 }}
-              style={{
-                display: "flex", alignItems: "center", gap: 8,
-                padding: "9px 16px", fontFamily: T.mono, fontSize: 10,
-                fontWeight: 700, letterSpacing: 1.5, textDecoration: "none",
-                borderLeft: "2px solid transparent",
-              }}
-            >
-              <span style={{ fontSize: 10 }}>{item.icon}</span>
-              <div>
-                <div style={{ fontSize: 7, opacity: 0.4, marginBottom: 1 }}>{item.num}</div>
-                {item.label}
-              </div>
-              {isActive && (
-                <motion.div layoutId="nav-dot-c3" style={{ width: 4, height: 4, borderRadius: "50%", background: T.neon, marginLeft: "auto" }} />
-              )}
-            </motion.a>
-          );
-        })}
-      </nav>
-      <div style={{ padding: "14px 16px", fontFamily: T.mono, fontSize: 9, color: T.dim, letterSpacing: 2, lineHeight: 1.9 }}>
-        C VISUAL SIM<br />v3.0 · /c3
-      </div>
-    </aside>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// RIGHT PANEL — Deep Thinking Panel
-// ─────────────────────────────────────────────────────────────────────────────
-const DEEP_PANELS = {
-  hero:       { title: "Chapter 3", color: T.neon,   why: "Operators and control flow are the backbone of all C programs. Without them, code is just declarations.", mistake: "Jumping ahead to functions without mastering control flow = fragile code.", model: "Think of C as a CPU director: operators compute, conditions route, loops repeat." },
-  arithmetic: { title: "Arithmetic", color: T.neon,  why: "CPU has native ADD/SUB/MUL/DIV instructions. C maps directly to these — zero abstraction.", mistake: "Integer division truncates toward zero. 7/2 = 3, not 3.5. Endless source of bugs.", model: "Numbers are just bit patterns. Operations rearrange bits in defined ways." },
-  relational: { title: "Relational", color: T.neon2,  why: "Comparison generates a 1/0 integer. This flows into if/while conditions as truthy/falsy.", mistake: "if(x = 5) assigns 5 to x and always runs. Single = is the most common C bug.", model: "Every condition is just an integer: 0 = stop, anything else = go." },
-  logical:    { title: "Logical", color: T.accent,    why: "Short-circuit evaluation prevents crashes. if(ptr && ptr->val) is safe because of &&.", mistake: "Confusing & (bitwise AND) with && (logical AND). They behave very differently.", model: "Logic gates from digital circuits. Same truth tables, same behavior." },
-  assignment: { title: "Assignment", color: T.neon4,  why: "+= is syntactic sugar — compiler generates identical code to x = x + 3.", mistake: "Forgetting that = is right-associative: a = b = 5 sets both, but reads right-to-left.", model: "= is a statement. The right side is fully evaluated, then stored in the left." },
-  incdec:     { title: "Inc/Dec", color: T.neon3,     why: "i++ compiles to a single INC instruction on x86. Fastest way to add 1.", mistake: "In expressions: int a = i++ gives a=5,i=6. int a = ++i gives a=6,i=6. Different!", model: "Pre: increment happens in-place. Post: old value is copied, then incremented." },
-  precedence: { title: "Precedence", color: "#7EB5FF", why: "Compiler uses these rules to build the AST (Abstract Syntax Tree) for evaluation.", mistake: "Assuming left-to-right when operators mix. 3+5*2 ≠ (3+5)*2.", model: "When in doubt: add parentheses. They're free and eliminate ambiguity." },
-  ifelse:     { title: "If / Else", color: T.neon,    why: "Compiles to CMP + conditional JMP instructions. No overhead — pure CPU branching.", mistake: "if without braces: only the NEXT statement is conditional. else binds to nearest if.", model: "Decision tree. One path chosen, rest skipped. Mutually exclusive branches." },
-  switchcase: { title: "Switch", color: T.neon2,      why: "Compiler builds a jump table — O(1) dispatch vs O(n) if-else chains.", mistake: "Missing break causes fallthrough — execution runs into the NEXT case's body.", model: "A router: value comes in, gets matched, signal exits at the right port." },
-  loops:      { title: "Loops", color: T.neon4,       why: "for = init+condition+increment in one line. while = condition only. do-while = body first.", mistake: "Infinite loops from forgetting i++ or wrong condition. Off-by-one (i < n vs i <= n).", model: "Loops are just conditional jumps in disguise. The CPU jumps back to the condition." },
-  jumps:      { title: "Jump", color: T.neon3,        why: "break and continue compile to unconditional JMP instructions — instant exit.", mistake: "break in nested loops only exits the INNERMOST loop. Not all loops.", model: "Early exit is NOT bad practice. It can make code cleaner and faster." },
-  engine:     { title: "Full Engine", color: T.neon,  why: "Real programs combine all of these: operators inside conditions inside loops.", mistake: "Complex expressions inside loop conditions — compute them once outside for clarity.", model: "Break any program into: data (variables) + logic (operators) + flow (control)." },
-};
-
-function RightPanel({ activeSection }) {
   const data = DEEP_PANELS[activeSection] || DEEP_PANELS.hero;
   const [liveTime, setLiveTime] = useState(0);
 
@@ -2757,7 +2686,7 @@ function RightPanel({ activeSection }) {
     <aside style={{
       width: 320, minWidth: 320, flexShrink: 0,
       background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
-      borderLeft: `1px solid ${T.dim}`,
+      borderRight: `1px solid ${T.dim}`,       // ← was borderLeft, now borderRight for left sidebar
       padding: "26px 14px",
       display: "flex", flexDirection: "column", gap: 12,
       overflowY: "auto", overflowX: "hidden",
@@ -2795,9 +2724,9 @@ function RightPanel({ activeSection }) {
       <AnimatePresence mode="wait">
         <motion.div
           key={activeSection}
-          initial={{ opacity: 0, x: 14 }}
+          initial={{ opacity: 0, x: -14 }}    // animate from left
           animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -14 }}
+          exit={{ opacity: 0, x: 14 }}
           transition={{ duration: 0.3 }}
           style={{ display: "flex", flexDirection: "column", gap: 10 }}
         >
@@ -2843,36 +2772,141 @@ function RightPanel({ activeSection }) {
           </div>
         </motion.div>
       </AnimatePresence>
-
-      {/* Chapter navigation */}
-      <div style={{ marginTop: "auto" }}>
-        <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.dim}, transparent)`, marginBottom: 12 }} />
-        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.muted, marginBottom: 8 }}>CHAPTER NAVIGATION</div>
-        <div style={{ display: "flex", gap: 8 }}>
-          {[
-            { label: "← C-Intro", href: "/c-intro", color: T.muted },
-            { label: "C2 →", href: "/c2", color: T.muted },
-          ].map(link => (
-            <motion.a
-              key={link.href}
-              href={link.href}
-              whileHover={{ color: T.neon }}
-              style={{
-                flex: 1, textAlign: "center", padding: "7px", borderRadius: 6,
-                background: "transparent", border: `1px solid ${T.dim}`,
-                fontFamily: T.mono, fontSize: 9, color: T.muted,
-                textDecoration: "none", transition: "color 0.2s",
-              }}
-            >
-              {link.label}
-            </motion.a>
-          ))}
-        </div>
-      </div>
     </aside>
   );
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RIGHT PANEL — Deep Thinking Panel
+// ─────────────────────────────────────────────────────────────────────────────
+const DEEP_PANELS = {
+  hero:       { title: "Chapter 3", color: T.neon,   why: "Operators and control flow are the backbone of all C programs. Without them, code is just declarations.", mistake: "Jumping ahead to functions without mastering control flow = fragile code.", model: "Think of C as a CPU director: operators compute, conditions route, loops repeat." },
+  arithmetic: { title: "Arithmetic", color: T.neon,  why: "CPU has native ADD/SUB/MUL/DIV instructions. C maps directly to these — zero abstraction.", mistake: "Integer division truncates toward zero. 7/2 = 3, not 3.5. Endless source of bugs.", model: "Numbers are just bit patterns. Operations rearrange bits in defined ways." },
+  relational: { title: "Relational", color: T.neon2,  why: "Comparison generates a 1/0 integer. This flows into if/while conditions as truthy/falsy.", mistake: "if(x = 5) assigns 5 to x and always runs. Single = is the most common C bug.", model: "Every condition is just an integer: 0 = stop, anything else = go." },
+  logical:    { title: "Logical", color: T.accent,    why: "Short-circuit evaluation prevents crashes. if(ptr && ptr->val) is safe because of &&.", mistake: "Confusing & (bitwise AND) with && (logical AND). They behave very differently.", model: "Logic gates from digital circuits. Same truth tables, same behavior." },
+  assignment: { title: "Assignment", color: T.neon4,  why: "+= is syntactic sugar — compiler generates identical code to x = x + 3.", mistake: "Forgetting that = is right-associative: a = b = 5 sets both, but reads right-to-left.", model: "= is a statement. The right side is fully evaluated, then stored in the left." },
+  incdec:     { title: "Inc/Dec", color: T.neon3,     why: "i++ compiles to a single INC instruction on x86. Fastest way to add 1.", mistake: "In expressions: int a = i++ gives a=5,i=6. int a = ++i gives a=6,i=6. Different!", model: "Pre: increment happens in-place. Post: old value is copied, then incremented." },
+  precedence: { title: "Precedence", color: "#7EB5FF", why: "Compiler uses these rules to build the AST (Abstract Syntax Tree) for evaluation.", mistake: "Assuming left-to-right when operators mix. 3+5*2 ≠ (3+5)*2.", model: "When in doubt: add parentheses. They're free and eliminate ambiguity." },
+  ifelse:     { title: "If / Else", color: T.neon,    why: "Compiles to CMP + conditional JMP instructions. No overhead — pure CPU branching.", mistake: "if without braces: only the NEXT statement is conditional. else binds to nearest if.", model: "Decision tree. One path chosen, rest skipped. Mutually exclusive branches." },
+  switchcase: { title: "Switch", color: T.neon2,      why: "Compiler builds a jump table — O(1) dispatch vs O(n) if-else chains.", mistake: "Missing break causes fallthrough — execution runs into the NEXT case's body.", model: "A router: value comes in, gets matched, signal exits at the right port." },
+  loops:      { title: "Loops", color: T.neon4,       why: "for = init+condition+increment in one line. while = condition only. do-while = body first.", mistake: "Infinite loops from forgetting i++ or wrong condition. Off-by-one (i < n vs i <= n).", model: "Loops are just conditional jumps in disguise. The CPU jumps back to the condition." },
+  jumps:      { title: "Jump", color: T.neon3,        why: "break and continue compile to unconditional JMP instructions — instant exit.", mistake: "break in nested loops only exits the INNERMOST loop. Not all loops.", model: "Early exit is NOT bad practice. It can make code cleaner and faster." },
+  engine:     { title: "Full Engine", color: T.neon,  why: "Real programs combine all of these: operators inside conditions inside loops.", mistake: "Complex expressions inside loop conditions — compute them once outside for clarity.", model: "Break any program into: data (variables) + logic (operators) + flow (control)." },
+};
+
+
+function RightPanel({ activeSection }) {
+  return (
+    <aside style={{
+      width: 260, minWidth: 260,
+      background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
+      borderLeft: `1px solid ${T.dim}`,       // unchanged – correct for right sidebar
+      display: "flex", flexDirection: "column",
+      padding: "28px 0",
+      position: "sticky", top: 0, height: "100vh",
+      overflow: "hidden", flexShrink: 0,
+    }}>
+      {/* Header */}
+      <div style={{ padding: "0 20px 24px" }}>
+        <motion.div
+          animate={{ textShadow: [`0 0 22px ${T.neon}70`, `0 0 32px ${T.neon}90`, `0 0 22px ${T.neon}70`] }}
+          transition={{ duration: 2.5, repeat: Infinity }}
+          style={{ fontFamily: T.display, fontWeight: 800, fontSize: 20, letterSpacing: 2, color: T.neon }}
+        >
+          C
+        </motion.div>
+        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 5, color: T.muted, marginTop: 4 }}>LANGUAGE</div>
+      </div>
+
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}35, transparent)`, marginBottom: 16 }} />
+
+      {/* Navigation */}
+      <nav style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
+        {NAV_ITEMS.map(item => {
+          const isActive = activeSection === item.id;
+          return (
+            <motion.a
+              key={item.id}
+              href={`#${item.id}`}
+              onClick={e => { e.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" }); }}
+              animate={{ color: isActive ? T.neon : T.muted, borderLeftColor: isActive ? T.neon : "transparent", background: isActive ? `${T.neon}07` : "transparent" }}
+              whileHover={{ color: T.text, paddingLeft: 26 }}
+              transition={{ duration: 0.2 }}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 20px", fontFamily: T.mono, fontSize: 12, fontWeight: 700, letterSpacing: 2, textDecoration: "none", borderLeft: "2px solid transparent", transition: "all 0.2s", cursor: "pointer" }}
+            >
+              <span style={{ fontSize: 13, flexShrink: 0 }}>{item.icon}</span>
+              <div>
+                <div style={{ fontSize: 8, opacity: 0.45, marginBottom: 2 }}>{item.num}</div>
+                {item.label}
+              </div>
+              {isActive && (
+                <motion.div layoutId="nav-indicator-2"
+                  style={{ width: 5, height: 5, borderRadius: "50%", background: T.neon, marginLeft: "auto", flexShrink: 0 }} />
+              )}
+            </motion.a>
+          );
+        })}
+      </nav>
+
+      {/* Progress & Prev/Next Section */}
+      <div style={{
+        marginTop: "auto",
+        padding: "16px 16px 20px",
+        borderTop: `1px solid ${T.dim}`,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}>
+        <div>
+          <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 3, color: T.muted, marginBottom: 6 }}>
+            COURSE PROGRESS
+          </div>
+          <div style={{ height: 2, background: T.dim, borderRadius: 2, overflow: "hidden" }}>
+            <motion.div
+              style={{ height: "100%", width: "42.8%", background: `linear-gradient(90deg, ${T.neon}, ${T.neon2})`, borderRadius: 2 }}
+            />
+          </div>
+          <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon, marginTop: 4 }}>3 / 7 complete</div>
+        </div>
+
+        {/* Prev button */}
+        <Link href="/c-2" passHref legacyBehavior>
+          <motion.a
+            whileHover={{ x: -4, borderColor: T.neon }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              fontFamily: T.mono, fontSize: 9, letterSpacing: 1.5, fontWeight: 700,
+              color: T.neon2, textDecoration: "none", background: "rgba(0,212,255,0.05)",
+              border: `1px solid ${T.neon2}30`, borderRadius: 6, padding: "8px 12px",
+              transition: "all 0.2s",
+            }}
+          >
+            <span>← PREV</span>
+            <span style={{ color: T.text, letterSpacing: 0, fontSize: 8 }}>MEMORY &amp; DATA</span>
+          </motion.a>
+        </Link>
+
+        {/* Next button */}
+        <Link href="/c-4" passHref legacyBehavior>
+          <motion.a
+            whileHover={{ x: 4, borderColor: T.neon }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              fontFamily: T.mono, fontSize: 9, letterSpacing: 1.5, fontWeight: 700,
+              color: T.neon, textDecoration: "none", background: "rgba(0,255,163,0.05)",
+              border: `1px solid ${T.neon}30`, borderRadius: 6, padding: "8px 12px",
+              transition: "all 0.2s",
+            }}
+          >
+            <span>NEXT →</span>
+            <span style={{ color: T.text, letterSpacing: 0, fontSize: 8 }}>FUNCTIONS / ARRAYS / STRINGS</span>
+          </motion.a>
+        </Link>
+      </div>
+    </aside>
+  );
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // ROOT PAGE
 // ─────────────────────────────────────────────────────────────────────────────
