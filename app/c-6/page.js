@@ -1276,7 +1276,7 @@ function RightSidebar({ active }) {
         <div style={{height:2,background:T.dim,borderRadius:2,overflow:"hidden"}}>
           <motion.div style={{height:"100%",width:"60%",background:`linear-gradient(90deg,${T.neon},${T.neon2})`,borderRadius:2}}/>
         </div>
-        <div style={{fontFamily:T.mono,fontSize:8,color:T.neon,marginBottom:4}}>6 / 10 chapters</div>
+        <div style={{fontFamily:T.mono,fontSize:8,color:T.neon,marginBottom:4}}>6 / 7 chapters</div>
 
         <motion.a href="/c-5" whileHover={{x:-3,borderColor:T.neon}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",fontFamily:T.mono,fontSize:8,letterSpacing:1.5,fontWeight:700,color:T.neon2,textDecoration:"none",background:`rgba(0,229,255,0.05)`,border:`1px solid ${T.neon2}30`,borderRadius:6,padding:"7px 11px",transition:"all 0.2s"}}>
           <span>← PREV</span><span style={{color:T.text,letterSpacing:0,fontSize:8}}>Pointers & Structs</span>
