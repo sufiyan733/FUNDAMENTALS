@@ -1672,72 +1672,9 @@ function HeroSection5() {
 // SIDEBAR
 // ─────────────────────────────────────────────────────────────────────────────
 function Sidebar5({ activeSection }) {
-  return (
-    <aside style={{
-      width: 215, minWidth: 215, flexShrink: 0,
-      background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
-      borderRight: `1px solid ${T.dim}`,
-      display: "flex", flexDirection: "column",
-      padding: "26px 0", position: "sticky", top: 0, height: "100vh", overflow: "hidden",
-    }}>
-      <div style={{ padding: "0 18px 20px" }}>
-        <div style={{ fontFamily: T.display, fontWeight: 400, fontSize: 18, letterSpacing: 4, color: T.neon }}>C LANG</div>
-        <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.muted, marginTop: 2 }}>CH.5 · POINTERS</div>
-      </div>
-      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}40, transparent)`, marginBottom: 14 }} />
-      <nav style={{ overflowY: "auto", flex: 1 }}>
-        {NAV_ITEMS.map(item => {
-          const isActive = activeSection === item.id;
-          return (
-            <motion.a key={item.id} href={`#${item.id}`}
-              onClick={e => { e.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" }); }}
-              animate={{ color: isActive ? T.neon : T.muted, background: isActive ? `${T.neon}08` : "transparent" }}
-              whileHover={{ color: T.text, paddingLeft: 24 }}
-              transition={{ duration: 0.18 }}
-              style={{
-                display: "flex", alignItems: "center", gap: 9,
-                padding: "10px 18px", fontFamily: T.mono, fontSize: 10,
-                fontWeight: 600, letterSpacing: 1.5, textDecoration: "none",
-                borderLeft: `2px solid ${isActive ? T.neon : "transparent"}`,
-              }}>
-              <span style={{ fontSize: 11 }}>{item.icon}</span>
-              <div>
-                <div style={{ fontSize: 7, opacity: 0.4, marginBottom: 1 }}>{item.num}</div>
-                {item.label}
-              </div>
-              {isActive && (
-                <motion.div layoutId="nav-dot-c5"
-                  style={{ width: 4, height: 4, borderRadius: "50%", background: T.neon, marginLeft: "auto" }} />
-              )}
-            </motion.a>
-          );
-        })}
-      </nav>
-      <div style={{ padding: "14px 18px", fontFamily: T.mono, fontSize: 9, color: T.dim, letterSpacing: 2, lineHeight: 2 }}>
-        C VISUAL SIM<br />v5.0
-      </div>
-    </aside>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// RIGHT PANEL (minimal text, with actual prev/next navigation)
-// ─────────────────────────────────────────────────────────────────────────────
-const DEEP5 = {
-  hero:        { title: "Chapter 5",   color: T.neon,   why: "Pointers, structs and dynamic memory. Master these = understand all languages.", mistake: "Treating pointers as magic. They're just integers holding addresses.", model: "Every variable is a box. A pointer is a sticky note with the address of a box." },
-  pointers:    { title: "Pointers",    color: T.neon,   why: "Pointer holds an address. That's all.", mistake: "Uninitialized pointer → crash.", model: "int *p: p holds address, *p is the value there." },
-  "addr-deref":{ title: "& and *",     color: T.neon2,  why: "& gives address, * follows address.", mistake: "Confusing * in type vs * expression.", model: "& goes up, * goes down." },
-  "ptr-arrays":{ title: "Ptr+Arrays",  color: T.neon4,  why: "arr[i] == *(arr+i).", mistake: "sizeof(ptr) != sizeof(arr).", model: "Array name = pointer that can't move." },
-  structs:     { title: "Structs",     color: T.accent, why: "Group data together.", mistake: "Cannot compare structs with ==.", model: "Blueprint and house." },
-  unions:      { title: "Unions",      color: T.neon3,  why: "Share memory, type punning.", mistake: "Write one, read another = undefined behavior.", model: "One box with many labels." },
-  preproc:     { title: "Preprocessor",color: T.neon2,  why: "Text substitution before compile.", mistake: "#define SQ(x) x*x → precedence bugs.", model: "Find & replace." },
-  dynmem:      { title: "Dyn Memory",  color: T.neon2,  why: "Heap allocation for variable sizes.", mistake: "Memory leak = forgot free().", model: "Stack auto, heap manual." },
-  engine:      { title: "Full Engine", color: T.neon,   why: "Real C programs combine all.", mistake: "Overusing pointers.", model: "Master C chapter 5 = understand internals of higher-level languages." },
-};
-
-function RightPanel5({ activeSection }) {
   const data = DEEP5[activeSection] || DEEP5.hero;
   const [liveTime, setLiveTime] = useState(0);
+
   useEffect(() => {
     const iv = setInterval(() => setLiveTime(t => t + 1), 1000);
     return () => clearInterval(iv);
@@ -1747,7 +1684,7 @@ function RightPanel5({ activeSection }) {
     <aside style={{
       width: 285, minWidth: 285, flexShrink: 0,
       background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
-      borderLeft: `1px solid ${T.dim}`,
+      borderRight: `1px solid ${T.dim}`,   // was borderLeft → now borderRight
       padding: "26px 14px",
       display: "flex", flexDirection: "column", gap: 12,
       overflowY: "auto", overflowX: "hidden",
@@ -1802,30 +1739,144 @@ function RightPanel5({ activeSection }) {
           </div>
         </motion.div>
       </AnimatePresence>
+    </aside>
+  );
+}
 
-      <div style={{ marginTop: "auto" }}>
-        <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.dim}, transparent)`, marginBottom: 12 }} />
-        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.muted, marginBottom: 8 }}>CHAPTER NAVIGATION</div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <Link href="/c-4" passHref legacyBehavior>
-            <motion.a whileHover={{ color: T.neon, scale: 1.02 }} style={{
-              flex: 1, textAlign: "center", padding: "7px", borderRadius: 6,
-              background: "transparent", border: `1px solid ${T.dim}`,
-              fontFamily: T.mono, fontSize: 9, color: T.muted, textDecoration: "none", cursor: "pointer",
-            }}>
-              ← C4
+// ─────────────────────────────────────────────────────────────────────────────
+// RIGHT PANEL (minimal text, with actual prev/next navigation)
+// ─────────────────────────────────────────────────────────────────────────────
+const DEEP5 = {
+  hero:        { title: "Chapter 5",   color: T.neon,   why: "Pointers, structs and dynamic memory. Master these = understand all languages.", mistake: "Treating pointers as magic. They're just integers holding addresses.", model: "Every variable is a box. A pointer is a sticky note with the address of a box." },
+  pointers:    { title: "Pointers",    color: T.neon,   why: "Pointer holds an address. That's all.", mistake: "Uninitialized pointer → crash.", model: "int *p: p holds address, *p is the value there." },
+  "addr-deref":{ title: "& and *",     color: T.neon2,  why: "& gives address, * follows address.", mistake: "Confusing * in type vs * expression.", model: "& goes up, * goes down." },
+  "ptr-arrays":{ title: "Ptr+Arrays",  color: T.neon4,  why: "arr[i] == *(arr+i).", mistake: "sizeof(ptr) != sizeof(arr).", model: "Array name = pointer that can't move." },
+  structs:     { title: "Structs",     color: T.accent, why: "Group data together.", mistake: "Cannot compare structs with ==.", model: "Blueprint and house." },
+  unions:      { title: "Unions",      color: T.neon3,  why: "Share memory, type punning.", mistake: "Write one, read another = undefined behavior.", model: "One box with many labels." },
+  preproc:     { title: "Preprocessor",color: T.neon2,  why: "Text substitution before compile.", mistake: "#define SQ(x) x*x → precedence bugs.", model: "Find & replace." },
+  dynmem:      { title: "Dyn Memory",  color: T.neon2,  why: "Heap allocation for variable sizes.", mistake: "Memory leak = forgot free().", model: "Stack auto, heap manual." },
+  engine:      { title: "Full Engine", color: T.neon,   why: "Real C programs combine all.", mistake: "Overusing pointers.", model: "Master C chapter 5 = understand internals of higher-level languages." },
+};
+
+function RightPanel5({ activeSection }) {
+  const prevTopic = "FUNCTIONS & SCOPE";    // goes to /c-4
+  const nextTopic = "DYNAMIC MEMORY";       // goes to /c-6
+
+  return (
+    <aside style={{
+      width: 215, minWidth: 215, flexShrink: 0,
+      background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
+      borderLeft: `1px solid ${T.dim}`,    // was borderRight → now borderLeft
+      display: "flex", flexDirection: "column",
+      padding: "26px 0", position: "sticky", top: 0, height: "100vh", overflow: "hidden",
+    }}>
+      {/* Header */}
+      <div style={{ padding: "0 18px 20px" }}>
+        <div style={{ fontFamily: T.display, fontWeight: 400, fontSize: 18, letterSpacing: 4, color: T.neon }}>C LANG</div>
+        <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.muted, marginTop: 2 }}>CH.5 · POINTERS</div>
+      </div>
+
+      <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}40, transparent)`, marginBottom: 14 }} />
+
+      {/* Navigation */}
+      <nav style={{ overflowY: "auto", flex: 1 }}>
+        {NAV_ITEMS.map(item => {
+          const isActive = activeSection === item.id;
+          return (
+            <motion.a key={item.id} href={`#${item.id}`}
+              onClick={e => { e.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" }); }}
+              animate={{ color: isActive ? T.neon : T.muted, background: isActive ? `${T.neon}08` : "transparent" }}
+              whileHover={{ color: T.text, paddingLeft: 24 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                display: "flex", alignItems: "center", gap: 9,
+                padding: "10px 18px", fontFamily: T.mono, fontSize: 10,
+                fontWeight: 600, letterSpacing: 1.5, textDecoration: "none",
+                borderLeft: `2px solid ${isActive ? T.neon : "transparent"}`,
+              }}>
+              <span style={{ fontSize: 11 }}>{item.icon}</span>
+              <div>
+                <div style={{ fontSize: 7, opacity: 0.4, marginBottom: 1 }}>{item.num}</div>
+                {item.label}
+              </div>
+              {isActive && (
+                <motion.div layoutId="nav-dot-c5"
+                  style={{ width: 4, height: 4, borderRadius: "50%", background: T.neon, marginLeft: "auto" }} />
+              )}
             </motion.a>
-          </Link>
-          <Link href="/c-6" passHref legacyBehavior>
-            <motion.a whileHover={{ color: T.neon, scale: 1.02 }} style={{
-              flex: 1, textAlign: "center", padding: "7px", borderRadius: 6,
-              background: "transparent", border: `1px solid ${T.dim}`,
-              fontFamily: T.mono, fontSize: 9, color: T.muted, textDecoration: "none", cursor: "pointer",
-            }}>
-              C6 →
-            </motion.a>
-          </Link>
+          );
+        })}
+      </nav>
+
+      {/* Progress & Prev/Next Buttons */}
+      <div style={{
+        marginTop: "auto",
+        padding: "14px 18px",
+        borderTop: `1px solid ${T.dim}`,
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+      }}>
+        {/* Progress: 5/7 */}
+        <div>
+          <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 3, color: T.muted, marginBottom: 6 }}>
+            COURSE PROGRESS
+          </div>
+          <div style={{ height: 2, background: T.dim, borderRadius: 2, overflow: "hidden" }}>
+            <motion.div
+              style={{
+                height: "100%",
+                width: "71.4%",   // 5/7 ≈ 71.4%
+                background: `linear-gradient(90deg, ${T.neon}, ${T.neon2})`,
+                borderRadius: 2,
+              }}
+            />
+          </div>
+          <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon, marginTop: 4 }}>5 / 7 complete</div>
         </div>
+
+        {/* Prev button - to /c-4 */}
+        <Link href="/c-4" passHref legacyBehavior>
+          <motion.a
+            whileHover={{ x: -4, borderColor: T.neon }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              fontFamily: T.mono, fontSize: 8, letterSpacing: 1.5, fontWeight: 700,
+              color: T.neon2, textDecoration: "none", background: "rgba(0,212,255,0.05)",
+              border: `1px solid ${T.neon2}30`, borderRadius: 6, padding: "6px 10px",
+              transition: "all 0.2s",
+            }}
+          >
+            <span>← PREV</span>
+            <span style={{ color: T.text, letterSpacing: 0, fontSize: 7 }}>
+              {prevTopic}
+            </span>
+          </motion.a>
+        </Link>
+
+        {/* Next button - to /c-6 */}
+        <Link href="/c-6" passHref legacyBehavior>
+          <motion.a
+            whileHover={{ x: 4, borderColor: T.neon }}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              fontFamily: T.mono, fontSize: 8, letterSpacing: 1.5, fontWeight: 700,
+              color: T.neon, textDecoration: "none", background: "rgba(0,255,163,0.05)",
+              border: `1px solid ${T.neon}30`, borderRadius: 6, padding: "6px 10px",
+              transition: "all 0.2s",
+            }}
+          >
+            <span>NEXT →</span>
+            <span style={{ color: T.text, letterSpacing: 0, fontSize: 7 }}>
+              {nextTopic}
+            </span>
+          </motion.a>
+        </Link>
+      </div>
+
+      {/* Footer version text */}
+      <div style={{ padding: "14px 18px", fontFamily: T.mono, fontSize: 9, color: T.dim, letterSpacing: 2, lineHeight: 2 }}>
+        C VISUAL SIM<br />v5.0
       </div>
     </aside>
   );
