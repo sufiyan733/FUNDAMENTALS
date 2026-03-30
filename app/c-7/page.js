@@ -1,2330 +1,1357 @@
-// "use client";
-
-// import { useState, useEffect, useRef } from "react";
-// import { motion, AnimatePresence } from "framer-motion";
-// import Link from "next/link";
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // DESIGN TOKENS — matching C5 theme exactly
-// // ─────────────────────────────────────────────────────────────────────────────
-// const T = {
-//   bg:      "#020509",
-//   bg1:     "#050A12",
-//   bg2:     "#08111F",
-//   glass:   "rgba(5,12,25,0.82)",
-//   border:  "rgba(255,100,0,0.10)",
-//   neon:    "#FF6400",   // primary orange
-//   neon2:   "#00E5FF",   // cyan
-//   neon3:   "#FF2D6B",   // pink/red
-//   neon4:   "#B4FF00",   // lime
-//   accent:  "#A855F7",   // purple
-//   text:    "#E8ECF4",
-//   muted:   "#3A506B",
-//   dim:     "#111D2A",
-//   mono:    "'Fira Code', monospace",
-//   display: "'Bebas Neue', sans-serif",
-// };
-
-// const NAV_ITEMS = [
-//   { id: "hero",       label: "INTRO",      num: "00", icon: "◈" },
-//   { id: "memory",     label: "MEMORY",     num: "01", icon: "⬜" },
-//   { id: "pointers",   label: "POINTERS",   num: "02", icon: "→" },
-//   { id: "deref",      label: "DEREF",      num: "03", icon: "*" },
-//   { id: "recursion",  label: "RECURSION",  num: "04", icon: "↻" },
-//   { id: "callstack",  label: "CALL STACK", num: "05", icon: "⧖" },
-//   { id: "engine",     label: "ENGINE",     num: "06", icon: "🚀" },
-// ];
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // SHARED COMPONENTS
-// // ─────────────────────────────────────────────────────────────────────────────
-// function GlassCard({ children, style = {}, hover = true, glowColor = T.neon, onClick }) {
-//   return (
-//     <motion.div
-//       onClick={onClick}
-//       whileHover={hover ? {
-//         borderColor: `${glowColor}50`,
-//         boxShadow: `0 8px 60px rgba(0,0,0,0.7), 0 0 30px ${glowColor}15`,
-//       } : {}}
-//       transition={{ type: "spring", stiffness: 280, damping: 28 }}
-//       style={{
-//         background: T.glass,
-//         border: `1px solid ${T.border}`,
-//         borderRadius: 14,
-//         backdropFilter: "blur(24px)",
-//         WebkitBackdropFilter: "blur(24px)",
-//         boxShadow: "0 4px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03)",
-//         ...style,
-//       }}
-//     >{children}</motion.div>
-//   );
-// }
-
-// function Section({ id, children, style = {} }) {
-//   return (
-//     <section id={id} style={{ padding: "72px 0", borderBottom: `1px solid ${T.dim}`, ...style }}>
-//       {children}
-//     </section>
-//   );
-// }
-
-// function SectionHeader({ num, tag, title, color = T.neon }) {
-//   return (
-//     <motion.div
-//       initial={{ opacity: 0, x: -30 }}
-//       whileInView={{ opacity: 1, x: 0 }}
-//       viewport={{ once: true, amount: 0.4 }}
-//       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-//       style={{ display: "flex", alignItems: "flex-end", gap: 20, marginBottom: 40 }}
-//     >
-//       <span style={{ fontFamily: T.mono, fontSize: 56, fontWeight: 700, color: T.dim, lineHeight: 1, letterSpacing: -2 }}>{num}</span>
-//       <div>
-//         <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color, fontWeight: 600, marginBottom: 5 }}>{tag}</div>
-//         <h2 style={{ fontFamily: T.display, fontSize: 36, fontWeight: 400, color: T.text, letterSpacing: 3, lineHeight: 1 }}>{title}</h2>
-//       </div>
-//     </motion.div>
-//   );
-// }
-
-// function CodeBlock({ lines, highlightLine = -1, filename = "main.c", style = {} }) {
-//   const linesArr = typeof lines === "string" ? lines.split("\n") : lines;
-//   return (
-//     <div style={{
-//       background: "rgba(0,0,0,0.55)", borderRadius: 12,
-//       border: `1px solid ${T.dim}`, overflow: "hidden", ...style,
-//     }}>
-//       <div style={{ padding: "8px 14px", borderBottom: `1px solid ${T.dim}`, display: "flex", gap: 6, alignItems: "center" }}>
-//         {["#FF5F57","#FEBC2E","#28C840"].map((c,i) => <div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: c }} />)}
-//         <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginLeft: 8, letterSpacing: 2 }}>{filename}</span>
-//       </div>
-//       <div style={{ padding: "14px 0", overflowX: "auto" }}>
-//         {linesArr.map((line, i) => (
-//           <motion.div key={i}
-//             animate={{ background: highlightLine === i ? `${T.neon}1A` : "transparent" }}
-//             style={{
-//               fontFamily: T.mono, fontSize: 12, lineHeight: 2,
-//               paddingLeft: highlightLine === i ? 22 : 18, paddingRight: 18,
-//               borderLeft: `3px solid ${highlightLine === i ? T.neon : "transparent"}`,
-//               color: highlightLine === i ? T.neon : T.text,
-//               transition: "all 0.25s", whiteSpace: "pre",
-//             }}>
-//             <span style={{ color: T.dim, marginRight: 16, fontSize: 9, userSelect: "none" }}>{String(i+1).padStart(2," ")}</span>
-//             {line}
-//           </motion.div>
-//         ))}
-//       </div>
-//     </div>
-//   );
-// }
-
-// function Pill({ children, color = T.neon, active = false, onClick, style = {} }) {
-//   return (
-//     <motion.button
-//       whileHover={{ scale: 1.06, y: -2 }}
-//       whileTap={{ scale: 0.95 }}
-//       onClick={onClick}
-//       style={{
-//         fontFamily: T.mono, fontSize: 10, fontWeight: 600, letterSpacing: 2,
-//         color: active ? "#000" : color,
-//         background: active ? color : `${color}12`,
-//         border: `1px solid ${active ? color : `${color}40`}`,
-//         borderRadius: 6, padding: "7px 16px", cursor: "pointer",
-//         transition: "all 0.18s",
-//         boxShadow: active ? `0 0 20px ${color}50` : "none",
-//         ...style,
-//       }}
-//     >{children}</motion.button>
-//   );
-// }
-
-// function InsightBlock({ title, color, icon, children }) {
-//   return (
-//     <motion.div
-//       initial={{ opacity: 0, y: 12 }}
-//       whileInView={{ opacity: 1, y: 0 }}
-//       viewport={{ once: true }}
-//       style={{ padding: "16px", borderRadius: 12, background: `${color}08`, border: `1px solid ${color}28` }}
-//     >
-//       <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color, marginBottom: 10 }}>{icon} {title}</div>
-//       <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9 }}>{children}</div>
-//     </motion.div>
-//   );
-// }
-
-// function AddrTag({ addr, color = T.neon2 }) {
-//   return (
-//     <motion.span
-//       animate={{ boxShadow: [`0 0 8px ${color}60`, `0 0 18px ${color}90`, `0 0 8px ${color}60`] }}
-//       transition={{ duration: 1.8, repeat: Infinity }}
-//       style={{
-//         fontFamily: T.mono, fontSize: 11, fontWeight: 700, color,
-//         background: `${color}15`, border: `1px solid ${color}50`,
-//         borderRadius: 5, padding: "2px 8px", display: "inline-block",
-//       }}
-//     >{addr}</motion.span>
-//   );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // HERO SECTION
-// // ─────────────────────────────────────────────────────────────────────────────
-// function HeroSection() {
-//   const [phase, setPhase] = useState(0);
-//   const phrases = [
-//     "pointer = just an address",
-//     "*p = follow the arrow",
-//     "&x = where x lives in RAM",
-//     "recursion = function calls itself",
-//     "call stack grows, then unwinds",
-//   ];
-//   useEffect(() => {
-//     const iv = setInterval(() => setPhase(p => (p+1) % phrases.length), 2600);
-//     return () => clearInterval(iv);
-//   }, []);
-
-//   const TOPICS = [
-//     { label: "What is a Pointer?",    icon: "→",  color: T.neon },
-//     { label: "& Address-of",          icon: "&",  color: T.neon2 },
-//     { label: "* Dereference",         icon: "*",  color: T.neon4 },
-//     { label: "Pointer Arithmetic",    icon: "+",  color: T.accent },
-//     { label: "Base Case",             icon: "⊡",  color: T.neon3 },
-//     { label: "Recursive Call",        icon: "↻",  color: T.neon },
-//     { label: "Stack Frames",          icon: "⧖",  color: T.neon2 },
-//     { label: "Stack Overflow",        icon: "☠",  color: T.neon3 },
-//     { label: "Unwind Phase",          icon: "↑",  color: T.neon4 },
-//   ];
-
-//   return (
-//     <section id="hero" style={{
-//       minHeight: "100vh", display: "flex", flexDirection: "column",
-//       alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden",
-//       background: `
-//         radial-gradient(ellipse 80% 50% at 50% -5%, rgba(255,100,0,0.09) 0%, transparent 60%),
-//         radial-gradient(ellipse 50% 35% at 85% 75%, rgba(168,85,247,0.07) 0%, transparent 55%),
-//         radial-gradient(ellipse 35% 25% at 10% 85%, rgba(0,229,255,0.05) 0%, transparent 55%),
-//         ${T.bg}
-//       `,
-//     }}>
-//       <div style={{
-//         position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-//         backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,100,0,0.012) 2px, rgba(255,100,0,0.012) 4px)",
-//       }} />
-
-//       <div style={{ position: "relative", zIndex: 10, textAlign: "center", maxWidth: 920, padding: "0 24px" }}>
-//         <motion.div initial={{ opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-//           style={{
-//             display: "inline-flex", alignItems: "center", gap: 10,
-//             fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon,
-//             border: `1px solid ${T.border}`, background: "rgba(255,100,0,0.05)",
-//             padding: "7px 22px", borderRadius: 100, marginBottom: 30,
-//           }}>
-//           <motion.span animate={{ opacity: [1,0.1,1], scale: [1,0.6,1] }} transition={{ duration: 1.1, repeat: Infinity }}
-//             style={{ width: 5, height: 5, borderRadius: "50%", background: T.neon, display: "inline-block" }} />
-//           C · CHAPTER 6 · POINTERS + RECURSION
-//         </motion.div>
-
-//         <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
-//           transition={{ delay: 0.3, duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
-//           style={{
-//             fontFamily: T.display, fontWeight: 400,
-//             fontSize: "clamp(50px, 9vw, 108px)",
-//             lineHeight: 0.9, letterSpacing: 6, color: T.text, marginBottom: 22,
-//           }}>
-//           MEMORY
-//           <br />
-//           <motion.span
-//             animate={{ textShadow: [`0 0 50px ${T.neon}90`, `0 0 80px ${T.neon}B0`, `0 0 50px ${T.neon}90`] }}
-//             transition={{ duration: 2.2, repeat: Infinity }}
-//             style={{ color: T.neon }}>
-//             CHAPTER 6
-//           </motion.span>
-//         </motion.h1>
-
-//         <div style={{ height: 30, marginBottom: 34, overflow: "hidden" }}>
-//           <AnimatePresence mode="wait">
-//             <motion.p key={phase} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
-//               transition={{ duration: 0.3 }}
-//               style={{ fontFamily: T.mono, fontSize: 13, color: T.neon2, letterSpacing: 1 }}>
-//               → {phrases[phase]}
-//             </motion.p>
-//           </AnimatePresence>
-//         </div>
-
-//         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}
-//           style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginBottom: 44 }}>
-//           {TOPICS.map((t, i) => (
-//             <motion.div key={t.label}
-//               initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }}
-//               transition={{ delay: 0.65 + i * 0.06, type: "spring", stiffness: 280 }}
-//               whileHover={{ y: -5, boxShadow: `0 10px 35px ${t.color}50` }}
-//               style={{
-//                 padding: "8px 18px", borderRadius: 7,
-//                 background: `${t.color}10`, border: `1px solid ${t.color}35`,
-//                 fontFamily: T.mono, fontSize: 10, color: t.color,
-//                 display: "flex", alignItems: "center", gap: 7,
-//                 transition: "box-shadow 0.2s",
-//               }}>
-//               <span style={{ fontSize: 13 }}>{t.icon}</span> {t.label}
-//             </motion.div>
-//           ))}
-//         </motion.div>
-
-//         <motion.button initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05 }}
-//           whileHover={{ scale: 1.07, boxShadow: `0 0 55px ${T.neon}70` }}
-//           whileTap={{ scale: 0.96 }}
-//           onClick={() => document.getElementById("memory")?.scrollIntoView({ behavior: "smooth" })}
-//           style={{
-//             fontFamily: T.display, fontWeight: 400, fontSize: 14, letterSpacing: 6,
-//             color: "#000", background: `linear-gradient(135deg, ${T.neon}, ${T.neon2})`,
-//             border: "none", borderRadius: 8, padding: "16px 50px", cursor: "pointer",
-//           }}>
-//           ENTER
-//         </motion.button>
-//       </div>
-
-//       <motion.div animate={{ y: [0,10,0] }} transition={{ duration: 2.3, repeat: Infinity }}
-//         style={{ position: "absolute", bottom: 30, zIndex: 10, fontFamily: T.mono, fontSize: 8, letterSpacing: 6, color: T.muted }}>
-//         SCROLL
-//       </motion.div>
-//     </section>
-//   );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // SECTION 01 — MEMORY WORLD (what is RAM?)
-// // ─────────────────────────────────────────────────────────────────────────────
-// function MemorySection() {
-//   const [hovered, setHovered] = useState(null);
-//   const cells = [
-//     { addr: "0x1000", label: "a", value: 10, type: "int", color: T.neon4 },
-//     { addr: "0x1004", label: "b", value: 99, type: "int", color: T.neon2 },
-//     { addr: "0x1008", label: "c", value: 42, type: "int", color: T.neon },
-//     { addr: "0x100C", label: "d", value: 7,  type: "int", color: T.accent },
-//     { addr: "0x1010", label: "?", value: "??", type: "???", color: T.muted, empty: true },
-//     { addr: "0x1014", label: "?", value: "??", type: "???", color: T.muted, empty: true },
-//   ];
-
-//   return (
-//     <Section id="memory">
-//       <SectionHeader num="01" tag="RAM BASICS" title="MEMORY = GIANT ARRAY" color={T.neon} />
-//       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-//         <GlassCard style={{ padding: 30 }}>
-//           <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon, marginBottom: 20 }}>▸ YOUR RAM RIGHT NOW</div>
-
-//           <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 28 }}>
-//             {cells.map((cell, i) => (
-//               <motion.div key={i}
-//                 initial={{ x: -30, opacity: 0 }}
-//                 animate={{ x: 0, opacity: 1 }}
-//                 transition={{ delay: i * 0.08, type: "spring", stiffness: 220 }}
-//                 onMouseEnter={() => setHovered(i)}
-//                 onMouseLeave={() => setHovered(null)}
-//                 style={{ display: "flex", alignItems: "center", gap: 12, cursor: "default" }}>
-//                 <div style={{ width: 72, fontFamily: T.mono, fontSize: 9, color: T.muted, textAlign: "right", letterSpacing: 1 }}>
-//                   {cell.addr}
-//                 </div>
-//                 <motion.div
-//                   animate={{
-//                     borderColor: hovered === i ? cell.color : `${cell.color}${cell.empty ? "15" : "30"}`,
-//                     background: hovered === i ? `${cell.color}20` : `${cell.color}${cell.empty ? "05" : "08"}`,
-//                     boxShadow: hovered === i && !cell.empty ? `0 0 25px ${cell.color}50` : "none",
-//                   }}
-//                   style={{ flex: 1, height: 52, borderRadius: 8, border: "2px solid", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px" }}>
-//                   <span style={{ fontFamily: T.mono, fontSize: 10, color: cell.empty ? T.dim : T.muted }}>
-//                     {cell.empty ? "——" : `${cell.type} ${cell.label}`}
-//                   </span>
-//                   <span style={{ fontFamily: T.mono, fontSize: 18, fontWeight: 700, color: cell.empty ? T.dim : cell.color }}>
-//                     {String(cell.value)}
-//                   </span>
-//                 </motion.div>
-//                 <div style={{ width: 30, fontFamily: T.mono, fontSize: 10, color: T.dim }}>
-//                   {!cell.empty && <span style={{ color: `${cell.color}80` }}>←</span>}
-//                 </div>
-//               </motion.div>
-//             ))}
-//           </div>
-
-//           <div style={{
-//             padding: "14px 16px", borderRadius: 10,
-//             background: `${T.neon}08`, border: `1px solid ${T.neon}30`,
-//             fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9,
-//           }}>
-//             <span style={{ color: T.neon }}>KEY INSIGHT:</span> Every variable = a box in RAM.<br />
-//             Every box has an <span style={{ color: T.neon2 }}>address</span> (like a house number).<br />
-//             A <span style={{ color: T.neon }}>pointer</span> stores that address.
-//           </div>
-//         </GlassCard>
-
-//         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-//           <CodeBlock
-//             lines={`int a = 10;   // box at 0x1000\nint b = 99;   // box at 0x1004\nint c = 42;   // box at 0x1008\n// addresses are just numbers!\n// &a  →  0x1000\n// &b  →  0x1004`}
-//             highlightLine={hovered !== null && hovered < 4 ? hovered : -1}
-//           />
-//           <InsightBlock title="SIZES IN MEMORY" color={T.neon2} icon="⬜">
-//             {"int   → 4 bytes\nchar  → 1 byte\nfloat → 4 bytes\nptr   → 8 bytes (64-bit)\n\nEach next var = prev addr + size"}
-//           </InsightBlock>
-//           <InsightBlock title="ADDRESSES ARE INTEGERS" color={T.neon4} icon="→">
-//             {"0x1004 is just 4100 in decimal.\nPointers are just big integers.\nThat's literally it."}
-//           </InsightBlock>
-//         </div>
-//       </div>
-//     </Section>
-//   );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // SECTION 02 — POINTERS VISUAL
-// // ─────────────────────────────────────────────────────────────────────────────
-// function PointersSection() {
-//   const [phase, setPhase] = useState(0); // 0=idle 1=x created 2=ptr assigned 3=done
-//   const [ptrMode, setPtrMode] = useState("addr"); // addr | value
-//   const [running, setRunning] = useState(false);
-
-//   const runAnim = async () => {
-//     if (running) return;
-//     setRunning(true);
-//     setPtrMode("addr");
-//     setPhase(1); await new Promise(r => setTimeout(r, 700));
-//     setPhase(2); await new Promise(r => setTimeout(r, 600));
-//     setPhase(3);
-//     setRunning(false);
-//   };
-//   const reset = () => { setPhase(0); setPtrMode("addr"); };
-
-//   const memCells = [
-//     { addr: "0x2000", label: "x",   value: 42,       type: "int",  color: T.neon4, active: phase >= 1 },
-//     { addr: "0x2004", label: "ptr", value: "0x2000", type: "int*", color: T.neon,  active: phase >= 2, isPtr: true },
-//   ];
-
-//   return (
-//     <Section id="pointers">
-//       <SectionHeader num="02" tag="POINTERS" title="ADDRESS MACHINE" color={T.neon} />
-//       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-//         <GlassCard style={{ padding: 30 }}>
-//           <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon, marginBottom: 22 }}>→ LIVE MEMORY</div>
-
-//           <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 28, position: "relative" }}>
-//             {memCells.map((cell, i) => (
-//               <motion.div key={i}
-//                 animate={{
-//                   borderColor: cell.active ? cell.color : `${cell.color}20`,
-//                   background: cell.active ? `${cell.color}14` : `${cell.color}05`,
-//                   boxShadow: cell.active ? `0 0 30px ${cell.color}50` : "none",
-//                 }}
-//                 style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 18px", borderRadius: 10, border: "2px solid" }}>
-//                 <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, width: 72 }}>{cell.addr}</div>
-//                 <div style={{ flex: 1 }}>
-//                   <div style={{ fontFamily: T.mono, fontSize: 9, color: cell.color, marginBottom: 4 }}>{cell.type} {cell.label}</div>
-//                   <motion.div
-//                     animate={cell.isPtr && phase >= 3 && ptrMode === "value" ? { color: [T.neon, T.neon4, T.neon] } : {}}
-//                     transition={{ duration: 1.2, repeat: Infinity }}
-//                     style={{ fontFamily: T.mono, fontSize: 20, fontWeight: 700, color: cell.active ? cell.color : T.muted }}>
-//                     {cell.isPtr && phase >= 3
-//                       ? ptrMode === "value" ? "*ptr = 42" : "ptr = 0x2000"
-//                       : cell.active ? String(cell.value) : "???"}
-//                   </motion.div>
-//                 </div>
-//                 {cell.active && (
-//                   <motion.div animate={{ scale: [1,1.4,1], opacity: [0.6,1,0.6] }} transition={{ duration: 1.2, repeat: Infinity }}
-//                     style={{ width: 10, height: 10, borderRadius: "50%", background: cell.color, boxShadow: `0 0 12px ${cell.color}` }} />
-//                 )}
-//               </motion.div>
-//             ))}
-
-//             {/* Arrow from ptr → x */}
-//             <AnimatePresence>
-//               {phase >= 2 && (
-//                 <motion.svg initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-//                   style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}
-//                   viewBox="0 0 400 140">
-//                   <motion.path
-//                     d="M 350 100 C 400 100 400 40 350 40"
-//                     fill="none" stroke={T.neon} strokeWidth="2.5" strokeDasharray="7 4"
-//                     initial={{ pathLength: 0 }} animate={{ pathLength: 1 }}
-//                     transition={{ duration: 0.8, ease: "easeOut" }} />
-//                   <motion.circle cx="350" cy="40" r="5" fill={T.neon}
-//                     animate={{ r: [4,8,4], opacity: [1,0.5,1] }} transition={{ duration: 1.5, repeat: Infinity }} />
-//                   <motion.circle cx="350" cy="100" r="4" fill={T.neon}
-//                     initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.7 }} />
-//                 </motion.svg>
-//               )}
-//             </AnimatePresence>
-//           </div>
-
-//           {/* Mode pills */}
-//           <AnimatePresence>
-//             {phase >= 3 && (
-//               <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-//                 style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
-//                 <Pill color={T.neon} active={ptrMode === "addr"} onClick={() => setPtrMode("addr")}>ptr (address)</Pill>
-//                 <Pill color={T.neon4} active={ptrMode === "value"} onClick={() => setPtrMode("value")}>*ptr (value)</Pill>
-//               </motion.div>
-//             )}
-//           </AnimatePresence>
-
-//           <AnimatePresence mode="wait">
-//             <motion.div key={`${phase}-${ptrMode}`}
-//               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-//               style={{ padding: "12px 16px", borderRadius: 10, marginBottom: 18, background: `${T.neon}0C`, border: `1px solid ${T.neon}30`, fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8 }}>
-//               {phase === 0 && "Press ASSIGN to watch a pointer get created →"}
-//               {phase === 1 && <span>int x = 42 — stored at <AddrTag addr="0x2000" color={T.neon4} /></span>}
-//               {phase === 2 && <span>ptr = <AddrTag addr="0x2000" color={T.neon} /> — it points to x!</span>}
-//               {phase >= 3 && ptrMode === "addr" && <span>ptr = <AddrTag addr="0x2000" color={T.neon} /> — the address</span>}
-//               {phase >= 3 && ptrMode === "value" && <span>*ptr = <strong style={{ color: T.neon4 }}>42</strong> — follow arrow → get value</span>}
-//             </motion.div>
-//           </AnimatePresence>
-
-//           <div style={{ display: "flex", gap: 10 }}>
-//             {phase === 0 ? (
-//               <motion.button whileHover={{ scale: 1.04, boxShadow: `0 0 35px ${T.neon}60` }} whileTap={{ scale: 0.97 }}
-//                 onClick={runAnim}
-//                 style={{ flex: 1, fontFamily: T.display, fontSize: 14, letterSpacing: 4, color: "#000", background: `linear-gradient(135deg, ${T.neon}, ${T.neon2})`, border: "none", borderRadius: 8, padding: "13px", cursor: "pointer" }}>
-//                 ▶ ASSIGN POINTER
-//               </motion.button>
-//             ) : (
-//               <motion.button whileTap={{ scale: 0.96 }} onClick={reset}
-//                 style={{ flex: 1, fontFamily: T.mono, fontSize: 10, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 8, padding: "13px", cursor: "pointer" }}>
-//                 ↺ RESET
-//               </motion.button>
-//             )}
-//           </div>
-//         </GlassCard>
-
-//         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-//           <CodeBlock
-//             lines={`int x = 42;          // x lives at 0x2000\nint *ptr = &x;       // ptr stores 0x2000\n\nprintf("%p", ptr);   // 0x2000 (address)\nprintf("%d", *ptr);  // 42    (value)\n\n// RULE:\n// ptr  = address\n// *ptr = value at address\n// &x   = address of x`}
-//             highlightLine={phase === 1 ? 0 : phase === 2 ? 1 : phase >= 3 ? (ptrMode === "value" ? 4 : 3) : -1}
-//           />
-//           <InsightBlock title="3 OPERATORS" color={T.neon} icon="→">
-//             {"& = address-of  (get the house number)\n* = dereference  (go to that house)\n  int *p  ← * means 'pointer type'\n  *p      ← * means 'follow pointer'"}
-//           </InsightBlock>
-//         </div>
-//       </div>
-//     </Section>
-//   );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // SECTION 03 — DEREFERENCE PLAYGROUND
-// // ─────────────────────────────────────────────────────────────────────────────
-// function DerefSection() {
-//   const [varX, setVarX] = useState(7);
-//   const [varY, setVarY] = useState(99);
-//   const [target, setTarget] = useState("x");
-//   const [writeVal, setWriteVal] = useState(55);
-//   const [flash, setFlash] = useState(null);
-
-//   const vars = { x: varX, y: varY };
-//   const addrs = { x: "0x3000", y: "0x3004" };
-//   const colors = { x: T.neon4, y: T.neon2 };
-
-//   const writeThrough = () => {
-//     if (target === "x") { setVarX(writeVal); setFlash("x"); }
-//     else { setVarY(writeVal); setFlash("y"); }
-//     setTimeout(() => setFlash(null), 800);
-//   };
-
-//   return (
-//     <Section id="deref">
-//       <SectionHeader num="03" tag="DEREFERENCE" title="WRITE THROUGH PTR" color={T.neon2} />
-//       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-//         <GlassCard style={{ padding: 30 }}>
-//           <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2, marginBottom: 22 }}>⊕ POINTER CONTROL</div>
-
-//           {/* Memory boxes */}
-//           <div style={{ display: "flex", gap: 12, marginBottom: 28 }}>
-//             {["x","y"].map(k => (
-//               <motion.div key={k}
-//                 animate={{
-//                   borderColor: flash === k ? "#fff" : target === k ? colors[k] : `${colors[k]}30`,
-//                   background: flash === k ? `${colors[k]}40` : target === k ? `${colors[k]}18` : `${colors[k]}08`,
-//                   boxShadow: flash === k ? `0 0 50px ${colors[k]}90` : target === k ? `0 0 25px ${colors[k]}40` : "none",
-//                 }}
-//                 style={{ flex: 1, borderRadius: 12, border: "2px solid", padding: "20px 14px", textAlign: "center" }}>
-//                 <div style={{ fontFamily: T.mono, fontSize: 9, color: colors[k], marginBottom: 6 }}>{addrs[k]}</div>
-//                 <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginBottom: 6 }}>int {k}</div>
-//                 <motion.div key={vars[k]} animate={{ scale: [1.4, 1] }}
-//                   style={{ fontFamily: T.mono, fontSize: 32, fontWeight: 700, color: colors[k] }}>
-//                   {vars[k]}
-//                 </motion.div>
-//                 {target === k && (
-//                   <motion.div animate={{ opacity: [0.5,1,0.5] }} transition={{ duration: 1, repeat: Infinity }}
-//                     style={{ fontFamily: T.mono, fontSize: 9, color: colors[k], marginTop: 8 }}>
-//                     ← ptr points here
-//                   </motion.div>
-//                 )}
-//               </motion.div>
-//             ))}
-//           </div>
-
-//           {/* Pointer selector */}
-//           <div style={{ marginBottom: 18 }}>
-//             <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.muted, marginBottom: 10 }}>POINT p AT:</div>
-//             <div style={{ display: "flex", gap: 8 }}>
-//               <Pill color={colors.x} active={target === "x"} onClick={() => setTarget("x")}>p = &x</Pill>
-//               <Pill color={colors.y} active={target === "y"} onClick={() => setTarget("y")}>p = &y</Pill>
-//             </div>
-//           </div>
-
-//           {/* Write value */}
-//           <div style={{ marginBottom: 20 }}>
-//             <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.muted, marginBottom: 10 }}>WRITE VALUE THROUGH POINTER:</div>
-//             <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-//               <input
-//                 type="number"
-//                 value={writeVal}
-//                 onChange={e => setWriteVal(Number(e.target.value))}
-//                 style={{
-//                   flex: 1, background: `${T.neon2}10`, border: `1px solid ${T.neon2}35`,
-//                   borderRadius: 8, padding: "9px 14px",
-//                   fontFamily: T.mono, fontSize: 15, color: T.neon2, outline: "none",
-//                 }}
-//               />
-//               <motion.button
-//                 whileHover={{ scale: 1.04, boxShadow: `0 0 25px ${T.neon2}50` }}
-//                 whileTap={{ scale: 0.97 }}
-//                 onClick={writeThrough}
-//                 style={{
-//                   fontFamily: T.display, fontSize: 12, letterSpacing: 4,
-//                   color: "#000", background: `linear-gradient(135deg, ${T.neon2}, ${T.accent})`,
-//                   border: "none", borderRadius: 8, padding: "9px 18px", cursor: "pointer",
-//                 }}>*p = {writeVal}</motion.button>
-//             </div>
-//           </div>
-
-//           <div style={{ padding: "12px 14px", borderRadius: 9, background: `${T.neon2}0A`, border: `1px solid ${T.neon2}25`, fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8 }}>
-//             <span style={{ color: T.neon2 }}>p = &{target}</span> → writing *p changes <strong style={{ color: colors[target] }}>{target}</strong> directly in RAM.
-//           </div>
-//         </GlassCard>
-
-//         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-//           <CodeBlock
-//             lines={`int x = ${varX}, y = ${varY};\nint *p;\n\n// Point at x:\np = &x;\n*p = ${writeVal};   // x is now ${target === "x" ? writeVal : varX}\n\n// Repoint at y:\np = &y;\n*p = ${writeVal};   // y is now ${target === "y" ? writeVal : varY}\n\n// Pointer is flexible!\n// Retarget, then write.`}
-//             highlightLine={4}
-//           />
-//           <InsightBlock title="WHY USE POINTERS?" color={T.neon3} icon="⚡">
-//             {"1. Modify vars inside functions\n2. Share large data (no copying)\n3. Dynamic memory (malloc)\n4. Build linked data structures"}
-//           </InsightBlock>
-//           <InsightBlock title="NULL POINTER" color={T.neon3} icon="⚠">
-//             {"int *p = NULL;  // safe default\n*p = 5;         // CRASH! Segfault\n\nAlways initialize pointers!"}
-//           </InsightBlock>
-//         </div>
-//       </div>
-//     </Section>
-//   );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // SECTION 04 — RECURSION INTRO
-// // ─────────────────────────────────────────────────────────────────────────────
-// const FACT_STEPS = [
-//   { n: 5, state: "call",   result: null, depth: 0 },
-//   { n: 4, state: "call",   result: null, depth: 1 },
-//   { n: 3, state: "call",   result: null, depth: 2 },
-//   { n: 2, state: "call",   result: null, depth: 3 },
-//   { n: 1, state: "base",   result: 1,    depth: 4 },
-//   { n: 2, state: "return", result: 2,    depth: 3 },
-//   { n: 3, state: "return", result: 6,    depth: 2 },
-//   { n: 4, state: "return", result: 24,   depth: 1 },
-//   { n: 5, state: "return", result: 120,  depth: 0 },
-// ];
-
-// function RecursionSection() {
-//   const [animIdx, setAnimIdx] = useState(-1);
-//   const [stack, setStack] = useState([]);
-//   const [running, setRunning] = useState(false);
-//   const runRef = useRef(false);
-
-//   const stateColor = s => s === "base" ? T.neon4 : s === "return" ? T.neon3 : T.neon2;
-
-//   const runAnim = async () => {
-//     if (runRef.current) return;
-//     runRef.current = true;
-//     setRunning(true);
-//     setStack([]);
-//     setAnimIdx(-1);
-//     const callStack = [];
-//     for (let i = 0; i < FACT_STEPS.length; i++) {
-//       if (!runRef.current) break;
-//       const step = FACT_STEPS[i];
-//       setAnimIdx(i);
-//       if (step.state === "call" || step.state === "base") {
-//         callStack.push(step);
-//         setStack([...callStack]);
-//       } else {
-//         callStack.pop();
-//         setStack([...callStack]);
-//       }
-//       await new Promise(r => setTimeout(r, 780));
-//     }
-//     runRef.current = false;
-//     setRunning(false);
-//     setAnimIdx(-1);
-//   };
-
-//   const reset = () => { runRef.current = false; setRunning(false); setStack([]); setAnimIdx(-1); };
-//   const current = animIdx >= 0 ? FACT_STEPS[animIdx] : null;
-
-//   return (
-//     <Section id="recursion">
-//       <SectionHeader num="04" tag="RECURSION" title="FUNCTION CALLS ITSELF" color={T.neon3} />
-//       <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 24 }}>
-//         <GlassCard style={{ padding: 28 }}>
-//           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
-//             <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon3 }}>▸ CALL STACK (bottom = first call)</div>
-//             <div style={{ display: "flex", gap: 8 }}>
-//               <motion.button
-//                 whileHover={{ scale: 1.05, boxShadow: `0 0 28px ${T.neon3}50` }}
-//                 whileTap={{ scale: 0.97 }}
-//                 onClick={runAnim}
-//                 disabled={running}
-//                 style={{
-//                   fontFamily: T.display, fontSize: 12, letterSpacing: 4,
-//                   color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.neon3}, ${T.accent})`,
-//                   border: "none", borderRadius: 8, padding: "8px 20px", cursor: running ? "not-allowed" : "pointer",
-//                 }}>{running ? "RUNNING…" : "▶ FACTORIAL(5)"}</motion.button>
-//               <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
-//                 style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 7, padding: "8px 12px", cursor: "pointer" }}>↺</motion.button>
-//             </div>
-//           </div>
-
-//           {/* Depth bar */}
-//           <div style={{ display: "flex", gap: 4, marginBottom: 20 }}>
-//             {Array.from({ length: 5 }).map((_, i) => (
-//               <motion.div key={i}
-//                 animate={{
-//                   background: stack.length > i ? stateColor(stack[i]?.state || "call") : T.dim,
-//                   boxShadow: stack.length > i ? `0 0 12px ${stateColor(stack[i]?.state || "call")}80` : "none",
-//                 }}
-//                 style={{ flex: 1, height: 5, borderRadius: 3, transition: "all 0.35s" }} />
-//             ))}
-//             <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginLeft: 8 }}>depth {stack.length}</span>
-//           </div>
-
-//           {/* Stack — renders bottom to top: bottom = first called, top = most recent */}
-//           <div style={{ position: "relative", minHeight: 300, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
-//             {/* Stack labels */}
-//             {stack.length > 0 && (
-//               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-//                 <span style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 2 }}>BOTTOM (first call)</span>
-//                 <span style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 2 }}>TOP (latest)</span>
-//               </div>
-//             )}
-
-//             {/* Horizontal stack bar — bottom of visual = first, top = latest */}
-//             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-//               <AnimatePresence>
-//                 {/* Reverse the stack so latest is at top visually */}
-//                 {[...stack].reverse().map((frame, i) => {
-//                   const color = stateColor(frame.state);
-//                   const isTop = i === 0; // reversed, so index 0 = most recent
-//                   return (
-//                     <motion.div
-//                       key={`${frame.depth}-${frame.state}`}
-//                       initial={{ scale: 0.85, opacity: 0, y: isTop ? -30 : 0 }}
-//                       animate={{ scale: 1, opacity: 1, y: 0 }}
-//                       exit={{ scale: 0.85, opacity: 0, y: -24, transition: { duration: 0.35 } }}
-//                       transition={{ type: "spring", stiffness: 280, damping: 24 }}
-//                       style={{
-//                         padding: "12px 20px", borderRadius: 10,
-//                         background: isTop ? `${color}22` : `${color}10`,
-//                         border: `${isTop ? "2px" : "1px"} solid ${isTop ? color : `${color}50`}`,
-//                         boxShadow: isTop ? `0 0 25px ${color}50` : "none",
-//                         display: "flex", alignItems: "center", justifyContent: "space-between",
-//                       }}>
-//                       <div>
-//                         <span style={{ fontFamily: T.mono, fontSize: 8, color, letterSpacing: 3 }}>
-//                           {isTop ? "← TOP (ACTIVE)" : `depth ${frame.depth}`}
-//                         </span>
-//                         <div style={{ fontFamily: T.mono, fontSize: 16, fontWeight: 700, color, marginTop: 2 }}>
-//                           fact({frame.n})
-//                         </div>
-//                       </div>
-//                       <div style={{ textAlign: "right" }}>
-//                         <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>n = {frame.n}</div>
-//                         {frame.result !== null && (
-//                           <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }}
-//                             style={{ fontFamily: T.mono, fontSize: 18, fontWeight: 700, color: T.neon4 }}>
-//                             = {frame.result}
-//                           </motion.div>
-//                         )}
-//                       </div>
-//                     </motion.div>
-//                   );
-//                 })}
-//               </AnimatePresence>
-
-//               {stack.length === 0 && !running && (
-//                 <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, textAlign: "center", padding: "60px 0" }}>
-//                   Stack empty. Press ▶ RUN.
-//                 </div>
-//               )}
-//             </div>
-//           </div>
-
-//           {/* Step info */}
-//           <AnimatePresence mode="wait">
-//             {current && (
-//               <motion.div key={animIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-//                 style={{ marginTop: 16, padding: "12px 16px", borderRadius: 9, background: `${stateColor(current.state)}10`, border: `1px solid ${stateColor(current.state)}40`, fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8 }}>
-//                 {current.state === "call" && `→ Calling fact(${current.n}) — push frame to stack top`}
-//                 {current.state === "base" && `⊡ Base case: n=1 → return 1. Begin unwinding!`}
-//                 {current.state === "return" && `↑ fact(${current.n}) = ${current.result} — pop frame, pass value back`}
-//               </motion.div>
-//             )}
-//           </AnimatePresence>
-//         </GlassCard>
-
-//         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-//           <CodeBlock
-//             filename="factorial.c"
-//             lines={`int fact(int n) {\n  // BASE CASE — stop condition\n  if (n <= 1)\n    return 1;\n  \n  // RECURSIVE CASE\n  return n * fact(n - 1);\n}`}
-//             highlightLine={current?.state === "base" ? 2 : current?.state === "call" ? 6 : -1}
-//           />
-//           {[
-//             { icon: "⊡", color: T.neon4, label: "BASE CASE", text: "n ≤ 1 → return 1\nNo base = infinite loop + crash" },
-//             { icon: "↻", color: T.neon2, label: "RECURSE",   text: "fact(n-1) — smaller every call\nMust shrink toward base case" },
-//             { icon: "↑", color: T.neon3, label: "UNWIND",    text: "5×4×3×2×1 = 120\nValues bubble back up the stack" },
-//           ].map((item, i) => (
-//             <motion.div key={i}
-//               initial={{ opacity: 0, x: 20 }}
-//               whileInView={{ opacity: 1, x: 0 }}
-//               viewport={{ once: true }}
-//               transition={{ delay: i * 0.1 }}
-//               style={{ padding: "14px 16px", borderRadius: 10, background: `${item.color}08`, border: `1px solid ${item.color}28`, display: "flex", gap: 14 }}>
-//               <div style={{ fontFamily: T.mono, fontSize: 20, color: item.color, lineHeight: 1 }}>{item.icon}</div>
-//               <div>
-//                 <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: item.color, marginBottom: 4 }}>{item.label}</div>
-//                 <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8, whiteSpace: "pre" }}>{item.text}</div>
-//               </div>
-//             </motion.div>
-//           ))}
-//         </div>
-//       </div>
-//     </Section>
-//   );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // SECTION 05 — STACK SIMULATOR
-// // ─────────────────────────────────────────────────────────────────────────────
-// function StackSimulator() {
-//   const [n, setN] = useState(4);
-//   const [frames, setFrames] = useState([]);
-//   const [running, setRunning] = useState(false);
-//   const [infinite, setInfinite] = useState(false);
-//   const [output, setOutput] = useState(null);
-//   const runRef = useRef(false);
-
-//   const buildSteps = (num) => {
-//     const steps = [];
-//     for (let i = num; i >= 1; i--) steps.push({ n: i, phase: "call", result: null });
-//     steps.push({ n: 1, phase: "base", result: 1 });
-//     let acc = 1;
-//     for (let i = 2; i <= num; i++) { acc *= i; steps.push({ n: i, phase: "return", result: acc }); }
-//     return steps;
-//   };
-
-//   const runSim = async () => {
-//     if (runRef.current) return;
-//     runRef.current = true;
-//     setRunning(true);
-//     setFrames([]);
-//     setOutput(null);
-//     const steps = buildSteps(n);
-//     const stackArr = [];
-//     for (let i = 0; i < steps.length; i++) {
-//       if (!runRef.current) break;
-//       const s = steps[i];
-//       if (s.phase === "call" || s.phase === "base") {
-//         stackArr.push({ ...s, id: i });
-//         setFrames([...stackArr]);
-//       } else {
-//         stackArr.pop();
-//         setFrames([...stackArr]);
-//       }
-//       if (i === steps.length - 1) setOutput(s.result);
-//       await new Promise(r => setTimeout(r, 620));
-//     }
-//     runRef.current = false;
-//     setRunning(false);
-//   };
-
-//   const runInfinite = async () => {
-//     if (runRef.current) return;
-//     runRef.current = true;
-//     setInfinite(true);
-//     setRunning(true);
-//     setOutput(null);
-//     const fakeStack = [];
-//     for (let i = 0; i < 9; i++) {
-//       if (!runRef.current) break;
-//       fakeStack.push({ n: 999 - i, phase: "call", result: null, id: i });
-//       setFrames([...fakeStack]);
-//       await new Promise(r => setTimeout(r, 220));
-//     }
-//     setOutput("STACK OVERFLOW ☠");
-//     runRef.current = false;
-//     setRunning(false);
-//   };
-
-//   const reset = () => { runRef.current = false; setRunning(false); setFrames([]); setOutput(null); setInfinite(false); };
-//   const maxDepth = n + 1;
-
-//   return (
-//     <Section id="callstack">
-//       <SectionHeader num="05" tag="CALL STACK" title="STACK SIMULATOR" color={T.neon4} />
-//       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-
-//         <GlassCard style={{ padding: 28 }}>
-//           <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon4, marginBottom: 20 }}>▸ CONFIGURE</div>
-
-//           <div style={{ marginBottom: 22 }}>
-//             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-//               <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>factorial(n)</span>
-//               <motion.span key={n} animate={{ scale: [1.4,1] }}
-//                 style={{ fontFamily: T.mono, fontSize: 22, fontWeight: 700, color: T.neon4 }}>{n}</motion.span>
-//             </div>
-//             <input type="range" min={1} max={8} value={n}
-//               onChange={e => { setN(Number(e.target.value)); reset(); }}
-//               style={{ width: "100%", accentColor: T.neon4 }} />
-//             <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 4 }}>Max depth: {n+1} frames</div>
-//           </div>
-
-//           {/* Depth meter */}
-//           <div style={{ marginBottom: 22 }}>
-//             <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 10, letterSpacing: 3 }}>
-//               STACK DEPTH [{frames.length} / {infinite ? "∞" : maxDepth}]
-//             </div>
-//             <div style={{ display: "flex", gap: 3 }}>
-//               {Array.from({ length: infinite ? 9 : maxDepth }).map((_,i) => {
-//                 const filled = i < frames.length;
-//                 return (
-//                   <motion.div key={i}
-//                     animate={{
-//                       background: filled ? (infinite ? T.neon3 : T.neon4) : T.dim,
-//                       boxShadow: filled ? `0 0 8px ${infinite ? T.neon3 : T.neon4}60` : "none",
-//                     }}
-//                     style={{ flex: 1, height: 32, borderRadius: 5, transition: "all 0.3s" }} />
-//                 );
-//               })}
-//             </div>
-//           </div>
-
-//           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-//             <motion.button whileHover={{ scale: 1.04, boxShadow: `0 0 30px ${T.neon4}50` }} whileTap={{ scale: 0.97 }}
-//               onClick={runSim} disabled={running}
-//               style={{ flex: 2, fontFamily: T.display, fontSize: 13, letterSpacing: 4, color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.neon4}, ${T.neon2})`, border: "none", borderRadius: 8, padding: "12px", cursor: running ? "not-allowed" : "pointer" }}>
-//               {running ? "RUNNING…" : `▶ RUN fact(${n})`}
-//             </motion.button>
-//             <motion.button whileHover={{ scale: 1.04, boxShadow: `0 0 25px ${T.neon3}50` }} whileTap={{ scale: 0.97 }}
-//               onClick={runInfinite} disabled={running}
-//               style={{ flex: 1, fontFamily: T.display, fontSize: 11, letterSpacing: 3, color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.neon3}, #FF0055)`, border: "none", borderRadius: 8, padding: "12px", cursor: running ? "not-allowed" : "pointer" }}>
-//               ☠ INFINITE
-//             </motion.button>
-//             <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
-//               style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer" }}>↺</motion.button>
-//           </div>
-
-//           <AnimatePresence mode="wait">
-//             {output && (
-//               <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
-//                 style={{
-//                   padding: "16px 20px", borderRadius: 11, textAlign: "center",
-//                   background: infinite ? `${T.neon3}18` : `${T.neon4}14`,
-//                   border: `2px solid ${infinite ? T.neon3 : T.neon4}`,
-//                   boxShadow: `0 0 30px ${infinite ? T.neon3 : T.neon4}50`,
-//                   fontFamily: T.display, fontSize: 26, letterSpacing: 5,
-//                   color: infinite ? T.neon3 : T.neon4,
-//                 }}>{infinite ? output : `= ${output}`}</motion.div>
-//             )}
-//           </AnimatePresence>
-//         </GlassCard>
-
-//         {/* Live stack — newest frame pushed to top visually */}
-//         <GlassCard style={{ padding: 24, overflow: "hidden" }}>
-//           <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon4, marginBottom: 8 }}>▸ LIVE STACK</div>
-//           <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 16, letterSpacing: 2 }}>
-//             ↑ TOP (newest frame, currently executing)
-//           </div>
-
-//           {/* Stack grows UP — newest at top of visual, oldest at bottom */}
-//           <div style={{ display: "flex", flexDirection: "column", gap: 6, minHeight: 300 }}>
-//             <AnimatePresence>
-//               {[...frames].reverse().map((frame, i) => {
-//                 const isTop = i === 0;
-//                 const color = frame.phase === "base" ? T.neon4 : frame.phase === "return" ? T.neon3 : (infinite ? T.neon3 : T.neon2);
-//                 return (
-//                   <motion.div
-//                     key={frame.id}
-//                     layout
-//                     initial={{ opacity: 0, y: -28, scale: 0.9 }}
-//                     animate={{ opacity: 1, y: 0, scale: 1 }}
-//                     exit={{ opacity: 0, y: -28, scale: 0.88, transition: { duration: 0.3 } }}
-//                     transition={{ type: "spring", stiffness: 300, damping: 26 }}
-//                     style={{
-//                       padding: "10px 16px", borderRadius: 9,
-//                       background: isTop ? `${color}22` : `${color}0A`,
-//                       border: `${isTop ? "2px" : "1px"} solid ${isTop ? color : `${color}40`}`,
-//                       boxShadow: isTop ? `0 0 25px ${color}50` : "none",
-//                       display: "flex", justifyContent: "space-between", alignItems: "center",
-//                     }}>
-//                     <div>
-//                       <div style={{ fontFamily: T.mono, fontSize: 8, color, letterSpacing: 2, marginBottom: 2 }}>
-//                         {isTop ? "▶ EXECUTING" : `frame ${frame.n < 999 ? frames.length - i - 1 : "?"}`}
-//                       </div>
-//                       <span style={{ fontFamily: T.mono, fontSize: 15, fontWeight: 700, color }}>
-//                         {frame.n < 999 ? `fact(${frame.n})` : `fact(∞)`}
-//                       </span>
-//                     </div>
-//                     <div style={{ textAlign: "right" }}>
-//                       <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 2 }}>{frame.phase.toUpperCase()}</div>
-//                       {frame.result !== null && (
-//                         <div style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 700, color: T.neon4 }}>→ {frame.result}</div>
-//                       )}
-//                     </div>
-//                   </motion.div>
-//                 );
-//               })}
-//             </AnimatePresence>
-//             {frames.length === 0 && (
-//               <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, textAlign: "center", paddingTop: 80 }}>
-//                 Press ▶ RUN to fill stack
-//               </div>
-//             )}
-//           </div>
-
-//           {frames.length > 0 && (
-//             <div style={{ marginTop: 12, fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 2, textAlign: "center" }}>
-//               ↓ BOTTOM (first call — waiting to resume)
-//             </div>
-//           )}
-//         </GlassCard>
-//       </div>
-//     </Section>
-//   );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // SECTION 06 — MASTER ENGINE
-// // ─────────────────────────────────────────────────────────────────────────────
-// const ENGINE_PROGS = [
-//   {
-//     name: "PTR BASICS",
-//     color: T.neon,
-//     lines: [
-//       `int x = 42;`,
-//       `int *p = &x;`,
-//       `printf("%p", p);`,
-//       `printf("%d", *p);`,
-//       `*p = 100;`,
-//       `printf("%d", x);`,
-//     ],
-//     steps: [
-//       { line: 0, mem: { x: 42 }, out: "" },
-//       { line: 1, mem: { x: 42, p: "0x2000" }, out: "" },
-//       { line: 2, mem: { x: 42, p: "0x2000" }, out: "0x2000" },
-//       { line: 3, mem: { x: 42, p: "0x2000" }, out: "42" },
-//       { line: 4, mem: { x: 100, p: "0x2000" }, out: "" },
-//       { line: 5, mem: { x: 100, p: "0x2000" }, out: "100" },
-//     ],
-//   },
-//   {
-//     name: "RECURSION",
-//     color: T.neon3,
-//     lines: [
-//       `int fact(int n) {`,
-//       `  if (n <= 1)`,
-//       `    return 1;`,
-//       `  return n * fact(n-1);`,
-//       `}`,
-//       `int r = fact(4);`,
-//       `printf("%d", r);`,
-//     ],
-//     steps: [
-//       { line: 5, mem: { "fact(4)": "calling..." }, out: "" },
-//       { line: 1, mem: { n: 4 }, out: "" },
-//       { line: 3, mem: { n: 4, "calling": "fact(3)" }, out: "" },
-//       { line: 1, mem: { n: 3, "calling": "fact(2)" }, out: "" },
-//       { line: 1, mem: { n: 2, "calling": "fact(1)" }, out: "" },
-//       { line: 2, mem: { n: 1, result: 1 }, out: "" },
-//       { line: 3, mem: { "unwinding": "2×1=2, 3×2=6, 4×6=24" }, out: "" },
-//       { line: 6, mem: { r: 24 }, out: "24" },
-//     ],
-//   },
-//   {
-//     name: "PTR + FUNCTION",
-//     color: T.neon2,
-//     lines: [
-//       `void double(int *p) {`,
-//       `  *p = *p * 2;`,
-//       `}`,
-//       `int x = 5;`,
-//       `double(&x);`,
-//       `printf("%d", x);`,
-//     ],
-//     steps: [
-//       { line: 3, mem: { x: 5 }, out: "" },
-//       { line: 4, mem: { x: 5, p: "&x" }, out: "" },
-//       { line: 1, mem: { x: 5, p: "&x", "*p": "5*2" }, out: "" },
-//       { line: 1, mem: { x: 10, p: "&x" }, out: "" },
-//       { line: 5, mem: { x: 10 }, out: "10" },
-//     ],
-//   },
-// ];
-
-// function EngineSection() {
-//   const [progIdx, setProgIdx] = useState(0);
-//   const [step, setStep] = useState(-1);
-//   const [memory, setMemory] = useState({});
-//   const [output, setOutput] = useState("");
-//   const [running, setRunning] = useState(false);
-//   const runningRef = useRef(false);
-//   const prog = ENGINE_PROGS[progIdx];
-
-//   const reset = () => { runningRef.current = false; setStep(-1); setMemory({}); setOutput(""); setRunning(false); };
-
-//   const run = async () => {
-//     if (runningRef.current) return;
-//     reset();
-//     await new Promise(r => setTimeout(r, 80));
-//     runningRef.current = true;
-//     setRunning(true);
-//     for (let i = 0; i < prog.steps.length; i++) {
-//       if (!runningRef.current) break;
-//       const s = prog.steps[i];
-//       setStep(s.line);
-//       setMemory({ ...s.mem });
-//       if (s.out) setOutput(s.out);
-//       await new Promise(r => setTimeout(r, 850));
-//     }
-//     setStep(-1);
-//     setRunning(false);
-//     runningRef.current = false;
-//   };
-
-//   return (
-//     <Section id="engine">
-//       <SectionHeader num="06" tag="MASTER ENGINE" title="FULL SIMULATION" color={T.accent} />
-
-//       <div style={{ display: "flex", gap: 10, marginBottom: 28, flexWrap: "wrap" }}>
-//         {ENGINE_PROGS.map((p, i) => (
-//           <Pill key={p.name} color={p.color} active={progIdx === i} onClick={() => { setProgIdx(i); reset(); }}>
-//             {p.name}
-//           </Pill>
-//         ))}
-//       </div>
-
-//       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-//         <GlassCard style={{ overflow: "hidden" }}>
-//           <div style={{ background: "rgba(0,0,0,0.45)", borderBottom: `1px solid ${T.dim}`, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-//             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-//               <motion.div animate={{ background: running ? prog.color : T.muted, boxShadow: running ? `0 0 12px ${prog.color}` : "none" }}
-//                 style={{ width: 7, height: 7, borderRadius: "50%" }} />
-//               <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>{prog.name.toLowerCase().replace(/ /g,"_")}.c</span>
-//             </div>
-//             <div style={{ display: "flex", gap: 8 }}>
-//               <motion.button whileTap={{ scale: 0.95 }} onClick={run} disabled={running}
-//                 style={{ fontFamily: T.display, fontWeight: 400, fontSize: 11, letterSpacing: 3, color: "#000", background: running ? T.muted : prog.color, border: "none", borderRadius: 5, padding: "6px 16px", cursor: running ? "not-allowed" : "pointer" }}>
-//                 {running ? "RUNNING…" : "▶ RUN"}
-//               </motion.button>
-//               <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
-//                 style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 5, padding: "6px 12px", cursor: "pointer" }}>
-//                 RESET
-//               </motion.button>
-//             </div>
-//           </div>
-
-//           <div style={{ padding: "14px 0" }}>
-//             {prog.lines.map((line, i) => {
-//               const isActive = step === i;
-//               return (
-//                 <motion.div key={i}
-//                   animate={{ background: isActive ? `${prog.color}18` : "transparent", paddingLeft: isActive ? 22 : 16 }}
-//                   style={{ display: "flex", alignItems: "center", paddingRight: 16, paddingTop: 3, paddingBottom: 3, borderLeft: `3px solid ${isActive ? prog.color : "transparent"}` }}>
-//                   <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, minWidth: 26, textAlign: "right", marginRight: 14, userSelect: "none" }}>{i+1}</span>
-//                   <span style={{ fontFamily: T.mono, fontSize: 12, color: isActive ? prog.color : T.text, whiteSpace: "pre" }}>{line}</span>
-//                   {isActive && (
-//                     <motion.span animate={{ opacity: [1,0.2,1] }} transition={{ duration: 0.5, repeat: Infinity }}
-//                       style={{ fontFamily: T.mono, fontSize: 8, color: prog.color, marginLeft: "auto", letterSpacing: 2 }}>◀</motion.span>
-//                   )}
-//                 </motion.div>
-//               );
-//             })}
-//           </div>
-//         </GlassCard>
-
-//         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-//           <GlassCard style={{ padding: 0, overflow: "hidden", flex: 1 }}>
-//             <div style={{ background: "rgba(0,0,0,0.4)", borderBottom: `1px solid ${T.dim}`, padding: "10px 16px", fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon2 }}>MEMORY STATE</div>
-//             <div style={{ padding: "16px", minHeight: 130 }}>
-//               <AnimatePresence>
-//                 {Object.keys(memory).length === 0 ? (
-//                   <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>No variables yet...</div>
-//                 ) : Object.entries(memory).map(([k, v]) => (
-//                   <motion.div key={k} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
-//                     style={{ display: "flex", alignItems: "center", gap: 12, fontFamily: T.mono, fontSize: 12, marginBottom: 10 }}>
-//                     <span style={{ color: T.neon2, minWidth: 80 }}>{k}</span>
-//                     <motion.div key={String(v)} initial={{ scale: 1.4, color: prog.color }} animate={{ scale: 1, color: T.text }}
-//                       style={{ background: `${prog.color}15`, border: `1px solid ${prog.color}40`, borderRadius: 5, padding: "3px 12px", fontWeight: 700, fontFamily: T.mono, fontSize: 11 }}>
-//                       {String(v)}
-//                     </motion.div>
-//                   </motion.div>
-//                 ))}
-//               </AnimatePresence>
-//             </div>
-//           </GlassCard>
-
-//           <GlassCard style={{ padding: 0, overflow: "hidden" }}>
-//             <div style={{ background: "rgba(0,0,0,0.4)", borderBottom: `1px solid ${T.dim}`, padding: "10px 16px", fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon3 }}>OUTPUT</div>
-//             <div style={{ padding: "14px 16px", minHeight: 56 }}>
-//               {output ? (
-//                 <motion.pre initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-//                   style={{ fontFamily: T.mono, fontSize: 16, color: T.neon4, lineHeight: 1.8 }}>
-//                   {output}
-//                 </motion.pre>
-//               ) : (
-//                 <span style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>
-//                   {running ? "executing..." : "press ▶ RUN"}
-//                 </span>
-//               )}
-//             </div>
-//           </GlassCard>
-
-//           <InsightBlock title="COMBINE BOTH" color={T.accent} icon="🚀">
-//             {"Pointers let functions modify real vars.\nRecursion breaks big problems small.\nTogether = linked lists, trees, parsers."}
-//           </InsightBlock>
-//         </div>
-//       </div>
-//     </Section>
-//   );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // SIDEBAR
-// // ─────────────────────────────────────────────────────────────────────────────
-// function Sidebar({ activeSection }) {
-//   return (
-//     <aside style={{
-//       width: 215, minWidth: 215, flexShrink: 0,
-//       background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
-//       borderRight: `1px solid ${T.dim}`,
-//       display: "flex", flexDirection: "column",
-//       padding: "26px 0", position: "sticky", top: 0, height: "100vh", overflow: "hidden",
-//     }}>
-//       <div style={{ padding: "0 18px 20px" }}>
-//         <div style={{ fontFamily: T.display, fontWeight: 400, fontSize: 18, letterSpacing: 4, color: T.neon }}>C LANG</div>
-//         <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.muted, marginTop: 2 }}>CH.6 · PTR + RECURSION</div>
-//       </div>
-//       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}40, transparent)`, marginBottom: 14 }} />
-//       <nav style={{ overflowY: "auto", flex: 1 }}>
-//         {NAV_ITEMS.map(item => {
-//           const isActive = activeSection === item.id;
-//           return (
-//             <motion.a key={item.id} href={`#${item.id}`}
-//               onClick={e => { e.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" }); }}
-//               animate={{ color: isActive ? T.neon : T.muted, background: isActive ? `${T.neon}08` : "transparent" }}
-//               whileHover={{ color: T.text, paddingLeft: 24 }}
-//               transition={{ duration: 0.18 }}
-//               style={{
-//                 display: "flex", alignItems: "center", gap: 9,
-//                 padding: "10px 18px", fontFamily: T.mono, fontSize: 10,
-//                 fontWeight: 600, letterSpacing: 1.5, textDecoration: "none",
-//                 borderLeft: `2px solid ${isActive ? T.neon : "transparent"}`,
-//               }}>
-//               <span style={{ fontSize: 11 }}>{item.icon}</span>
-//               <div>
-//                 <div style={{ fontSize: 7, opacity: 0.4, marginBottom: 1 }}>{item.num}</div>
-//                 {item.label}
-//               </div>
-//               {isActive && (
-//                 <motion.div layoutId="nav-dot-c6"
-//                   style={{ width: 4, height: 4, borderRadius: "50%", background: T.neon, marginLeft: "auto" }} />
-//               )}
-//             </motion.a>
-//           );
-//         })}
-//       </nav>
-//       <div style={{ padding: "14px 18px", fontFamily: T.mono, fontSize: 9, color: T.dim, letterSpacing: 2, lineHeight: 2 }}>
-//         C VISUAL SIM<br />v6.0
-//       </div>
-//     </aside>
-//   );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // RIGHT PANEL
-// // ─────────────────────────────────────────────────────────────────────────────
-// const DEEP = {
-//   hero:      { title: "Chapter 6",   color: T.neon,   why: "Pointers and recursion are C superpowers. Used in every system program ever written.", mistake: "Dereferencing a NULL or uninitialized pointer = instant crash (segfault).", model: "Pointer = sticky note with an address. Follow it to find the box." },
-//   memory:    { title: "RAM Basics",  color: T.neon2,  why: "All variables live in RAM. Knowing where = power.", mistake: "Assuming variables are adjacent — padding/alignment can add gaps.", model: "RAM = a street of numbered houses. &x = house number of x." },
-//   pointers:  { title: "Pointers",    color: T.neon,   why: "Pointers enable functions to modify real data, not copies.", mistake: "Printing *p before p is assigned = garbage or crash.", model: "int *p = address. *p = the thing. & = find the address." },
-//   deref:     { title: "Dereference", color: T.neon2,  why: "Write through a pointer = change the original variable.", mistake: "Forgetting to assign pointer before writing = wild pointer = data corruption.", model: "p = road sign. *p = destination. Change *p = change destination." },
-//   recursion: { title: "Recursion",   color: T.neon3,  why: "Some problems are naturally recursive: trees, mazes, math.", mistake: "Missing base case = infinite recursion = stack overflow crash (☠).", model: "Recursion = Russian dolls. Open each, find a smaller one, until empty." },
-//   callstack: { title: "Call Stack",  color: T.neon4,  why: "Each function call gets its own frame with local vars.", mistake: "Stack overflow when recursion is too deep (default ~1-8MB limit).", model: "Stack = tower of trays. Push when calling, pop when returning." },
-//   engine:    { title: "Full Engine", color: T.accent, why: "Real code combines pointers + recursion constantly.", mistake: "Overcomplicating — use recursion only when it simplifies the logic.", model: "Master Ch.6 = understand how every compiler, OS and game engine works internally." },
-// };
-
-// function RightPanel({ activeSection }) {
-//   const data = DEEP[activeSection] || DEEP.hero;
-//   const [liveTime, setLiveTime] = useState(0);
-//   useEffect(() => {
-//     const iv = setInterval(() => setLiveTime(t => t+1), 1000);
-//     return () => clearInterval(iv);
-//   }, []);
-
-//   return (
-//     <aside style={{
-//       width: 285, minWidth: 285, flexShrink: 0,
-//       background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
-//       borderLeft: `1px solid ${T.dim}`,
-//       padding: "26px 14px",
-//       display: "flex", flexDirection: "column", gap: 12,
-//       overflowY: "auto", overflowX: "hidden",
-//       position: "sticky", top: 0, height: "100vh",
-//     }}>
-//       <div>
-//         <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, marginBottom: 8 }}>DEEP</div>
-//         <div style={{ height: 1, background: `linear-gradient(90deg, ${T.neon}40, transparent)` }} />
-//       </div>
-
-//       <div style={{ background: `${T.neon}05`, border: `1px solid ${T.neon}18`, borderRadius: 9, padding: "10px 12px" }}>
-//         <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon, marginBottom: 8 }}>⚙ LIVE</div>
-//         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-//           {[
-//             { label: "SECTION", value: (activeSection || "hero").toUpperCase().slice(0,8), color: data.color },
-//             { label: "UPTIME",  value: `${liveTime}s`, color: T.neon2 },
-//             { label: "TOPICS",  value: "6", color: T.neon4 },
-//             { label: "ENGINE",  value: "LIVE", color: T.neon },
-//           ].map(({ label, value, color }) => (
-//             <div key={label}>
-//               <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 2, color: T.muted }}>{label}</div>
-//               <motion.div key={value} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }}
-//                 style={{ fontFamily: T.mono, fontSize: 12, fontWeight: 700, color }}>{value}</motion.div>
-//             </div>
-//           ))}
-//         </div>
-//       </div>
-
-//       <AnimatePresence mode="wait">
-//         <motion.div key={activeSection} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
-//           transition={{ duration: 0.28 }}
-//           style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-
-//           <div style={{ padding: "12px 14px", borderRadius: 10, background: `${data.color}10`, border: `1px solid ${data.color}35` }}>
-//             <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: data.color, marginBottom: 4 }}>CURRENT</div>
-//             <div style={{ fontFamily: T.display, fontSize: 20, fontWeight: 400, letterSpacing: 3, color: data.color }}>{data.title}</div>
-//           </div>
-
-//           <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.dim}` }}>
-//             <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon, marginBottom: 8 }}>💡 WHY</div>
-//             <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.85 }}>{data.why}</div>
-//           </div>
-
-//           <div style={{ padding: "14px", borderRadius: 10, background: `${T.neon3}08`, border: `1px solid ${T.neon3}25` }}>
-//             <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon3, marginBottom: 8 }}>⚠ MISTAKE</div>
-//             <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.85 }}>{data.mistake}</div>
-//           </div>
-
-//           <div style={{ padding: "14px", borderRadius: 10, background: `${data.color}08`, border: `1px solid ${data.color}20` }}>
-//             <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: data.color, marginBottom: 8 }}>🧠 MODEL</div>
-//             <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.85, fontStyle: "italic" }}>"{data.model}"</div>
-//           </div>
-//         </motion.div>
-//       </AnimatePresence>
-
-//       <div style={{ marginTop: "auto" }}>
-//         <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.dim}, transparent)`, marginBottom: 12 }} />
-//         <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.muted, marginBottom: 8 }}>CHAPTER NAVIGATION</div>
-//         <div style={{ display: "flex", gap: 8 }}>
-//           <Link href="/c-5" passHref legacyBehavior>
-//             <motion.a whileHover={{ color: T.neon, scale: 1.02 }} style={{
-//               flex: 1, textAlign: "center", padding: "7px", borderRadius: 6,
-//               background: "transparent", border: `1px solid ${T.dim}`,
-//               fontFamily: T.mono, fontSize: 9, color: T.muted, textDecoration: "none", cursor: "pointer",
-//             }}>← C5</motion.a>
-//           </Link>
-//           <Link href="/c-7" passHref legacyBehavior>
-//             <motion.a whileHover={{ color: T.neon, scale: 1.02 }} style={{
-//               flex: 1, textAlign: "center", padding: "7px", borderRadius: 6,
-//               background: "transparent", border: `1px solid ${T.dim}`,
-//               fontFamily: T.mono, fontSize: 9, color: T.muted, textDecoration: "none", cursor: "pointer",
-//             }}>C7 →</motion.a>
-//           </Link>
-//         </div>
-//       </div>
-//     </aside>
-//   );
-// }
-
-// // ─────────────────────────────────────────────────────────────────────────────
-// // ROOT PAGE
-// // ─────────────────────────────────────────────────────────────────────────────
-// export default function C6Page() {
-//   const [activeSection, setActiveSection] = useState("hero");
-
-//   useEffect(() => {
-//     const observer = new IntersectionObserver(
-//       entries => { entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }); },
-//       { threshold: 0.2, rootMargin: "-10% 0px -10% 0px" }
-//     );
-//     NAV_ITEMS.forEach(item => {
-//       const el = document.getElementById(item.id);
-//       if (el) observer.observe(el);
-//     });
-//     return () => observer.disconnect();
-//   }, []);
-
-//   return (
-//     <>
-//       <style>{`
-//         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fira+Code:wght@300;400;500;600;700&display=swap');
-//         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-//         html { scroll-behavior: smooth; }
-//         body { background: ${T.bg}; color: ${T.text}; overflow-x: hidden; }
-//         ::-webkit-scrollbar { width: 3px; }
-//         ::-webkit-scrollbar-track { background: ${T.bg}; }
-//         ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 2px; }
-//         input[type=range] { height: 4px; cursor: pointer; -webkit-appearance: none; appearance: none; background: ${T.dim}; border-radius: 2px; outline: none; }
-//         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: ${T.neon}; cursor: pointer; box-shadow: 0 0 10px ${T.neon}70; }
-//         input[type=number] { -moz-appearance: textfield; }
-//         input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-//         button { outline: none; }
-//         a { text-decoration: none; }
-//       `}</style>
-
-//       <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: T.bg }}>
-//         <Sidebar activeSection={activeSection} />
-
-//         <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
-//           <div style={{ maxWidth: "100%", padding: "0 38px" }}>
-//             <HeroSection />
-//             <MemorySection />
-//             <PointersSection />
-//             <DerefSection />
-//             <RecursionSection />
-//             <StackSimulator />
-//             <EngineSection />
-//             <div style={{ height: 80 }} />
-//           </div>
-//         </main>
-
-//         <RightPanel activeSection={activeSection} />
-//       </div>
-//     </>
-//   );
-// }
 "use client";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { motion, AnimatePresence, useScroll, useTransform, useSpring, useInView } from "framer-motion";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DESIGN TOKENS
 // ─────────────────────────────────────────────────────────────────────────────
 const T = {
-  bg: "#03050A",
-  bg1: "#060B14",
-  bg2: "#091220",
-  glass: "rgba(6,12,24,0.85)",
-  border: "rgba(0,200,255,0.10)",
-  neon: "#00C8FF",
-  neon2: "#FF4D6D",
-  neon3: "#39FF14",
-  neon4: "#FFB800",
-  purple: "#9D4EDD",
-  text: "#DCE8F5",
-  muted: "#3A5068",
-  dim: "#0E1E2F",
-  mono: "'Fira Code', 'Cascadia Code', monospace",
+  bg:      "#020509",
+  bg1:     "#050A12",
+  bg2:     "#08111F",
+  glass:   "rgba(5,12,25,0.88)",
+  border:  "rgba(255,100,0,0.10)",
+  neon:    "#FF6400",
+  neon2:   "#00E5FF",
+  neon3:   "#FF2D6B",
+  neon4:   "#B4FF00",
+  accent:  "#A855F7",
+  text:    "#E8ECF4",
+  muted:   "#3A506B",
+  dim:     "#111D2A",
+  mono:    "'Fira Code', monospace",
   display: "'Bebas Neue', sans-serif",
-  sans: "'DM Sans', 'Segoe UI', sans-serif",
 };
 
+const NAV_ITEMS = [
+  { id: "hero",       label: "INTRO",       num: "00", icon: "◈" },
+  { id: "ram",        label: "RAM MODEL",   num: "01", icon: "⬜" },
+  { id: "pointers",   label: "POINTERS",    num: "02", icon: "→" },
+  { id: "ops",        label: "& * OPS",     num: "03", icon: "&" },
+  { id: "ptr-fn",     label: "PTR + FN",    num: "04", icon: "ƒ" },
+  { id: "recursion",  label: "RECURSION",   num: "05", icon: "↻" },
+  { id: "callstack",  label: "CALL STACK",  num: "06", icon: "⧖" },
+  { id: "engine",     label: "ENGINE",      num: "07", icon: "🚀" },
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
-// UTILITY COMPONENTS
+// VOICE NARRATION SYSTEM
 // ─────────────────────────────────────────────────────────────────────────────
-function Glow({ color = T.neon, size = 300, opacity = 0.08, style = {} }) {
+const VOICE_SCRIPTS = {
+  hero:       "Welcome to Chapter 7. We're diving into pointers and recursion — the two concepts that make C powerful and dangerous at the same time. By the end, you'll see RAM for what it truly is: just a giant array of bytes.",
+  ram:        "RAM is simpler than you think. Imagine a long street where every house has a number. That number is the address. The stuff inside is the value. When you declare int a equals 42, the compiler picks a house, writes 42 in it, and remembers the address.",
+  pointers:   "A pointer is just a variable that stores an address. Nothing magical. When you write int star ptr, you're telling C: this variable holds a house number, not actual data. Star ptr means: go to that house and look inside.",
+  ops:        "Two operators. Ampersand gets the address — it asks: where does this variable live? Star follows the address — it says: go to that location and read or write. That's literally all there is to pointer operators.",
+  "ptr-fn":   "C copies everything by default. When you call a function, it gets a copy of your variable — changes to the copy don't affect the original. To let a function modify your data, you pass the address. The function follows the address and writes directly to your variable.",
+  recursion:  "Recursion is a function calling itself with a smaller version of the problem. Two rules: you must have a base case where it stops, and every recursive call must move closer to that base case. Break either rule and the program crashes.",
+  callstack:  "The call stack is a region of memory that tracks function calls. Each call pushes a new frame containing local variables and a return address. When the function finishes, the frame is popped. Too many nested calls overflow the stack — that's literally a stack overflow.",
+  engine:     "Now you've seen it all working together. Pointers let functions reach into memory directly. Recursion breaks problems into smaller copies of themselves. Combined, they power everything from linked lists to parsers to operating systems.",
+};
+
+function useVoiceNarration() {
+  const [speaking, setSpeaking] = useState(false);
+  const [supported, setSupported] = useState(false);
+  const [currentSection, setCurrentSection] = useState(null);
+  const utterRef = useRef(null);
+
+  useEffect(() => {
+    setSupported("speechSynthesis" in window);
+  }, []);
+
+  const speak = useCallback((sectionId) => {
+    if (!supported) return;
+    window.speechSynthesis.cancel();
+    const text = VOICE_SCRIPTS[sectionId];
+    if (!text) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 0.88;
+    utter.pitch = 1.0;
+    utter.volume = 1;
+    // Pick a good voice if available
+    const voices = window.speechSynthesis.getVoices();
+    const preferred = voices.find(v =>
+      v.name.includes("Google US English") ||
+      v.name.includes("Samantha") ||
+      v.name.includes("Daniel") ||
+      v.name.includes("Karen") ||
+      (v.lang === "en-US" && v.localService)
+    ) || voices.find(v => v.lang.startsWith("en"));
+    if (preferred) utter.voice = preferred;
+    utter.onstart = () => { setSpeaking(true); setCurrentSection(sectionId); };
+    utter.onend = () => { setSpeaking(false); setCurrentSection(null); };
+    utter.onerror = () => { setSpeaking(false); setCurrentSection(null); };
+    utterRef.current = utter;
+    window.speechSynthesis.speak(utter);
+  }, [supported]);
+
+  const stop = useCallback(() => {
+    window.speechSynthesis.cancel();
+    setSpeaking(false);
+    setCurrentSection(null);
+  }, []);
+
+  return { speaking, supported, currentSection, speak, stop };
+}
+
+// Voice Button component
+function VoiceButton({ sectionId, voice, style = {} }) {
+  const isThisSection = voice.currentSection === sectionId;
+  const isActive = voice.speaking && isThisSection;
+
+  if (!voice.supported) return null;
+
   return (
-    <div style={{
-      position: "absolute", borderRadius: "50%",
-      width: size, height: size,
-      background: `radial-gradient(circle, ${color} 0%, transparent 70%)`,
-      opacity, pointerEvents: "none", ...style,
-    }} />
+    <motion.button
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.96 }}
+      onClick={() => isActive ? voice.stop() : voice.speak(sectionId)}
+      style={{
+        display: "flex", alignItems: "center", gap: 8,
+        fontFamily: T.mono, fontSize: 9, letterSpacing: 3,
+        color: isActive ? "#000" : T.neon2,
+        background: isActive ? T.neon2 : `${T.neon2}12`,
+        border: `1px solid ${isActive ? T.neon2 : `${T.neon2}40`}`,
+        borderRadius: 7, padding: "7px 16px", cursor: "pointer",
+        boxShadow: isActive ? `0 0 24px ${T.neon2}60` : "none",
+        transition: "all 0.18s",
+        ...style,
+      }}
+    >
+      {isActive ? (
+        <motion.div style={{ display: "flex", gap: 2 }}>
+          {[0,1,2,3].map(i => (
+            <motion.div key={i}
+              animate={{ scaleY: [0.4, 1.4, 0.4] }}
+              transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.12 }}
+              style={{ width: 3, height: 12, background: "#000", borderRadius: 2 }}
+            />
+          ))}
+        </motion.div>
+      ) : (
+        <span style={{ fontSize: 11 }}>🔊</span>
+      )}
+      {isActive ? "STOP" : "NARRATE"}
+    </motion.button>
   );
 }
 
-function GlassCard({ children, style = {}, glow = T.neon, onClick, hover = true }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// SHARED PRIMITIVES
+// ─────────────────────────────────────────────────────────────────────────────
+function GlassCard({ children, style = {}, hover = true, glowColor = T.neon, onClick }) {
   return (
     <motion.div
       onClick={onClick}
-      whileHover={hover ? { borderColor: `${glow}50`, boxShadow: `0 0 40px ${glow}18, 0 8px 60px rgba(0,0,0,0.6)` } : {}}
-      transition={{ type: "spring", stiffness: 260, damping: 26 }}
+      whileHover={hover ? { borderColor: `${glowColor}50`, boxShadow: `0 8px 60px rgba(0,0,0,0.7), 0 0 40px ${glowColor}18` } : {}}
+      transition={{ type: "spring", stiffness: 280, damping: 28 }}
       style={{
         background: T.glass,
         border: `1px solid ${T.border}`,
-        borderRadius: 16,
-        backdropFilter: "blur(28px)",
-        WebkitBackdropFilter: "blur(28px)",
-        boxShadow: "0 4px 50px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
+        borderRadius: 14,
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        boxShadow: "0 4px 50px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.03)",
         ...style,
       }}
     >{children}</motion.div>
   );
 }
 
-function NeonText({ children, color = T.neon, style = {} }) {
+function Section({ id, children, style = {} }) {
   return (
-    <motion.span
-      animate={{ textShadow: [`0 0 20px ${color}80`, `0 0 45px ${color}C0`, `0 0 20px ${color}80`] }}
-      transition={{ duration: 2.4, repeat: Infinity }}
-      style={{ color, ...style }}
-    >{children}</motion.span>
+    <section id={id} style={{ padding: "80px 0", borderBottom: `1px solid ${T.dim}`, ...style }}>
+      {children}
+    </section>
   );
 }
 
-function Pill({ children, color = T.neon, active, onClick, style = {} }) {
+function SectionHeader({ num, tag, title, subtitle, color = T.neon, sectionId, voice }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -30 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, amount: 0.4 }}
+      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+      style={{ marginBottom: 44 }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 20, marginBottom: subtitle ? 14 : 0, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: T.mono, fontSize: "clamp(32px, 6vw, 52px)", fontWeight: 700, color: T.dim, lineHeight: 1, letterSpacing: -2 }}>{num}</span>
+        <div style={{ flex: 1, minWidth: 200 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color, fontWeight: 600, marginBottom: 5 }}>{tag}</div>
+          <h2 style={{ fontFamily: T.display, fontSize: "clamp(26px, 4vw, 38px)", fontWeight: 400, color: T.text, letterSpacing: 3, lineHeight: 1 }}>{title}</h2>
+        </div>
+        {sectionId && voice && (
+          <VoiceButton sectionId={sectionId} voice={voice} style={{ flexShrink: 0 }} />
+        )}
+      </div>
+      {subtitle && (
+        <div style={{
+          fontFamily: T.mono, fontSize: "clamp(10px, 1.5vw, 12px)", color: T.muted, lineHeight: 1.9,
+          maxWidth: 620, marginLeft: "clamp(0px, 6vw, 80px)",
+          borderLeft: `2px solid ${color}40`, paddingLeft: 16,
+        }}>{subtitle}</div>
+      )}
+    </motion.div>
+  );
+}
+
+function Pill({ children, color = T.neon, active = false, onClick, style = {} }) {
   return (
     <motion.button
-      whileHover={{ scale: 1.07, y: -2 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.06, y: -2 }} whileTap={{ scale: 0.95 }}
       onClick={onClick}
       style={{
         fontFamily: T.mono, fontSize: 10, fontWeight: 600, letterSpacing: 2,
         color: active ? "#000" : color,
-        background: active ? color : `${color}15`,
-        border: `1px solid ${active ? color : `${color}45`}`,
-        borderRadius: 7, padding: "7px 18px", cursor: "pointer",
-        boxShadow: active ? `0 0 22px ${color}60` : "none",
+        background: active ? color : `${color}12`,
+        border: `1px solid ${active ? color : `${color}40`}`,
+        borderRadius: 6, padding: "7px 16px", cursor: "pointer",
+        boxShadow: active ? `0 0 20px ${color}50` : "none",
         transition: "all 0.18s", ...style,
       }}
     >{children}</motion.button>
   );
 }
 
-function AddressTag({ addr, color = T.neon }) {
-  return (
-    <motion.span
-      animate={{ boxShadow: [`0 0 8px ${color}50`, `0 0 18px ${color}90`, `0 0 8px ${color}50`] }}
-      transition={{ duration: 1.8, repeat: Infinity }}
-      style={{
-        fontFamily: T.mono, fontSize: 11, fontWeight: 700, color,
-        background: `${color}18`, border: `1px solid ${color}55`,
-        borderRadius: 5, padding: "2px 9px", display: "inline-block",
-      }}
-    >{addr}</motion.span>
-  );
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 1: HERO — MEMORY WORLD
+// HERO
 // ─────────────────────────────────────────────────────────────────────────────
-function HeroSection() {
-  const [pointerMode, setPointerMode] = useState("addr"); // addr | value
-  const [lineDrawn, setLineDrawn] = useState(false);
-  const [hovered, setHovered] = useState(null);
+function HeroSection({ voice }) {
+  const canvasRef = useRef(null);
   const [phase, setPhase] = useState(0);
-  const containerRef = useRef(null);
-
-  const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end start"] });
-  const yBg = useTransform(scrollYProgress, [0, 1], [0, -80]);
-  const opacity = useTransform(scrollYProgress, [0, 0.7], [1, 0]);
-
-  const memCells = [
-    { addr: "0x1A00", label: null, value: "??", color: T.muted, dim: true },
-    { addr: "0x1A04", label: "x", value: 42, color: T.neon3, isVar: true },
-    { addr: "0x1A08", label: "p", value: "0x1A04", color: T.neon, isPtr: true },
-    { addr: "0x1A0C", label: null, value: "??", color: T.muted, dim: true },
-    { addr: "0x1A10", label: null, value: "??", color: T.muted, dim: true },
+  const phrases = [
+    "pointer = variable that stores an address",
+    "*p = follow the arrow to RAM",
+    "&x = the house number where x lives",
+    "recursion = function that calls itself",
+    "base case = when to stop calling",
+    "call stack = tower of waiting frames",
   ];
 
-  const xCell = memCells[1];
-  const pCell = memCells[2];
-
-  const runAnimation = async () => {
-    setPhase(1);
-    await new Promise(r => setTimeout(r, 700));
-    setPhase(2);
-    await new Promise(r => setTimeout(r, 600));
-    setLineDrawn(true);
-    setPhase(3);
-  };
-
-  const phrases = ["pointer = address", "*p = follow arrow", "&x = where x lives", "p → 0x1A04 → 42"];
-  const [phraseIdx, setPhraseIdx] = useState(0);
   useEffect(() => {
-    const iv = setInterval(() => setPhraseIdx(p => (p + 1) % phrases.length), 3000);
+    const iv = setInterval(() => setPhase(p => (p + 1) % phrases.length), 3200);
     return () => clearInterval(iv);
   }, []);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let raf;
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+    const HEX_CHARS = "0x1000 0x1004 0x1008 *p &x int* NULL ptr addr".split(" ");
+    const particles = Array.from({ length: 45 }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      vy: -(0.1 + Math.random() * 0.25), vx: (Math.random() - 0.5) * 0.08,
+      alpha: Math.random() * 0.3 + 0.04, size: 9 + Math.floor(Math.random() * 5),
+      char: HEX_CHARS[Math.floor(Math.random() * HEX_CHARS.length)],
+      color: [T.neon, T.neon2, T.neon4, T.muted][Math.floor(Math.random() * 4)],
+    }));
+    const loop = () => {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => {
+        p.y += p.vy; p.x += p.vx;
+        if (p.y < -20) { p.y = H + 10; p.x = Math.random() * W; }
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.font = `${p.size}px 'Fira Code', monospace`;
+        ctx.fillText(p.char, p.x, p.y);
+      });
+      ctx.globalAlpha = 1;
+      raf = requestAnimationFrame(loop);
+    };
+    loop();
+    const onResize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; };
+    window.addEventListener("resize", onResize);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener("resize", onResize); };
+  }, []);
+
+  const TOPICS = [
+    { label: "Variables in RAM", icon: "⬜", color: T.neon4 },
+    { label: "Address-of  &",    icon: "&",  color: T.neon2 },
+    { label: "Dereference  *",   icon: "*",  color: T.neon },
+    { label: "Pointer Arithmetic",icon: "++",color: T.accent },
+    { label: "Pass by Pointer",  icon: "ƒ",  color: T.neon3 },
+    { label: "Base Case",        icon: "⊡",  color: T.neon4 },
+    { label: "Recursive Call",   icon: "↻",  color: T.neon2 },
+    { label: "Stack Frames",     icon: "⧖",  color: T.neon },
+    { label: "Stack Overflow",   icon: "☠",  color: T.neon3 },
+  ];
+
   return (
-    <section ref={containerRef} id="hero" style={{
-      minHeight: "100vh", position: "relative", overflow: "hidden",
-      display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-      background: `radial-gradient(ellipse 90% 60% at 50% -10%, rgba(0,200,255,0.1) 0%, transparent 65%),
-                   radial-gradient(ellipse 50% 40% at 90% 80%, rgba(157,78,221,0.08) 0%, transparent 55%),
-                   ${T.bg}`,
+    <section id="hero" style={{
+      minHeight: "100vh", display: "flex", flexDirection: "column",
+      alignItems: "center", justifyContent: "center",
+      position: "relative", overflow: "hidden", padding: "40px 24px",
+      background: `radial-gradient(ellipse 80% 50% at 50% -5%, rgba(255,100,0,0.09) 0%, transparent 60%),
+                   radial-gradient(ellipse 50% 35% at 85% 75%, rgba(168,85,247,0.07) 0%, transparent 55%),
+                   radial-gradient(ellipse 35% 25% at 10% 85%, rgba(0,229,255,0.05) 0%, transparent 55%), ${T.bg}`,
     }}>
-      {/* Scan lines */}
-      <div style={{
-        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,200,255,0.008) 3px, rgba(0,200,255,0.008) 4px)",
-      }} />
+      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", opacity: 0.4 }} />
+      <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,100,0,0.012) 2px, rgba(255,100,0,0.012) 4px)" }} />
 
-      <Glow color={T.neon} size={600} opacity={0.07} style={{ top: -150, left: "50%", transform: "translateX(-50%)" }} />
-      <Glow color={T.purple} size={400} opacity={0.06} style={{ bottom: 100, right: -100 }} />
-
-      <motion.div style={{ y: yBg, opacity, position: "relative", zIndex: 10, width: "100%", maxWidth: 1100, padding: "0 40px" }}>
-
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 10,
-            fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon,
-            border: `1px solid ${T.border}`, background: "rgba(0,200,255,0.05)",
-            padding: "7px 22px", borderRadius: 100, marginBottom: 28,
-          }}
-        >
-          <motion.span
-            animate={{ opacity: [1, 0.1, 1] }}
-            transition={{ duration: 1.2, repeat: Infinity }}
-            style={{ width: 5, height: 5, borderRadius: "50%", background: T.neon, display: "inline-block" }}
-          />
-          C · CHAPTER 6 · POINTERS + RECURSION
+      <div style={{ position: "relative", zIndex: 10, textAlign: "center", maxWidth: 940, width: "100%" }}>
+        <motion.div initial={{ opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 10, fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, border: `1px solid ${T.border}`, background: "rgba(255,100,0,0.05)", padding: "7px 22px", borderRadius: 100, marginBottom: 30 }}>
+          <motion.span animate={{ opacity: [1, 0.1, 1], scale: [1, 0.6, 1] }} transition={{ duration: 1.1, repeat: Infinity }}
+            style={{ width: 5, height: 5, borderRadius: "50%", background: T.neon, display: "inline-block" }} />
+          C · CHAPTER 7 · POINTERS + RECURSION
         </motion.div>
 
-        {/* Title */}
-        <motion.h1
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 1, ease: [0.22, 1, 0.36, 1] }}
-          style={{
-            fontFamily: T.display, fontWeight: 400,
-            fontSize: "clamp(56px, 9vw, 118px)",
-            lineHeight: 0.88, letterSpacing: 5, color: T.text, marginBottom: 20,
-          }}
-        >
-          MEMORY
+        <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+          style={{ fontFamily: T.display, fontWeight: 400, fontSize: "clamp(50px, 9vw, 108px)", lineHeight: 0.9, letterSpacing: 6, color: T.text, marginBottom: 22 }}>
+          FINAL
           <br />
-          <NeonText color={T.neon} style={{ fontFamily: T.display, fontWeight: 400, fontSize: "inherit", letterSpacing: 5 }}>
-            WORLD
-          </NeonText>
+          <motion.span
+            animate={{ textShadow: [`0 0 50px ${T.neon}90`, `0 0 80px ${T.neon}B0`, `0 0 50px ${T.neon}90`] }}
+            transition={{ duration: 2.2, repeat: Infinity }}
+            style={{ color: T.neon }}>CHAPTER</motion.span>
         </motion.h1>
 
-        {/* Rotating phrase */}
-        <div style={{ height: 28, marginBottom: 44, overflow: "hidden" }}>
+        <div style={{ height: 32, marginBottom: 36, overflow: "hidden" }}>
           <AnimatePresence mode="wait">
-            <motion.p
-              key={phraseIdx}
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -20, opacity: 0 }}
-              transition={{ duration: 0.32 }}
-              style={{ fontFamily: T.mono, fontSize: 13, color: T.neon2, letterSpacing: 1 }}
-            >
-              → {phrases[phraseIdx]}
+            <motion.p key={phase} initial={{ y: 22, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -22, opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              style={{ fontFamily: T.mono, fontSize: "clamp(11px, 2vw, 13px)", color: T.neon2, letterSpacing: 1 }}>
+              → {phrases[phase]}
             </motion.p>
           </AnimatePresence>
         </div>
 
-        {/* Memory visual */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, alignItems: "start" }}>
+        <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }}
+          style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8, marginBottom: 46 }}>
+          {TOPICS.map((t, i) => (
+            <motion.div key={t.label}
+              initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.65 + i * 0.08, type: "spring", stiffness: 280 }}
+              whileHover={{ y: -5, boxShadow: `0 10px 35px ${t.color}50` }}
+              style={{ padding: "8px 18px", borderRadius: 7, background: `${t.color}10`, border: `1px solid ${t.color}35`, fontFamily: T.mono, fontSize: 10, color: t.color, display: "flex", alignItems: "center", gap: 7 }}>
+              <span style={{ fontSize: 13 }}>{t.icon}</span> {t.label}
+            </motion.div>
+          ))}
+        </motion.div>
 
-          {/* Left: Memory grid */}
-          <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.55 }}>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, marginBottom: 16 }}>▸ RAM CELLS</div>
-
-            {/* SVG connection line */}
-            <div style={{ position: "relative" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {memCells.map((cell, i) => (
-                  <motion.div
-                    key={i}
-                    initial={{ x: -30, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.6 + i * 0.09, type: "spring", stiffness: 220 }}
-                    onMouseEnter={() => setHovered(i)}
-                    onMouseLeave={() => setHovered(null)}
-                    style={{ display: "flex", alignItems: "center", gap: 12, cursor: "default" }}
-                  >
-                    <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, width: 68, textAlign: "right" }}>{cell.addr}</span>
-
-                    <motion.div
-                      animate={{
-                        borderColor: hovered === i ? (cell.isVar ? T.neon3 : cell.isPtr ? T.neon : `${T.muted}60`) :
-                          (cell.isVar && lineDrawn) ? T.neon3 :
-                            (cell.isPtr && lineDrawn) ? T.neon :
-                              `${T.neon}18`,
-                        background: hovered === i ? `${(cell.isVar ? T.neon3 : cell.isPtr ? T.neon : T.muted)}18` :
-                          (cell.isVar && lineDrawn) ? `${T.neon3}12` :
-                            (cell.isPtr && lineDrawn) ? `${T.neon}12` :
-                              `${T.neon}05`,
-                        boxShadow: (cell.isVar || cell.isPtr) && lineDrawn ? `0 0 30px ${cell.isVar ? T.neon3 : T.neon}50` : "none",
-                      }}
-                      transition={{ duration: 0.4 }}
-                      style={{
-                        flex: 1, height: 56, borderRadius: 9, border: "2px solid",
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                        padding: "0 16px",
-                      }}
-                    >
-                      <span style={{ fontFamily: T.mono, fontSize: 9, color: cell.dim ? T.muted : (cell.isVar ? T.neon3 : T.neon) }}>
-                        {cell.label ? `${cell.isPtr ? "int*" : "int"} ${cell.label}` : "···"}
-                      </span>
-                      <motion.span
-                        animate={cell.isPtr && pointerMode === "value" && lineDrawn ? {
-                          color: [T.neon, T.neon3, T.neon],
-                        } : {}}
-                        transition={{ duration: 1.2, repeat: Infinity }}
-                        style={{
-                          fontFamily: T.mono, fontSize: 15, fontWeight: 700,
-                          color: cell.dim ? `${T.muted}60` : (cell.isVar ? T.neon3 : cell.isPtr ? T.neon : T.muted),
-                        }}
-                      >
-                        {cell.isPtr && lineDrawn
-                          ? (pointerMode === "value" ? `*p = 42` : `p = 0x1A04`)
-                          : String(cell.value)}
-                      </motion.span>
-                    </motion.div>
-
-                    <div style={{ width: 28, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      {cell.isPtr && lineDrawn && (
-                        <motion.div
-                          initial={{ opacity: 0, x: -6 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          style={{ fontFamily: T.mono, fontSize: 20, color: T.neon }}
-                        >→</motion.div>
-                      )}
-                      {cell.isVar && lineDrawn && (
-                        <motion.div
-                          animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                          transition={{ duration: 1.3, repeat: Infinity }}
-                          style={{ width: 9, height: 9, borderRadius: "50%", background: T.neon3, boxShadow: `0 0 14px ${T.neon3}` }}
-                        />
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-
-              {/* Animated connector arc */}
-              <AnimatePresence>
-                {lineDrawn && (
-                  <motion.svg
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", pointerEvents: "none" }}
-                    viewBox="0 0 400 260"
-                  >
-                    <motion.path
-                      d="M 350 160 C 410 160 410 100 350 100"
-                      fill="none"
-                      stroke={T.neon}
-                      strokeWidth="2.5"
-                      strokeDasharray="7 5"
-                      initial={{ pathLength: 0 }}
-                      animate={{ pathLength: 1 }}
-                      transition={{ duration: 0.9, ease: "easeOut" }}
-                    />
-                    <motion.circle cx="350" cy="100" r="5" fill={T.neon}
-                      animate={{ r: [4, 8, 4], opacity: [1, 0.5, 1] }}
-                      transition={{ duration: 1.6, repeat: Infinity }}
-                    />
-                    <motion.circle cx="350" cy="160" r="4" fill={T.neon}
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.8 }}
-                    />
-                  </motion.svg>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-
-          {/* Right: Controls + code */}
-          <motion.div
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6 }}
-            style={{ display: "flex", flexDirection: "column", gap: 16 }}
-          >
-            {/* Code block */}
-            <GlassCard style={{ overflow: "hidden" }}>
-              <div style={{
-                padding: "9px 16px", borderBottom: `1px solid ${T.dim}`,
-                display: "flex", gap: 6, alignItems: "center",
-              }}>
-                {["#FF5F57", "#FEBC2E", "#28C840"].map((c, i) => (
-                  <div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: c }} />
-                ))}
-                <span style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginLeft: 8, letterSpacing: 2 }}>main.c</span>
-              </div>
-              <div style={{ padding: "16px 20px" }}>
-                {[
-                  { line: `int x = 42;`, color: T.neon3, active: phase >= 1 },
-                  { line: `int *p = &x;`, color: T.neon, active: phase >= 2 },
-                  { line: `printf("%p", p);  // 0x1A04`, color: T.text, active: phase >= 3 },
-                  { line: `printf("%d", *p); // 42`, color: T.text, active: phase >= 3 },
-                ].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    animate={{
-                      background: item.active ? `${item.color}12` : "transparent",
-                      borderLeftColor: item.active ? item.color : "transparent",
-                    }}
-                    style={{
-                      fontFamily: T.mono, fontSize: 12, lineHeight: 2.1,
-                      paddingLeft: 12, borderLeft: "3px solid",
-                      color: item.active ? item.color : `${T.text}60`,
-                      transition: "all 0.3s",
-                    }}
-                  >
-                    <span style={{ color: T.muted, marginRight: 14, fontSize: 9 }}>{i + 1}</span>
-                    {item.line}
-                  </motion.div>
-                ))}
-              </div>
-            </GlassCard>
-
-            {/* Controls */}
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              {!lineDrawn ? (
-                <motion.button
-                  whileHover={{ scale: 1.04, boxShadow: `0 0 35px ${T.neon}60` }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={runAnimation}
-                  style={{
-                    flex: 1, fontFamily: T.display, fontSize: 14, letterSpacing: 6,
-                    color: "#000", background: `linear-gradient(135deg, ${T.neon}, ${T.purple})`,
-                    border: "none", borderRadius: 9, padding: "14px", cursor: "pointer",
-                  }}
-                >▶ ASSIGN POINTER</motion.button>
-              ) : (
-                <>
-                  <Pill color={T.neon} active={pointerMode === "addr"} onClick={() => setPointerMode("addr")}>p (addr)</Pill>
-                  <Pill color={T.neon3} active={pointerMode === "value"} onClick={() => setPointerMode("value")}>*p (value)</Pill>
-                  <motion.button
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => { setLineDrawn(false); setPhase(0); setPointerMode("addr"); }}
-                    style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 8, padding: "7px 14px", cursor: "pointer" }}
-                  >↺</motion.button>
-                </>
-              )}
-            </div>
-
-            {/* Insight box */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`${phase}-${pointerMode}`}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                style={{
-                  padding: "14px 18px", borderRadius: 11,
-                  background: `${T.neon}08`, border: `1px solid ${T.neon}30`,
-                  fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9,
-                }}
-              >
-                {phase === 0 && "int x lives at 0x1A04. Press ASSIGN."}
-                {phase === 1 && "x = 42 stored in memory."}
-                {phase === 2 && <span>p stores <AddressTag addr="0x1A04" color={T.neon} /> — x's address.</span>}
-                {phase === 3 && pointerMode === "addr" && <span>p = <AddressTag addr="0x1A04" color={T.neon} /> (the address)</span>}
-                {phase === 3 && pointerMode === "value" && <span>*p = <strong style={{ color: T.neon3 }}>42</strong> (follow arrow → get value)</span>}
-              </motion.div>
-            </AnimatePresence>
-          </motion.div>
+        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+          <motion.button initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1.05 }}
+            whileHover={{ scale: 1.07, boxShadow: `0 0 55px ${T.neon}70` }} whileTap={{ scale: 0.96 }}
+            onClick={() => document.getElementById("ram")?.scrollIntoView({ behavior: "smooth" })}
+            style={{ fontFamily: T.display, fontSize: 14, letterSpacing: 6, color: "#000", background: `linear-gradient(135deg, ${T.neon}, ${T.neon2})`, border: "none", borderRadius: 8, padding: "16px 50px", cursor: "pointer" }}>
+            ENTER
+          </motion.button>
+          <VoiceButton sectionId="hero" voice={voice} style={{ padding: "16px 20px" }} />
         </div>
-      </motion.div>
+      </div>
 
-      {/* Scroll hint */}
-      <motion.div
-        animate={{ y: [0, 10, 0] }}
-        transition={{ duration: 2.5, repeat: Infinity }}
-        style={{ position: "absolute", bottom: 30, zIndex: 10, fontFamily: T.mono, fontSize: 8, letterSpacing: 6, color: T.muted }}
-      >
-        SCROLL ↓
+      <motion.div animate={{ y: [0, 10, 0] }} transition={{ duration: 2.3, repeat: Infinity }}
+        style={{ position: "absolute", bottom: 30, zIndex: 10, fontFamily: T.mono, fontSize: 8, letterSpacing: 6, color: T.muted }}>
+        SCROLL
       </motion.div>
     </section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 2: POINTER PLAYGROUND
+// SECTION 01 — RAM MODEL
 // ─────────────────────────────────────────────────────────────────────────────
-function PointerPlayground() {
-  const [varValue, setVarValue] = useState(7);
-  const [ptrTarget, setPtrTarget] = useState("x"); // x | y | null
-  const [ppMode, setPpMode] = useState(false); // pointer to pointer
-  const [step, setStep] = useState(-1);
-  const [vars, setVars] = useState({ x: 7, y: 99 });
-  const [writeVal, setWriteVal] = useState(55);
+function RamSection({ voice }) {
+  const [step, setStep] = useState(0);
+  const [hovered, setHovered] = useState(null);
 
-  const colors = { x: T.neon3, y: T.neon4, p: T.neon, pp: T.purple };
-
-  const memLayout = [
-    { key: "x", addr: "0x2000", type: "int", color: colors.x },
-    { key: "y", addr: "0x2004", type: "int", color: colors.y },
-    { key: "p", addr: "0x2008", type: "int*", color: colors.p },
-    ...(ppMode ? [{ key: "pp", addr: "0x200C", type: "int**", color: colors.pp }] : []),
+  const CONCEPTS = [
+    {
+      title: "RAM is just a giant array",
+      sub: "Every byte has a unique index — its ADDRESS",
+      color: T.neon,
+      cells: [
+        { addr: "0x00", val: "??", label: "", empty: true },
+        { addr: "0x01", val: "??", label: "", empty: true },
+        { addr: "0x02", val: "??", label: "", empty: true },
+        { addr: "0x03", val: "??", label: "", empty: true },
+        { addr: "0x04", val: "??", label: "", empty: true },
+        { addr: "0x05", val: "??", label: "", empty: true },
+      ],
+      insight: "Think of RAM as a street. Each house has a number (address). Each house stores data (value). The CPU knows every house by its number.",
+    },
+    {
+      title: "Declare int a = 42",
+      sub: "Compiler reserves 4 bytes, fills them with 42",
+      color: T.neon4,
+      cells: [
+        { addr: "0x1000", val: "42", label: "a", type: "int", color: T.neon4 },
+        { addr: "0x1001", val: "0", label: "", part: true, color: T.neon4 },
+        { addr: "0x1002", val: "0", label: "", part: true, color: T.neon4 },
+        { addr: "0x1003", val: "0", label: "", part: true, color: T.neon4 },
+        { addr: "0x1004", val: "??", label: "", empty: true },
+        { addr: "0x1005", val: "??", label: "", empty: true },
+      ],
+      insight: "int is 4 bytes. So variable 'a' occupies addresses 0x1000–0x1003. The address of 'a' = the FIRST byte = 0x1000. That's what &a gives you.",
+    },
+    {
+      title: "Declare int b = 99",
+      sub: "Next variable goes right after — address 0x1004",
+      color: T.neon2,
+      cells: [
+        { addr: "0x1000", val: "42", label: "a", type: "int", color: T.neon4 },
+        { addr: "0x1001", val: "0",  label: "", part: true, color: T.neon4 },
+        { addr: "0x1002", val: "0",  label: "", part: true, color: T.neon4 },
+        { addr: "0x1003", val: "0",  label: "", part: true, color: T.neon4 },
+        { addr: "0x1004", val: "99", label: "b", type: "int", color: T.neon2 },
+        { addr: "0x1005", val: "0",  label: "", part: true, color: T.neon2 },
+      ],
+      insight: "Variables sit next to each other in RAM. &a = 0x1000, &b = 0x1004. Distance = 4 (size of int). This is WHY pointer arithmetic works.",
+    },
+    {
+      title: "Pointer = stores an address",
+      sub: "int *p = &a stores 0x1000 inside p",
+      color: T.neon,
+      cells: [
+        { addr: "0x1000", val: "42",     label: "a",  type: "int",  color: T.neon4 },
+        { addr: "0x1004", val: "99",     label: "b",  type: "int",  color: T.neon2 },
+        { addr: "0x1008", val: "0x1000", label: "p",  type: "int*", color: T.neon, isPtr: true },
+      ],
+      insight: "p is a variable too! It lives at 0x1008 and holds the VALUE 0x1000 (address of a). When you say *p, CPU reads p, gets 0x1000, then goes there and reads 42.",
+    },
   ];
 
-  const writeThruPtr = () => {
-    if (!ptrTarget) return;
-    setVars(prev => ({ ...prev, [ptrTarget]: writeVal }));
-    setStep(3);
-    setTimeout(() => setStep(-1), 1200);
-  };
+  const current = CONCEPTS[step];
 
   return (
-    <section id="playground" style={{
-      padding: "90px 0",
-      background: `radial-gradient(ellipse 70% 50% at 20% 50%, rgba(57,255,20,0.05) 0%, transparent 55%),
-                   radial-gradient(ellipse 60% 40% at 80% 30%, rgba(0,200,255,0.05) 0%, transparent 55%),
-                   ${T.bg1}`,
-    }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 40px" }}>
+    <Section id="ram">
+      <SectionHeader num="01" tag="RAM MODEL" title="MEMORY IS AN ARRAY" color={T.neon} sectionId="ram" voice={voice}
+        subtitle="Before pointers make sense, you must SEE what RAM looks like. Every variable is just bytes at an address. A pointer is just a variable that stores an address — that's literally it." />
 
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          style={{ marginBottom: 44, display: "flex", alignItems: "flex-end", gap: 20 }}
-        >
-          <span style={{ fontFamily: T.mono, fontSize: 60, fontWeight: 700, color: T.dim, lineHeight: 1 }}>02</span>
-          <div>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, marginBottom: 5 }}>CONTROL THE MEMORY</div>
-            <h2 style={{ fontFamily: T.display, fontSize: 38, fontWeight: 400, color: T.text, letterSpacing: 3 }}>POINTER PLAYGROUND</h2>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 28 }}>
+        <GlassCard style={{ padding: 30 }}>
+          <div style={{ display: "flex", gap: 8, marginBottom: 24, flexWrap: "wrap" }}>
+            {CONCEPTS.map((c, i) => (
+              <Pill key={i} color={c.color} active={step === i} onClick={() => setStep(i)}>STEP {i + 1}</Pill>
+            ))}
           </div>
-        </motion.div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          <AnimatePresence mode="wait">
+            <motion.div key={step} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }} transition={{ duration: 0.5 }}>
+              <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: current.color, marginBottom: 6 }}>▸ {current.title.toUpperCase()}</div>
+              <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, marginBottom: 24 }}>{current.sub}</div>
 
-          {/* Left: Interactive memory */}
-          <GlassCard style={{ padding: 28 }}>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon, marginBottom: 20 }}>▸ MEMORY STATE</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 24 }}>
+                {current.cells.map((cell, i) => (
+                  <motion.div key={i}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: i * 0.1, type: "spring", stiffness: 200 }}
+                    onMouseEnter={() => setHovered(i)}
+                    onMouseLeave={() => setHovered(null)}
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 76, fontFamily: T.mono, fontSize: 9, color: T.muted, textAlign: "right", flexShrink: 0 }}>{cell.addr}</div>
+                    <motion.div
+                      animate={{
+                        borderColor: hovered === i ? (cell.color || T.muted) : `${cell.color || T.muted}${cell.empty ? "15" : "35"}`,
+                        background: hovered === i ? `${cell.color || T.muted}20` : `${cell.color || T.muted}${cell.empty ? "05" : "0A"}`,
+                        boxShadow: hovered === i && !cell.empty ? `0 0 30px ${cell.color}50` : "none",
+                      }}
+                      style={{ flex: 1, height: 50, borderRadius: 8, border: "2px solid", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px" }}>
+                      <div>
+                        {!cell.empty && !cell.part && (
+                          <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 2 }}>
+                            {cell.type} <span style={{ color: cell.color }}>{cell.label}</span>
+                          </div>
+                        )}
+                        {cell.part && <div style={{ fontFamily: T.mono, fontSize: 8, color: T.dim }}>continuation...</div>}
+                      </div>
+                      <span style={{ fontFamily: T.mono, fontSize: cell.isPtr ? 12 : 18, fontWeight: 700, color: cell.empty ? T.dim : (cell.color || T.muted) }}>
+                        {String(cell.val)}
+                      </span>
+                    </motion.div>
+                    {cell.isPtr ? (
+                      <motion.div animate={{ x: [0, 4, 0] }} transition={{ duration: 1.6, repeat: Infinity }}
+                        style={{ fontFamily: T.mono, fontSize: 14, color: T.neon }}>→</motion.div>
+                    ) : <div style={{ width: 20 }} />}
+                  </motion.div>
+                ))}
+              </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 26 }}>
-              {memLayout.map((cell) => {
-                const val = cell.key === "p" ? (ptrTarget ? `&${ptrTarget}` : "NULL") :
-                  cell.key === "pp" ? "&p" :
-                    vars[cell.key];
-                const isTarget = (cell.key === ptrTarget) || (ppMode && cell.key === "p" && ptrTarget);
+              <motion.div key={`insight-${step}`} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}
+                style={{ padding: "16px", borderRadius: 10, background: `${current.color}08`, border: `1px solid ${current.color}30` }}>
+                <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: current.color, marginBottom: 8 }}>💡 INSIGHT</div>
+                <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9 }}>{current.insight}</div>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <GlassCard style={{ padding: 26 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2, marginBottom: 20 }}>🧠 THE CORE MENTAL MODEL</div>
+            <div style={{ display: "flex", gap: 12, marginBottom: 24, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ flex: 1, minWidth: 120, textAlign: "center" }}>
+                <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 8, letterSpacing: 3 }}>NORMAL VAR</div>
+                <motion.div animate={{ boxShadow: [`0 0 15px ${T.neon4}40`, `0 0 30px ${T.neon4}70`, `0 0 15px ${T.neon4}40`] }} transition={{ duration: 2.5, repeat: Infinity }}
+                  style={{ background: `${T.neon4}12`, border: `2px solid ${T.neon4}`, borderRadius: 10, padding: "20px 14px" }}>
+                  <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon4, marginBottom: 4 }}>int a</div>
+                  <div style={{ fontFamily: T.mono, fontSize: 28, fontWeight: 700, color: T.neon4 }}>42</div>
+                  <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginTop: 6 }}>@ 0x1000</div>
+                </motion.div>
+                <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 8 }}>stores DATA</div>
+              </div>
+              <div style={{ textAlign: "center" }}>
+                <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.6, 1, 0.6] }} transition={{ duration: 1.8, repeat: Infinity }}
+                  style={{ fontFamily: T.mono, fontSize: 20, color: T.neon }}>VS</motion.div>
+              </div>
+              <div style={{ flex: 1, minWidth: 120, textAlign: "center" }}>
+                <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 8, letterSpacing: 3 }}>POINTER VAR</div>
+                <motion.div animate={{ boxShadow: [`0 0 15px ${T.neon}40`, `0 0 30px ${T.neon}70`, `0 0 15px ${T.neon}40`] }} transition={{ duration: 2.5, repeat: Infinity, delay: 1.2 }}
+                  style={{ background: `${T.neon}12`, border: `2px solid ${T.neon}`, borderRadius: 10, padding: "20px 14px" }}>
+                  <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon, marginBottom: 4 }}>int* p</div>
+                  <div style={{ fontFamily: T.mono, fontSize: 16, fontWeight: 700, color: T.neon }}>0x1000</div>
+                  <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginTop: 6 }}>@ 0x1008</div>
+                </motion.div>
+                <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 8 }}>stores ADDRESS</div>
+              </div>
+            </div>
+            {[
+              { icon: "1", color: T.neon4, text: "int a = 42   → stores 42 at address 0x1000" },
+              { icon: "2", color: T.neon2, text: "int *p = &a  → stores 0x1000 at address 0x1008" },
+              { icon: "3", color: T.neon,  text: "p == 0x1000  (the address itself)" },
+              { icon: "4", color: T.neon3, text: "*p == 42     (go to 0x1000, read value)" },
+            ].map((f, i) => (
+              <motion.div key={i} initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.12 }}
+                style={{ display: "flex", gap: 12, alignItems: "center", padding: "8px 12px", borderRadius: 7, marginBottom: 6, background: `${f.color}08`, border: `1px solid ${f.color}22` }}>
+                <div style={{ width: 18, height: 18, borderRadius: "50%", background: f.color, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontFamily: T.mono, color: "#000", flexShrink: 0 }}>{f.icon}</div>
+                <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text }}>{f.text}</div>
+              </motion.div>
+            ))}
+          </GlassCard>
+
+          <GlassCard style={{ padding: 22 }} glowColor={T.neon3}>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon3, marginBottom: 14 }}>⚠ SIZES MATTER</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {[
+                { type: "char",   size: "1 byte",  color: T.neon4 },
+                { type: "int",    size: "4 bytes", color: T.neon2 },
+                { type: "float",  size: "4 bytes", color: T.neon },
+                { type: "double", size: "8 bytes", color: T.accent },
+                { type: "int*",   size: "8 bytes", color: T.neon3, note: "on 64-bit" },
+                { type: "char*",  size: "8 bytes", color: T.neon3, note: "same!" },
+              ].map((t, i) => (
+                <div key={i} style={{ padding: "8px 10px", borderRadius: 6, background: `${t.color}08`, border: `1px solid ${t.color}25` }}>
+                  <span style={{ fontFamily: T.mono, fontSize: 11, color: t.color }}>{t.type}</span>
+                  <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}> → {t.size}</span>
+                  {t.note && <div style={{ fontFamily: T.mono, fontSize: 8, color: T.dim }}>{t.note}</div>}
+                </div>
+              ))}
+            </div>
+            <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginTop: 12, lineHeight: 1.8 }}>
+              All pointers are the same size (8 bytes on 64-bit) because addresses are just 64-bit integers.
+            </div>
+          </GlassCard>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 02 — POINTERS LIVE
+// ─────────────────────────────────────────────────────────────────────────────
+function PointersSection({ voice }) {
+  const [step, setStep] = useState(-1);
+  const [running, setRunning] = useState(false);
+  const runRef = useRef(false);
+  const [arrowVisible, setArrowVisible] = useState(false);
+
+  const STEPS = [
+    { code: "int x = 42;",         desc: "CPU allocates 4 bytes at address 0x2000. Writes 42 into those bytes.", x: 42, ptrSet: false, deref: null },
+    { code: "int *ptr;",            desc: "CPU allocates 8 bytes for ptr (it's a pointer). Not yet assigned — contains garbage!", x: 42, ptrSet: false, deref: null },
+    { code: "ptr = &x;",           desc: "&x evaluates to 0x2000 (address of x). That value is stored inside ptr. Arrow drawn!", x: 42, ptrSet: true, deref: null },
+    { code: 'printf("%p", ptr);',  desc: "Print ptr's value = 0x2000. We're printing the ADDRESS, not the value at that address.", x: 42, ptrSet: true, deref: "addr" },
+    { code: 'printf("%d", *ptr);', desc: "*ptr = DEREFERENCE. CPU reads ptr → gets 0x2000 → goes to address 0x2000 → reads 42.", x: 42, ptrSet: true, deref: "value" },
+    { code: "*ptr = 999;",         desc: "*ptr on LEFT side = WRITE. CPU reads ptr → gets 0x2000 → goes there → writes 999. x is now 999!", x: 999, ptrSet: true, deref: "write" },
+  ];
+
+  const current = step >= 0 ? STEPS[step] : null;
+
+  const run = async () => {
+    if (runRef.current) return;
+    runRef.current = true;
+    setRunning(true);
+    setArrowVisible(false);
+    setStep(-1);
+    await new Promise(r => setTimeout(r, 400));
+    for (let i = 0; i < STEPS.length; i++) {
+      if (!runRef.current) break;
+      setStep(i);
+      if (STEPS[i].ptrSet) setArrowVisible(true);
+      await new Promise(r => setTimeout(r, 1600)); // SLOWER
+    }
+    runRef.current = false;
+    setRunning(false);
+  };
+
+  const reset = () => { runRef.current = false; setRunning(false); setStep(-1); setArrowVisible(false); };
+
+  return (
+    <Section id="pointers">
+      <SectionHeader num="02" tag="POINTERS" title="FOLLOW THE ARROW" color={T.neon} sectionId="pointers" voice={voice}
+        subtitle="A pointer is just a variable that holds an address. There's no magic. When you write *ptr, the CPU follows the stored address — like following a road sign to a destination." />
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 28 }}>
+        <GlassCard style={{ padding: 30 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon, marginBottom: 24 }}>→ LIVE MEMORY SIMULATION</div>
+
+          <div style={{ position: "relative", marginBottom: 28 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+              {/* Variable x */}
+              <motion.div
+                animate={{
+                  borderColor: current?.ptrSet ? `${T.neon4}80` : `${T.neon4}30`,
+                  background: current?.deref === "write" ? `${T.neon4}35` : current?.deref === "value" ? `${T.neon4}22` : step >= 0 ? `${T.neon4}10` : `${T.neon4}05`,
+                  boxShadow: current?.deref ? `0 0 40px ${T.neon4}60` : step >= 0 ? `0 0 20px ${T.neon4}30` : "none",
+                }}
+                transition={{ duration: 0.6 }}
+                style={{ padding: "18px 20px", borderRadius: 12, border: "2px solid" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 4 }}>ADDRESS: 0x2000</div>
+                    <div style={{ fontFamily: T.mono, fontSize: 10, color: T.neon4 }}>int x</div>
+                  </div>
+                  <motion.div key={current?.x} animate={{ scale: [1.5, 1] }} transition={{ duration: 0.5 }}
+                    style={{ fontFamily: T.mono, fontSize: 32, fontWeight: 700, color: T.neon4 }}>
+                    {step >= 0 ? String(current.x) : "?"}
+                  </motion.div>
+                </div>
+                {current?.deref === "value" && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
+                    style={{ fontFamily: T.mono, fontSize: 9, color: T.neon4, marginTop: 8 }}>← CPU reads this value via *ptr</motion.div>
+                )}
+                {current?.deref === "write" && (
+                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6 }}
+                    style={{ fontFamily: T.mono, fontSize: 9, color: T.neon3, marginTop: 8 }}>← CPU WROTE here via *ptr = 999</motion.div>
+                )}
+              </motion.div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 20px" }}>
+                <div style={{ flex: 1, height: 1, background: T.dim }} />
+                {arrowVisible && (
+                  <motion.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6 }}
+                    style={{ fontFamily: T.mono, fontSize: 9, color: T.neon, letterSpacing: 2 }}>
+                    ptr points HERE ↑
+                  </motion.div>
+                )}
+                <div style={{ flex: 1, height: 1, background: T.dim }} />
+              </div>
+
+              {/* Pointer ptr */}
+              <motion.div
+                animate={{
+                  borderColor: step >= 2 ? `${T.neon}80` : step >= 1 ? `${T.neon}30` : `${T.muted}20`,
+                  background: step >= 2 ? `${T.neon}10` : step >= 1 ? `${T.neon}05` : "transparent",
+                  boxShadow: step >= 2 ? `0 0 25px ${T.neon}40` : "none",
+                }}
+                transition={{ duration: 0.6 }}
+                style={{ padding: "18px 20px", borderRadius: 12, border: "2px solid" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 4 }}>ADDRESS: 0x2008</div>
+                    <div style={{ fontFamily: T.mono, fontSize: 10, color: T.neon }}>int* ptr</div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <motion.div key={`ptr-${step}`} animate={{ scale: [1.3, 1] }} transition={{ duration: 0.4 }}
+                      style={{ fontFamily: T.mono, fontSize: step >= 2 ? 16 : 14, fontWeight: 700, color: step >= 2 ? T.neon : T.muted }}>
+                      {step < 1 ? "N/A" : step === 1 ? "garbage" : "0x2000"}
+                    </motion.div>
+                    {step >= 2 && <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>= address of x</div>}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+
+            <AnimatePresence>
+              {arrowVisible && (
+                <motion.svg initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "visible", width: "100%", height: "100%" }}>
+                  <defs>
+                    <marker id="arrow-neon-ptr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+                      <path d="M0,0 L0,6 L8,3 z" fill={T.neon} />
+                    </marker>
+                    <filter id="arrowglow2"><feGaussianBlur stdDeviation="2.5" result="blur" /><feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+                  </defs>
+                  <motion.path d="M 380 200 C 430 200 430 80 380 80"
+                    fill="none" stroke={T.neon} strokeWidth="3" strokeDasharray="8 4"
+                    markerEnd="url(#arrow-neon-ptr)" filter="url(#arrowglow2)"
+                    initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.0, ease: "easeOut" }} />
+                  <motion.text x="440" y="145" textAnchor="middle" fill={T.neon} fontSize="9" fontFamily={T.mono} letterSpacing="1"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.9 }}>
+                    ptr → x
+                  </motion.text>
+                </motion.svg>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div key={step} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}
+              style={{ padding: "14px 16px", borderRadius: 10, marginBottom: 18, background: `${T.neon}0A`, border: `1px solid ${T.neon}30` }}>
+              {step >= 0 ? (
+                <>
+                  <div style={{ fontFamily: T.mono, fontSize: 11, color: T.neon, marginBottom: 6 }}>
+                    <span style={{ color: T.dim }}>&gt; </span>{current.code}
+                  </div>
+                  <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8 }}>{current.desc}</div>
+                  {(current.deref === "addr" || current.deref === "value") && (
+                    <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}
+                      style={{ marginTop: 10, padding: "8px 14px", borderRadius: 7, background: `${T.neon4}15`, border: `1px solid ${T.neon4}40`, fontFamily: T.mono, fontSize: 12, fontWeight: 700, color: T.neon4 }}>
+                      OUTPUT: {current.deref === "addr" ? "0x2000" : "42"}
+                    </motion.div>
+                  )}
+                </>
+              ) : (
+                <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>Press ▶ RUN to simulate line by line →</div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Step progress */}
+          {step >= 0 && (
+            <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+              {STEPS.map((_, i) => (
+                <motion.div key={i}
+                  animate={{ background: i <= step ? T.neon : T.dim, boxShadow: i === step ? `0 0 10px ${T.neon}80` : "none" }}
+                  style={{ flex: 1, height: 4, borderRadius: 2 }} />
+              ))}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <motion.button whileHover={{ scale: 1.04, boxShadow: `0 0 35px ${T.neon}60` }} whileTap={{ scale: 0.97 }}
+              onClick={run} disabled={running}
+              style={{ flex: 1, fontFamily: T.display, fontSize: 14, letterSpacing: 4, color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.neon}, ${T.neon2})`, border: "none", borderRadius: 8, padding: "13px", cursor: running ? "not-allowed" : "pointer" }}>
+              {running ? "RUNNING…" : "▶ RUN STEP BY STEP"}
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.96 }} onClick={reset}
+              style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 8, padding: "13px 18px", cursor: "pointer" }}>↺</motion.button>
+          </div>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <GlassCard style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "8px 14px", borderBottom: `1px solid ${T.dim}`, display: "flex", gap: 6, alignItems: "center" }}>
+              {["#FF5F57","#FEBC2E","#28C840"].map((c, i) => <div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: c }} />)}
+              <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginLeft: 8, letterSpacing: 2 }}>pointers.c</span>
+            </div>
+            <div style={{ padding: "14px 0" }}>
+              {[
+                "int x = 42;",
+                "int *ptr;",
+                "ptr = &x;",
+                "",
+                'printf("%p", ptr);   // 0x2000',
+                'printf("%d", *ptr);  // 42',
+                "",
+                "*ptr = 999;",
+                'printf("%d", x);     // 999 !!',
+              ].map((line, i) => {
+                const stepLine = current ? [0, 1, 2, -1, 3, 4, -1, 5, -1][i] : -1;
+                const isActive = stepLine === step;
                 return (
-                  <motion.div
-                    key={cell.key}
-                    animate={{
-                      borderColor: isTarget ? cell.color : `${cell.color}25`,
-                      background: isTarget ? `${cell.color}18` : `${cell.color}06`,
-                      boxShadow: isTarget ? `0 0 28px ${cell.color}50` : "none",
-                    }}
-                    style={{
-                      display: "flex", alignItems: "center", gap: 12,
-                      padding: "12px 16px", borderRadius: 10, border: "2px solid",
-                      transition: "all 0.35s",
-                    }}
-                  >
-                    <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, width: 60 }}>{cell.addr}</div>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontFamily: T.mono, fontSize: 9, color: cell.color, marginBottom: 3 }}>{cell.type} {cell.key}</div>
-                      <motion.div
-                        key={String(val)}
-                        initial={{ scale: 1.2 }}
-                        animate={{ scale: 1 }}
-                        style={{ fontFamily: T.mono, fontSize: 17, fontWeight: 700, color: cell.color }}
-                      >{String(val)}</motion.div>
-                    </div>
-                    {isTarget && (
-                      <motion.div
-                        animate={{ scale: [1, 1.4, 1], opacity: [0.6, 1, 0.6] }}
-                        transition={{ duration: 1.1, repeat: Infinity }}
-                        style={{ width: 8, height: 8, borderRadius: "50%", background: cell.color }}
-                      />
-                    )}
+                  <motion.div key={i}
+                    animate={{ background: isActive ? `${T.neon}1A` : "transparent", paddingLeft: isActive ? 22 : 18 }}
+                    transition={{ duration: 0.4 }}
+                    style={{ fontFamily: T.mono, fontSize: 12, lineHeight: 2.1, paddingRight: 18, borderLeft: `3px solid ${isActive ? T.neon : "transparent"}`, color: isActive ? T.neon : T.text, whiteSpace: "pre" }}>
+                    <span style={{ color: T.dim, marginRight: 16, fontSize: 9, userSelect: "none" }}>{String(i + 1).padStart(2, " ")}</span>
+                    {line}
                   </motion.div>
                 );
               })}
             </div>
-
-            {/* Controls */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.muted }}>POINT p AT:</div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <Pill color={colors.x} active={ptrTarget === "x"} onClick={() => { setPtrTarget("x"); setStep(0); }}>p = &x</Pill>
-                <Pill color={colors.y} active={ptrTarget === "y"} onClick={() => { setPtrTarget("y"); setStep(1); }}>p = &y</Pill>
-                <Pill color={T.muted} active={ptrTarget === null} onClick={() => { setPtrTarget(null); setStep(-1); }}>NULL</Pill>
-              </div>
-
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 6 }}>
-                <input
-                  type="number"
-                  value={writeVal}
-                  onChange={e => setWriteVal(Number(e.target.value))}
-                  style={{
-                    flex: 1, background: `${T.neon}10`, border: `1px solid ${T.neon}35`,
-                    borderRadius: 8, padding: "9px 14px",
-                    fontFamily: T.mono, fontSize: 13, color: T.neon, outline: "none",
-                  }}
-                  placeholder="value"
-                />
-                <motion.button
-                  whileHover={{ scale: 1.04, boxShadow: `0 0 25px ${T.neon}50` }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={writeThruPtr}
-                  disabled={!ptrTarget}
-                  style={{
-                    fontFamily: T.display, fontSize: 12, letterSpacing: 4,
-                    color: "#000", background: ptrTarget ? `linear-gradient(135deg, ${T.neon}, ${T.neon2})` : T.muted,
-                    border: "none", borderRadius: 8, padding: "9px 18px", cursor: ptrTarget ? "pointer" : "not-allowed",
-                  }}
-                >*p = {writeVal}</motion.button>
-              </div>
-
-              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-                <Pill color={T.purple} active={ppMode} onClick={() => setPpMode(p => !p)} style={{ fontSize: 9 }}>
-                  {ppMode ? "** ON" : "** OFF"} (ptr→ptr)
-                </Pill>
-              </div>
-            </div>
           </GlassCard>
 
-          {/* Right: Concept cards */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-
-            {[
-              {
-                icon: "&", color: T.neon2, title: "Address-of",
-                code: "p = &x;",
-                desc: `& gives the memory address.\nPrints as 0x2000`,
-              },
-              {
-                icon: "*", color: T.neon, title: "Dereference",
-                code: "*p = 55;",
-                desc: `* follows the arrow.\nChanges x through p.`,
-              },
-              {
-                icon: "**", color: T.purple, title: "Ptr to Ptr",
-                code: "pp = &p;",
-                desc: `**pp = address of address.\nTwo levels of indirection.`,
-              },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.12, duration: 0.6 }}
-                whileHover={{ x: -4, borderColor: `${item.color}60` }}
-                style={{
-                  padding: "16px 20px", borderRadius: 12,
-                  background: `${item.color}08`, border: `1px solid ${item.color}28`,
-                  display: "flex", gap: 16, alignItems: "center",
-                  transition: "border-color 0.2s",
-                }}
-              >
-                <div style={{
-                  width: 46, height: 46, borderRadius: 10, flexShrink: 0,
-                  background: `${item.color}18`, border: `1px solid ${item.color}45`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: T.mono, fontSize: 18, fontWeight: 700, color: item.color,
-                }}>{item.icon}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: item.color, marginBottom: 3 }}>{item.title.toUpperCase()}</div>
-                  <div style={{ fontFamily: T.mono, fontSize: 13, color: T.text, marginBottom: 4 }}>{item.code}</div>
-                  <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, lineHeight: 1.7, whiteSpace: "pre" }}>{item.desc}</div>
-                </div>
-              </motion.div>
-            ))}
-
-            {/* Quick rule */}
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              style={{
-                padding: "14px 18px", borderRadius: 11,
-                background: `${T.neon3}08`, border: `1px solid ${T.neon3}30`,
-                fontFamily: T.mono, fontSize: 12, color: T.text, lineHeight: 1.9,
-              }}
-            >
-              <span style={{ color: T.neon3 }}>RULE:</span>{" "}
-              p = address · *p = value · &x = address of x
+          {[
+            { icon: "&", color: T.neon2, title: "ADDRESS-OF  &x",     text: "Returns the memory address where x lives.\nResult type: int* (pointer to int)\nThis is how you get a pointer to any variable." },
+            { icon: "*", color: T.neon,  title: "DEREFERENCE  *ptr",  text: "Follows the address stored in ptr.\nReads or writes the data at that address.\nLeft of = writes. Right of = reads." },
+            { icon: "≡", color: T.neon4, title: "DECLARATION  int *p", text: "The * in int *p means 'p is a pointer to int'\nDon't confuse declaration * with dereference *\nSame symbol, different contexts!" },
+          ].map((item, i) => (
+            <motion.div key={i} initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.14 }}
+              style={{ padding: "14px 16px", borderRadius: 10, background: `${item.color}08`, border: `1px solid ${item.color}28`, display: "flex", gap: 14 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: `${item.color}20`, border: `1px solid ${item.color}50`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: T.mono, fontSize: 14, fontWeight: 700, color: item.color, flexShrink: 0 }}>{item.icon}</div>
+              <div>
+                <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: item.color, marginBottom: 5 }}>{item.title}</div>
+                <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9, whiteSpace: "pre" }}>{item.text}</div>
+              </div>
             </motion.div>
-          </div>
+          ))}
         </div>
       </div>
-    </section>
+    </Section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 3: RECURSION INTRO
+// SECTION 03 — & and * OPERATOR DEEP DIVE
 // ─────────────────────────────────────────────────────────────────────────────
-const FACTORIAL_STEPS = [
-  { n: 5, state: "call", label: "fact(5)", result: null, depth: 0 },
-  { n: 4, state: "call", label: "fact(4)", result: null, depth: 1 },
-  { n: 3, state: "call", label: "fact(3)", result: null, depth: 2 },
-  { n: 2, state: "call", label: "fact(2)", result: null, depth: 3 },
-  { n: 1, state: "base", label: "fact(1)", result: 1, depth: 4 },
-  { n: 2, state: "return", label: "fact(2)", result: 2, depth: 3 },
-  { n: 3, state: "return", label: "fact(3)", result: 6, depth: 2 },
-  { n: 4, state: "return", label: "fact(4)", result: 24, depth: 1 },
-  { n: 5, state: "return", label: "fact(5)", result: 120, depth: 0 },
+function OpsSection({ voice }) {
+  const [val, setVal] = useState(7);
+  const [pTarget, setPTarget] = useState("a");
+  const [flash, setFlash] = useState(null);
+  const [writeVal, setWriteVal] = useState(42);
+  const [history, setHistory] = useState([]);
+  const [bVal, setBVal] = useState(99);
+
+  const allVars = { a: { val, addr: "0x3000", color: T.neon4 }, b: { val: bVal, addr: "0x3004", color: T.neon2 } };
+
+  const doWrite = () => {
+    const prev = pTarget === "a" ? val : bVal;
+    if (pTarget === "a") { setVal(writeVal); setFlash("a"); }
+    else { setBVal(writeVal); setFlash("b"); }
+    setTimeout(() => setFlash(null), 1000);
+    setHistory(h => [...h.slice(-4), `*p = ${writeVal}  →  ${pTarget} changed: ${prev} → ${writeVal}`]);
+  };
+
+  const target = allVars[pTarget];
+
+  return (
+    <Section id="ops">
+      <SectionHeader num="03" tag="& and * OPS" title="POINTER OPERATORS" color={T.neon2} sectionId="ops" voice={voice}
+        subtitle="The & and * operators are the only two things you need to master. & gets an address. * follows an address. Use this playground until it's muscle memory." />
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 28 }}>
+        <GlassCard style={{ padding: 30 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2, marginBottom: 24 }}>⊕ INTERACTIVE POINTER PLAYGROUND</div>
+
+          <div style={{ display: "flex", gap: 14, marginBottom: 28, flexWrap: "wrap" }}>
+            {Object.entries(allVars).map(([k, v]) => (
+              <motion.div key={k}
+                animate={{
+                  borderColor: flash === k ? "#fff" : pTarget === k ? v.color : `${v.color}30`,
+                  background: flash === k ? `${v.color}50` : pTarget === k ? `${v.color}18` : `${v.color}08`,
+                  boxShadow: flash === k ? `0 0 60px ${v.color}90` : pTarget === k ? `0 0 30px ${v.color}40` : "none",
+                }}
+                transition={{ duration: 0.5 }}
+                style={{ flex: 1, minWidth: 120, borderRadius: 14, border: "2px solid", padding: "22px 16px", textAlign: "center", cursor: "pointer" }}
+                onClick={() => setPTarget(k)}
+                whileHover={{ scale: 1.02 }}>
+                <div style={{ fontFamily: T.mono, fontSize: 8, color: v.color, marginBottom: 6, letterSpacing: 2 }}>{v.addr}</div>
+                <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginBottom: 8 }}>int {k}</div>
+                <motion.div key={`${k}-${k === "a" ? val : bVal}`} animate={{ scale: [1.4, 1] }} transition={{ duration: 0.4 }}
+                  style={{ fontFamily: T.mono, fontSize: 36, fontWeight: 700, color: v.color }}>
+                  {k === "a" ? val : bVal}
+                </motion.div>
+                {pTarget === k && (
+                  <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ duration: 1.5, repeat: Infinity }}
+                    style={{ fontFamily: T.mono, fontSize: 9, color: v.color, marginTop: 8 }}>← p points here</motion.div>
+                )}
+              </motion.div>
+            ))}
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 4, marginBottom: 10 }}>RETARGET POINTER:</div>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <Pill color={T.neon4} active={pTarget === "a"} onClick={() => setPTarget("a")}>p = &a</Pill>
+              <Pill color={T.neon2} active={pTarget === "b"} onClick={() => setPTarget("b")}>p = &b</Pill>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 4, marginBottom: 10 }}>WRITE THROUGH *p:</div>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <input type="number" value={writeVal} onChange={e => setWriteVal(Number(e.target.value))}
+                style={{ flex: 1, minWidth: 80, background: `${T.neon2}10`, border: `1px solid ${T.neon2}35`, borderRadius: 8, padding: "10px 14px", fontFamily: T.mono, fontSize: 15, color: T.neon2, outline: "none" }} />
+              <motion.button whileHover={{ scale: 1.04, boxShadow: `0 0 30px ${T.neon2}60` }} whileTap={{ scale: 0.97 }}
+                onClick={doWrite}
+                style={{ fontFamily: T.display, fontSize: 12, letterSpacing: 4, color: "#000", background: `linear-gradient(135deg, ${T.neon2}, ${T.accent})`, border: "none", borderRadius: 8, padding: "10px 20px", cursor: "pointer" }}>
+                *p = {writeVal}
+              </motion.button>
+            </div>
+          </div>
+
+          <div style={{ padding: "14px 16px", borderRadius: 10, background: `${target.color}0A`, border: `1px solid ${target.color}30`, marginBottom: 18 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 10, color: target.color, marginBottom: 6 }}>WHAT IS HAPPENING:</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9 }}>
+              <span style={{ color: target.color }}>p = &{pTarget}</span> → p holds value <span style={{ color: target.color }}>{target.addr}</span><br />
+              <span style={{ color: T.neon2 }}>*p</span> → CPU goes to {target.addr} → reads <span style={{ color: target.color }}>{pTarget === "a" ? val : bVal}</span><br />
+              <span style={{ color: T.neon3 }}>*p = {writeVal}</span> → CPU goes to {target.addr} → writes <span style={{ color: T.neon3 }}>{writeVal}</span> → <strong>{pTarget}</strong> changes!
+            </div>
+          </div>
+
+          {history.length > 0 && (
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 4, marginBottom: 8 }}>OPERATION LOG:</div>
+              {history.map((h, i) => (
+                <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                  style={{ fontFamily: T.mono, fontSize: 10, color: T.neon4, padding: "4px 0", borderBottom: `1px solid ${T.dim}` }}>
+                  {h}
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <GlassCard style={{ padding: 24 }} glowColor={T.neon2}>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2, marginBottom: 18 }}>🖥 CPU STEPS FOR *p = {writeVal}</div>
+            {[
+              { step: "1", text: `Read p → get value ${target.addr}`, color: T.neon2 },
+              { step: "2", text: `Use ${target.addr} as destination address`, color: T.neon },
+              { step: "3", text: `Write ${writeVal} to bytes at ${target.addr}`, color: T.neon3 },
+              { step: "4", text: `${pTarget} in RAM now holds ${writeVal}`, color: T.neon4 },
+            ].map((s, i) => (
+              <motion.div key={`${pTarget}-${writeVal}-${i}`} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
+                style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", background: `${s.color}25`, border: `1px solid ${s.color}60`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: T.mono, fontSize: 9, color: s.color, flexShrink: 0 }}>{s.step}</div>
+                <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8, paddingTop: 2 }}>{s.text}</div>
+              </motion.div>
+            ))}
+          </GlassCard>
+
+          <GlassCard style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "8px 14px", borderBottom: `1px solid ${T.dim}`, display: "flex", gap: 6, alignItems: "center" }}>
+              {["#FF5F57","#FEBC2E","#28C840"].map((c, i) => <div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: c }} />)}
+              <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginLeft: 8 }}>ptr_ops.c</span>
+            </div>
+            <div style={{ padding: "14px 0" }}>
+              {[
+                `int a = ${val}, b = ${bVal === 99 ? 99 : bVal};`,
+                `int *p;`,
+                ``,
+                `p = &${pTarget};           // point at ${pTarget}`,
+                `printf("%p", p);    // ${target.addr}`,
+                `printf("%d", *p);   // ${pTarget === "a" ? val : bVal}`,
+                ``,
+                `*p = ${writeVal};          // WRITE through ptr`,
+                `// ${pTarget} is now ${writeVal}`,
+              ].map((line, i) => (
+                <div key={i} style={{ fontFamily: T.mono, fontSize: 11, lineHeight: 2.1, padding: "0 18px", color: [3,4,5,7,8].includes(i) ? T.neon2 : T.text, whiteSpace: "pre" }}>
+                  <span style={{ color: T.dim, marginRight: 14, fontSize: 9 }}>{String(i + 1).padStart(2)}</span>
+                  {line}
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+
+          <motion.div style={{ padding: "16px", borderRadius: 12, background: `${T.neon3}08`, border: `1px solid ${T.neon3}30` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon3, marginBottom: 10 }}>⚠ COMMON MISTAKES</div>
+            {[
+              { bad: "int *p; *p = 5;",       why: "p was never assigned an address! Writing to garbage address = crash (segfault)" },
+              { bad: "int *p = NULL; *p = 5;", why: "NULL = address 0, OS protects it. Dereferencing NULL always crashes." },
+              { bad: "p = x;  (not &x)",       why: "Assigns the VALUE of x as an address. Almost never what you want." },
+            ].map((m, i) => (
+              <div key={i} style={{ marginBottom: 12 }}>
+                <div style={{ fontFamily: T.mono, fontSize: 11, color: T.neon3 }}>{m.bad}</div>
+                <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginTop: 2, lineHeight: 1.7 }}>{m.why}</div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 04 — POINTERS + FUNCTIONS
+// ─────────────────────────────────────────────────────────────────────────────
+function PtrFnSection({ voice }) {
+  const [mode, setMode] = useState("copy");
+  const [val, setVal] = useState(5);
+  const [ran, setRan] = useState(false);
+  const [animStep, setAnimStep] = useState(-1);
+  const runRef = useRef(false);
+
+  const run = async () => {
+    if (runRef.current) return;
+    runRef.current = true;
+    setRan(false);
+    setAnimStep(-1);
+    for (let i = 0; i < 5; i++) {
+      if (!runRef.current) break;
+      setAnimStep(i);
+      await new Promise(r => setTimeout(r, 1200)); // SLOWER
+    }
+    setRan(true);
+    if (mode === "pointer") setVal(v => v * 2);
+    runRef.current = false;
+    setAnimStep(-1);
+  };
+
+  const reset = () => { runRef.current = false; setVal(5); setRan(false); setAnimStep(-1); };
+
+  const copySteps = [
+    "main() calls double_bad(x)",
+    "CPU copies value 5 → local param n",
+    "n = n * 2 → n = 10 (local copy!)",
+    "double_bad() returns — n DESTROYED",
+    "x is still 5. Change was lost!",
+  ];
+  const ptrSteps = [
+    "main() calls double_good(&x)",
+    "CPU passes address 0x4000 as param p",
+    "*p = *p * 2 → goes to 0x4000, writes 10",
+    "double_good() returns — p destroyed",
+    "x is now 10. Change PERSISTS! ✓",
+  ];
+  const steps = mode === "copy" ? copySteps : ptrSteps;
+
+  return (
+    <Section id="ptr-fn">
+      <SectionHeader num="04" tag="POINTERS + FUNCTIONS" title="PASS BY POINTER" color={T.neon3} sectionId="ptr-fn" voice={voice}
+        subtitle="Functions receive COPIES of arguments by default. To modify a caller's variable, you must pass its address. This is the #1 real-world use of pointers." />
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 28 }}>
+        <GlassCard style={{ padding: 30 }}>
+          <div style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
+            <Pill color={T.neon3} active={mode === "copy"} onClick={() => { setMode("copy"); reset(); }}>❌ BY VALUE</Pill>
+            <Pill color={T.neon4} active={mode === "pointer"} onClick={() => { setMode("pointer"); reset(); }}>✓ BY POINTER</Pill>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 24 }}>
+            <AnimatePresence>
+              {animStep >= 0 && animStep <= 3 && (
+                <motion.div initial={{ opacity: 0, y: -20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.5 }}
+                  style={{ padding: "16px 20px", borderRadius: 12, background: `${T.neon}12`, border: `2px solid ${T.neon}60` }}>
+                  <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon, letterSpacing: 3, marginBottom: 8 }}>
+                    {mode === "copy" ? "double_bad() STACK FRAME" : "double_good() STACK FRAME"}
+                  </div>
+                  <div style={{ display: "flex", gap: 20 }}>
+                    <div>
+                      <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>param: {mode === "copy" ? "n" : "p"}</div>
+                      <motion.div key={animStep} animate={{ scale: [1.3, 1] }} transition={{ duration: 0.4 }}
+                        style={{ fontFamily: T.mono, fontSize: 20, fontWeight: 700, color: T.neon }}>
+                        {mode === "copy" ? (animStep >= 2 ? "10" : "5") : "0x4000"}
+                      </motion.div>
+                    </div>
+                    {mode === "copy" && animStep >= 2 && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
+                        style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, paddingTop: 16 }}>← local copy only</motion.div>
+                    )}
+                    {mode === "pointer" && animStep >= 2 && (
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
+                        style={{ fontFamily: T.mono, fontSize: 10, color: T.neon4, paddingTop: 16 }}>← follows to x!</motion.div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <motion.div
+              animate={{
+                borderColor: mode === "pointer" && animStep >= 2 ? `${T.neon4}80` : `${T.neon4}30`,
+                boxShadow: mode === "pointer" && animStep >= 2 ? `0 0 40px ${T.neon4}50` : "none",
+              }}
+              transition={{ duration: 0.6 }}
+              style={{ padding: "16px 20px", borderRadius: 12, background: `${T.neon4}08`, border: "2px solid" }}>
+              <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon4, letterSpacing: 3, marginBottom: 8 }}>main() STACK FRAME</div>
+              <div style={{ display: "flex", gap: 20, alignItems: "center", flexWrap: "wrap" }}>
+                <div>
+                  <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>int x @ 0x4000</div>
+                  <motion.div key={`x-${ran}-${mode}`} animate={{ scale: [1.3, 1] }} transition={{ duration: 0.4 }}
+                    style={{ fontFamily: T.mono, fontSize: 28, fontWeight: 700, color: T.neon4 }}>
+                    {ran && mode === "pointer" ? "10" : "5"}
+                  </motion.div>
+                </div>
+                {ran && (
+                  <motion.div initial={{ opacity: 0, scale: 0 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }}
+                    style={{ padding: "6px 14px", borderRadius: 7, background: mode === "pointer" ? `${T.neon4}25` : `${T.neon3}15`, border: `1px solid ${mode === "pointer" ? T.neon4 : T.neon3}`, fontFamily: T.mono, fontSize: 11, color: mode === "pointer" ? T.neon4 : T.neon3 }}>
+                    {mode === "pointer" ? "✓ CHANGED" : "✗ UNCHANGED"}
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          </div>
+
+          <div style={{ marginBottom: 18 }}>
+            {steps.map((s, i) => (
+              <motion.div key={i}
+                animate={{ opacity: animStep === i ? 1 : animStep > i ? 0.45 : 0.2, x: animStep === i ? 4 : 0, color: animStep === i ? (mode === "pointer" ? T.neon4 : T.neon3) : T.muted }}
+                transition={{ duration: 0.4 }}
+                style={{ fontFamily: T.mono, fontSize: 11, padding: "5px 0", borderLeft: `2px solid ${animStep === i ? (mode === "pointer" ? T.neon4 : T.neon3) : T.dim}`, paddingLeft: 12, marginBottom: 4 }}>
+                {animStep === i && <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ duration: 0.5, repeat: Infinity }}>▶ </motion.span>}
+                {s}
+              </motion.div>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} onClick={run}
+              style={{ flex: 1, fontFamily: T.display, fontSize: 13, letterSpacing: 4, color: "#000", background: `linear-gradient(135deg, ${mode === "pointer" ? T.neon4 : T.neon3}, ${T.neon2})`, border: "none", borderRadius: 8, padding: "12px", cursor: "pointer" }}>
+              ▶ RUN
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.96 }} onClick={reset}
+              style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 8, padding: "12px 16px", cursor: "pointer" }}>↺</motion.button>
+          </div>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <GlassCard style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "8px 14px", borderBottom: `1px solid ${T.dim}`, display: "flex", gap: 6, alignItems: "center" }}>
+              {["#FF5F57","#FEBC2E","#28C840"].map((c, i) => <div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: c }} />)}
+              <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginLeft: 8 }}>pass_by_ptr.c</span>
+            </div>
+            <div style={{ padding: "14px 0" }}>
+              {[
+                "// ❌ WRONG — won't modify x",
+                "void double_bad(int n) {",
+                "    n = n * 2;  // local copy!",
+                "}",
+                "",
+                "// ✓ CORRECT — modifies x",
+                "void double_good(int *p) {",
+                "    *p = *p * 2;  // real x!",
+                "}",
+                "",
+                "int main() {",
+                "    int x = 5;",
+                "    double_bad(x);   // x still 5",
+                "    double_good(&x); // x = 10 ✓",
+                "}",
+              ].map((line, i) => (
+                <div key={i} style={{ fontFamily: T.mono, fontSize: 11, lineHeight: 2.0, padding: "0 18px", color: [0].includes(i) ? T.dim : [5].includes(i) ? T.neon4 : [6, 7, 8].includes(i) ? T.neon4 : [1, 2, 3].includes(i) ? `${T.neon3}90` : T.text, whiteSpace: "pre" }}>
+                  <span style={{ color: T.dim, marginRight: 14, fontSize: 9 }}>{String(i + 1).padStart(2)}</span>
+                  {line}
+                </div>
+              ))}
+            </div>
+          </GlassCard>
+
+          <GlassCard style={{ padding: 22 }} glowColor={T.accent}>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.accent, marginBottom: 14 }}>🧠 WHY C DOES THIS</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9 }}>
+              C passes COPIES to protect caller's data. To modify caller data you must explicitly opt-in by passing the address. This makes code predictable.
+              <br /><br />
+              <span style={{ color: T.neon2 }}>scanf("%d", &x)</span> — now you know why scanf takes &x! It needs the address to write the user's input back into x.
+            </div>
+          </GlassCard>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 05 — RECURSION
+// ─────────────────────────────────────────────────────────────────────────────
+const FACT_STEPS = [
+  { n: 5, state: "call",   result: null, depth: 0 },
+  { n: 4, state: "call",   result: null, depth: 1 },
+  { n: 3, state: "call",   result: null, depth: 2 },
+  { n: 2, state: "call",   result: null, depth: 3 },
+  { n: 1, state: "base",   result: 1,    depth: 4 },
+  { n: 2, state: "return", result: 2,    depth: 3 },
+  { n: 3, state: "return", result: 6,    depth: 2 },
+  { n: 4, state: "return", result: 24,   depth: 1 },
+  { n: 5, state: "return", result: 120,  depth: 0 },
 ];
 
-function RecursionIntro() {
+function RecursionSection({ voice }) {
   const [animIdx, setAnimIdx] = useState(-1);
   const [stack, setStack] = useState([]);
   const [running, setRunning] = useState(false);
+  const [phase, setPhase] = useState("idle");
   const runRef = useRef(false);
 
-  const stateColor = (s) => s === "base" ? T.neon3 : s === "return" ? T.neon4 : T.neon;
+  const stateColor = s => s === "base" ? T.neon4 : s === "return" ? T.neon3 : T.neon2;
 
-  const runAnim = async () => {
+  const run = async () => {
     if (runRef.current) return;
     runRef.current = true;
     setRunning(true);
     setStack([]);
     setAnimIdx(-1);
-
+    setPhase("diving");
     const callStack = [];
-    for (let i = 0; i < FACTORIAL_STEPS.length; i++) {
+    for (let i = 0; i < FACT_STEPS.length; i++) {
       if (!runRef.current) break;
-      const step = FACTORIAL_STEPS[i];
+      const step = FACT_STEPS[i];
       setAnimIdx(i);
-
       if (step.state === "call" || step.state === "base") {
         callStack.push(step);
         setStack([...callStack]);
+        if (step.state === "base") setPhase("unwinding");
       } else {
         callStack.pop();
         setStack([...callStack]);
       }
-
-      await new Promise(r => setTimeout(r, 780));
+      await new Promise(r => setTimeout(r, 1100)); // SLOWER
     }
-
+    setPhase("done");
     runRef.current = false;
     setRunning(false);
     setAnimIdx(-1);
   };
 
-  const reset = () => {
-    runRef.current = false;
-    setRunning(false);
-    setStack([]);
-    setAnimIdx(-1);
-  };
-
-  const currentStep = animIdx >= 0 ? FACTORIAL_STEPS[animIdx] : null;
+  const reset = () => { runRef.current = false; setRunning(false); setStack([]); setAnimIdx(-1); setPhase("idle"); };
+  const current = animIdx >= 0 ? FACT_STEPS[animIdx] : null;
 
   return (
-    <section id="recursion" style={{
-      padding: "90px 0",
-      background: `radial-gradient(ellipse 80% 60% at 80% 30%, rgba(255,77,109,0.07) 0%, transparent 60%),
-                   radial-gradient(ellipse 50% 40% at 10% 70%, rgba(157,78,221,0.06) 0%, transparent 55%),
-                   ${T.bg}`,
-    }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 40px" }}>
+    <Section id="recursion">
+      <SectionHeader num="05" tag="RECURSION" title="FUNCTION CALLS ITSELF" color={T.neon3} sectionId="recursion" voice={voice}
+        subtitle="Recursion is not magic. It's just a function calling itself with a smaller problem. Two rules: 1) Must have a base case. 2) Each call must get closer to the base case." />
 
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.8 }}
-          style={{ marginBottom: 44, display: "flex", alignItems: "flex-end", gap: 20 }}
-        >
-          <span style={{ fontFamily: T.mono, fontSize: 60, fontWeight: 700, color: T.dim, lineHeight: 1 }}>03</span>
-          <div>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon2, marginBottom: 5 }}>FUNCTION CALLING ITSELF</div>
-            <h2 style={{ fontFamily: T.display, fontSize: 38, fontWeight: 400, color: T.text, letterSpacing: 3 }}>RECURSION</h2>
-          </div>
-        </motion.div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 32 }}>
+        {[
+          { icon: "↻", color: T.neon2,  title: "RECURSIVE CASE", text: "Problem too big? Break it down.\nfact(5) → 5 × fact(4)\nfact(4) → 4 × fact(3)\nKeep going until small enough." },
+          { icon: "⊡", color: T.neon4,  title: "BASE CASE",       text: "The stopping condition.\nfact(1) = 1  (no more calls)\nWithout this = infinite loop!\nAlways write this FIRST." },
+          { icon: "↑", color: T.neon3,  title: "UNWIND PHASE",    text: "Base case returns 1.\nStack starts popping back.\n2×1=2, 3×2=6, 4×6=24, 5×24=120\nAnswers bubble back up." },
+        ].map((item, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.15 }}
+            style={{ padding: "20px", borderRadius: 12, background: `${item.color}08`, border: `1px solid ${item.color}30`, textAlign: "center" }}>
+            <motion.div animate={{ rotate: [0, 360] }} transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+              style={{ fontSize: 32, marginBottom: 12 }}>{item.icon}</motion.div>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: item.color, marginBottom: 10 }}>{item.title}</div>
+            <div style={{ fontFamily: T.mono, fontSize: "clamp(9px, 1.5vw, 11px)", color: T.text, lineHeight: 1.9, whiteSpace: "pre" }}>{item.text}</div>
+          </motion.div>
+        ))}
+      </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 24 }}>
-
-          {/* Left: Stack visualizer */}
-          <GlassCard style={{ padding: 28 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-              <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2 }}>▸ CALL STACK</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: `0 0 28px ${T.neon2}50` }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={runAnim}
-                  disabled={running}
-                  style={{
-                    fontFamily: T.display, fontSize: 12, letterSpacing: 4,
-                    color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.neon2}, ${T.purple})`,
-                    border: "none", borderRadius: 8, padding: "8px 20px", cursor: running ? "not-allowed" : "pointer",
-                  }}
-                >{running ? "RUNNING…" : "▶ FACTORIAL(5)"}</motion.button>
-                <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
-                  style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 7, padding: "8px 12px", cursor: "pointer" }}
-                >↺</motion.button>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 28 }}>
+        <GlassCard style={{ padding: 28 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+            <div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon3, marginBottom: 4 }}>▸ CALL STACK — LIVE</div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>
+                {phase === "idle" ? "Press RUN to watch factorial(5)" : phase === "diving" ? "↓ DIVING — building up frames" : phase === "unwinding" ? "↑ UNWINDING — passing values back" : "✓ DONE — final answer: 120"}
               </div>
             </div>
-
-            {/* Stack depth indicator */}
-            <div style={{ display: "flex", gap: 4, marginBottom: 18 }}>
-              {Array.from({ length: 5 }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  animate={{
-                    background: stack.length > i ? stateColor(stack[stack.length - 1 - i]?.state || "call") : T.dim,
-                    boxShadow: stack.length > i ? `0 0 12px ${stateColor(stack[stack.length - 1 - i]?.state || "call")}80` : "none",
-                  }}
-                  style={{ flex: 1, height: 5, borderRadius: 3, transition: "all 0.35s" }}
-                />
-              ))}
-              <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginLeft: 8 }}>depth {stack.length}</span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
+                onClick={run} disabled={running}
+                style={{ fontFamily: T.display, fontSize: 11, letterSpacing: 4, color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.neon3}, ${T.accent})`, border: "none", borderRadius: 8, padding: "8px 20px", cursor: running ? "not-allowed" : "pointer" }}>
+                {running ? "RUNNING…" : "▶ FACTORIAL(5)"}
+              </motion.button>
+              <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
+                style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 7, padding: "8px 12px", cursor: "pointer" }}>↺</motion.button>
             </div>
+          </div>
 
-            {/* Stack cards */}
-            <div style={{ position: "relative", minHeight: 280, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          <div style={{ display: "flex", gap: 4, marginBottom: 20, alignItems: "center" }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <motion.div key={i}
+                animate={{ background: stack.length > i ? stateColor(stack[i]?.state || "call") : T.dim, boxShadow: stack.length > i ? `0 0 10px ${stateColor(stack[i]?.state || "call")}80` : "none" }}
+                transition={{ duration: 0.5 }}
+                style={{ flex: 1, height: 6, borderRadius: 3 }} />
+            ))}
+            <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginLeft: 8, minWidth: 60 }}>depth {stack.length}/5</span>
+          </div>
+
+          <div style={{ minHeight: 320, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+            {stack.length === 0 && !running && (
+              <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, textAlign: "center", padding: "80px 0" }}>Stack empty — press ▶</div>
+            )}
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <AnimatePresence>
-                {stack.map((frame, i) => {
+                {[...stack].reverse().map((frame, i) => {
                   const color = stateColor(frame.state);
+                  const isTop = i === 0;
                   return (
-                    <motion.div
-                      key={`${frame.label}-${i}`}
+                    <motion.div key={`${frame.depth}-${frame.state}`}
                       initial={{ scale: 0.85, opacity: 0, y: -30 }}
                       animate={{ scale: 1, opacity: 1, y: 0 }}
-                      exit={{ scale: 0.85, opacity: 0, y: -24, transition: { duration: 0.35 } }}
-                      transition={{ type: "spring", stiffness: 280, damping: 24 }}
-                      style={{
-                        padding: "12px 20px", borderRadius: 10, marginTop: 7,
-                        background: `${color}18`, border: `2px solid ${color}`,
-                        boxShadow: `0 0 22px ${color}40`,
-                        display: "flex", alignItems: "center", justifyContent: "space-between",
-                      }}
-                    >
+                      exit={{ scale: 0.85, opacity: 0, y: -24 }}
+                      transition={{ type: "spring", stiffness: 200, damping: 22 }}
+                      style={{ padding: "12px 20px", borderRadius: 10, background: isTop ? `${color}22` : `${color}08`, border: `${isTop ? "2px" : "1px"} solid ${isTop ? color : `${color}45`}`, boxShadow: isTop ? `0 0 30px ${color}50` : "none", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div>
-                        <span style={{ fontFamily: T.mono, fontSize: 8, color, letterSpacing: 3 }}>
-                          {frame.state.toUpperCase()}
-                        </span>
-                        <div style={{ fontFamily: T.mono, fontSize: 16, fontWeight: 700, color, marginTop: 2 }}>{frame.label}</div>
+                        <div style={{ fontFamily: T.mono, fontSize: 8, color, letterSpacing: 3, marginBottom: 3 }}>{isTop ? "◀ ACTIVE" : `depth ${frame.depth}`}</div>
+                        <div style={{ fontFamily: T.mono, fontSize: 18, fontWeight: 700, color }}>fact({frame.n})</div>
                       </div>
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>n = {frame.n}</div>
                         {frame.result !== null && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            style={{ fontFamily: T.mono, fontSize: 18, fontWeight: 700, color: T.neon3 }}
-                          >= {frame.result}</motion.div>
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ duration: 0.5 }}
+                            style={{ fontFamily: T.mono, fontSize: 18, fontWeight: 700, color: T.neon4 }}>
+                            = {frame.result}
+                          </motion.div>
                         )}
                       </div>
                     </motion.div>
                   );
                 })}
               </AnimatePresence>
-
-              {stack.length === 0 && !running && (
-                <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, textAlign: "center", padding: "60px 0" }}>
-                  Stack empty. Press ▶ RUN.
-                </div>
-              )}
             </div>
+          </div>
 
-            {/* Current step */}
-            <AnimatePresence mode="wait">
-              {currentStep && (
-                <motion.div
-                  key={animIdx}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  style={{
-                    marginTop: 16, padding: "12px 16px", borderRadius: 9,
-                    background: `${stateColor(currentStep.state)}10`,
-                    border: `1px solid ${stateColor(currentStep.state)}40`,
-                    fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8,
-                  }}
-                >
-                  {currentStep.state === "call" && `Calling fact(${currentStep.n}) → pushing to stack`}
-                  {currentStep.state === "base" && `Base case: fact(1) = 1 → begin unwinding`}
-                  {currentStep.state === "return" && `fact(${currentStep.n}) = ${currentStep.result} → popping stack`}
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <AnimatePresence mode="wait">
+            {current && (
+              <motion.div key={animIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}
+                style={{ marginTop: 16, padding: "14px 16px", borderRadius: 10, background: `${stateColor(current.state)}10`, border: `1px solid ${stateColor(current.state)}40`, fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8 }}>
+                {current.state === "call" && `→ Calling fact(${current.n}) — CPU pushes new frame, starts executing with n=${current.n}`}
+                {current.state === "base" && `⊡ BASE CASE HIT: n=1, return 1. Now we start unwinding the stack upward!`}
+                {current.state === "return" && `↑ fact(${current.n}) = ${current.n} × ${current.result / current.n} = ${current.result}. Frame popped, value passed back.`}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <GlassCard style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ padding: "8px 14px", borderBottom: `1px solid ${T.dim}`, display: "flex", gap: 6, alignItems: "center" }}>
+              {["#FF5F57","#FEBC2E","#28C840"].map((c, i) => <div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: c }} />)}
+              <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginLeft: 8 }}>factorial.c</span>
+            </div>
+            <div style={{ padding: "14px 0" }}>
+              {[
+                { line: "int fact(int n) {",      color: T.text,  note: "" },
+                { line: "  if (n <= 1)        ",  color: T.neon4, note: "← BASE CASE" },
+                { line: "    return 1;         ",  color: T.neon4, note: "← STOP HERE" },
+                { line: "                     ",   color: T.dim,   note: "" },
+                { line: "  return n * fact(n-1);", color: T.neon3, note: "← RECURSIVE" },
+                { line: "}",                       color: T.text,  note: "" },
+              ].map((l, i) => {
+                const isBase = current?.state === "base" && i <= 2;
+                const isCall = current?.state === "call" && i === 4;
+                const isReturn = current?.state === "return" && i === 4;
+                const highlight = isBase || isCall || isReturn;
+                return (
+                  <motion.div key={i} animate={{ background: highlight ? `${l.color}20` : "transparent", paddingLeft: highlight ? 22 : 18 }} transition={{ duration: 0.4 }}
+                    style={{ fontFamily: T.mono, fontSize: 12, lineHeight: 2.2, paddingRight: 18, borderLeft: `3px solid ${highlight ? l.color : "transparent"}`, display: "flex", justifyContent: "space-between" }}>
+                    <span>
+                      <span style={{ color: T.dim, marginRight: 14, fontSize: 9 }}>{String(i + 1).padStart(2)}</span>
+                      <span style={{ color: l.color, whiteSpace: "pre" }}>{l.line}</span>
+                    </span>
+                    {l.note && <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginLeft: 8 }}>{l.note}</span>}
+                  </motion.div>
+                );
+              })}
+            </div>
           </GlassCard>
 
-          {/* Right: Code + rules */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <GlassCard style={{ overflow: "hidden" }}>
-              <div style={{ padding: "9px 16px", borderBottom: `1px solid ${T.dim}`, display: "flex", gap: 6, alignItems: "center" }}>
-                {["#FF5F57", "#FEBC2E", "#28C840"].map((c, i) => <div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: c }} />)}
-                <span style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginLeft: 8, letterSpacing: 2 }}>factorial.c</span>
-              </div>
-              <div style={{ padding: "16px 20px" }}>
-                {[
-                  { line: "int fact(int n) {", color: T.neon2, highlight: false },
-                  { line: "  if (n <= 1)", color: T.neon3, highlight: currentStep?.state === "base" },
-                  { line: "    return 1;", color: T.neon3, highlight: currentStep?.state === "base" },
-                  { line: "  return n * fact(n-1);", color: T.neon, highlight: currentStep?.state === "call" },
-                  { line: "}", color: T.text, highlight: false },
-                ].map((item, i) => (
-                  <motion.div
-                    key={i}
-                    animate={{ background: item.highlight ? `${item.color}18` : "transparent", borderLeftColor: item.highlight ? item.color : "transparent" }}
-                    style={{ fontFamily: T.mono, fontSize: 12, lineHeight: 2.1, paddingLeft: 12, borderLeft: "3px solid", color: item.color, transition: "all 0.3s" }}
-                  >
-                    <span style={{ color: T.muted, marginRight: 14, fontSize: 9 }}>{i + 1}</span>
-                    {item.line}
-                  </motion.div>
-                ))}
-              </div>
-            </GlassCard>
-
+          <GlassCard style={{ padding: 22 }} glowColor={T.neon4}>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon4, marginBottom: 16 }}>📋 MANUAL TRACE</div>
             {[
-              { color: T.neon3, icon: "⊡", label: "BASE CASE", text: "n ≤ 1 → return 1\nStop condition. No base = ∞ loop." },
-              { color: T.neon, icon: "↻", label: "RECURSE", text: "fact(n-1) calls itself.\nSmaller problem each time." },
-              { color: T.neon4, icon: "↑", label: "UNWIND", text: "Return values bubble back.\n5 × 4 × 3 × 2 × 1 = 120" },
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: 20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                style={{
-                  padding: "14px 18px", borderRadius: 10,
-                  background: `${item.color}08`, border: `1px solid ${item.color}28`,
-                  display: "flex", gap: 14, alignItems: "flex-start",
-                }}
-              >
-                <div style={{ fontFamily: T.mono, fontSize: 20, color: item.color, lineHeight: 1, marginTop: 2 }}>{item.icon}</div>
-                <div>
-                  <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: item.color, marginBottom: 4 }}>{item.label}</div>
-                  <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8, whiteSpace: "pre" }}>{item.text}</div>
-                </div>
+              { call: "fact(5)", exp: "= 5 × fact(4)", color: T.neon2 },
+              { call: "fact(4)", exp: "= 4 × fact(3)", color: T.neon2 },
+              { call: "fact(3)", exp: "= 3 × fact(2)", color: T.neon2 },
+              { call: "fact(2)", exp: "= 2 × fact(1)", color: T.neon2 },
+              { call: "fact(1)", exp: "= 1  ← base!",  color: T.neon4 },
+              { call: "↑ 2×1",  exp: "= 2",           color: T.neon3 },
+              { call: "↑ 3×2",  exp: "= 6",           color: T.neon3 },
+              { call: "↑ 4×6",  exp: "= 24",          color: T.neon3 },
+              { call: "↑ 5×24", exp: "= 120 ✓",       color: T.neon3 },
+            ].map((row, i) => (
+              <motion.div key={i} initial={{ opacity: 0, x: 10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
+                style={{ display: "flex", justifyContent: "space-between", padding: "5px 10px", borderRadius: 6, background: `${row.color}06`, marginBottom: 3 }}>
+                <span style={{ fontFamily: T.mono, fontSize: 11, color: row.color }}>{row.call}</span>
+                <span style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>{row.exp}</span>
               </motion.div>
             ))}
-          </div>
+          </GlassCard>
         </div>
       </div>
-    </section>
+    </Section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 4: STACK SIMULATOR
+// SECTION 06 — CALL STACK
 // ─────────────────────────────────────────────────────────────────────────────
-function StackSimulator() {
+function CallStackSection({ voice }) {
   const [n, setN] = useState(4);
-  const [execIdx, setExecIdx] = useState(-1);
   const [frames, setFrames] = useState([]);
   const [running, setRunning] = useState(false);
   const [infinite, setInfinite] = useState(false);
   const [output, setOutput] = useState(null);
+  const [soExplain, setSoExplain] = useState(false);
   const runRef = useRef(false);
 
   const buildSteps = (num) => {
@@ -2342,29 +1369,20 @@ function StackSimulator() {
     setRunning(true);
     setFrames([]);
     setOutput(null);
-    setExecIdx(-1);
-
+    setSoExplain(false);
+    setInfinite(false);
     const steps = buildSteps(n);
     const stackArr = [];
-
     for (let i = 0; i < steps.length; i++) {
       if (!runRef.current) break;
       const s = steps[i];
-      setExecIdx(i);
-      if (s.phase === "call" || s.phase === "base") {
-        stackArr.push({ ...s, id: i });
-        setFrames([...stackArr]);
-      } else {
-        stackArr.pop();
-        setFrames([...stackArr]);
-      }
+      if (s.phase === "call" || s.phase === "base") { stackArr.push({ ...s, id: i }); setFrames([...stackArr]); }
+      else { stackArr.pop(); setFrames([...stackArr]); }
       if (i === steps.length - 1) setOutput(s.result);
-      await new Promise(r => setTimeout(r, 640));
+      await new Promise(r => setTimeout(r, 750)); // SLOWER
     }
-
     runRef.current = false;
     setRunning(false);
-    setExecIdx(-1);
   };
 
   const runInfinite = async () => {
@@ -2373,566 +1391,594 @@ function StackSimulator() {
     setInfinite(true);
     setRunning(true);
     setOutput(null);
+    setSoExplain(false);
     const fakeStack = [];
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 10; i++) {
       if (!runRef.current) break;
       fakeStack.push({ n: 999 - i, phase: "call", result: null, id: i });
       setFrames([...fakeStack]);
-      await new Promise(r => setTimeout(r, 220));
+      await new Promise(r => setTimeout(r, 250));
     }
-    setOutput("STACK OVERFLOW! ☠");
+    setOutput("STACK OVERFLOW ☠");
+    setSoExplain(true);
     runRef.current = false;
     setRunning(false);
   };
 
-  const reset = () => {
-    runRef.current = false;
-    setRunning(false);
-    setFrames([]);
-    setOutput(null);
-    setExecIdx(-1);
-    setInfinite(false);
-  };
-
-  const maxDepth = n + 1;
+  const reset = () => { runRef.current = false; setRunning(false); setFrames([]); setOutput(null); setInfinite(false); setSoExplain(false); };
 
   return (
-    <section id="simulator" style={{
-      padding: "90px 0",
-      background: `radial-gradient(ellipse 60% 50% at 50% 100%, rgba(0,200,255,0.06) 0%, transparent 60%),
-                   ${T.bg1}`,
-    }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 40px" }}>
+    <Section id="callstack">
+      <SectionHeader num="06" tag="CALL STACK" title="UNDER THE HOOD" color={T.neon4} sectionId="callstack" voice={voice}
+        subtitle="The call stack is a region of RAM. Every function call PUSHES a new frame (local variables, return address). Return POPS the frame. Stack is finite — too many calls = overflow." />
 
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.8 }}
-          style={{ marginBottom: 44, display: "flex", alignItems: "flex-end", gap: 20 }}
-        >
-          <span style={{ fontFamily: T.mono, fontSize: 60, fontWeight: 700, color: T.dim, lineHeight: 1 }}>04</span>
-          <div>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon4, marginBottom: 5 }}>MAKE RECURSION PREDICTABLE</div>
-            <h2 style={{ fontFamily: T.display, fontSize: 38, fontWeight: 400, color: T.text, letterSpacing: 3 }}>STACK SIMULATOR</h2>
-          </div>
-        </motion.div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-
-          {/* Left: Controls + horizontal stack bars */}
-          <GlassCard style={{ padding: 28 }}>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon4, marginBottom: 20 }}>▸ CONFIGURE</div>
-
-            {/* n slider */}
-            <div style={{ marginBottom: 22 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-                <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>factorial(n)</span>
-                <motion.span key={n} animate={{ scale: [1.4, 1] }}
-                  style={{ fontFamily: T.mono, fontSize: 22, fontWeight: 700, color: T.neon4 }}>{n}</motion.span>
-              </div>
-              <input type="range" min={1} max={8} value={n}
-                onChange={e => { setN(Number(e.target.value)); reset(); }}
-                style={{ width: "100%", accentColor: T.neon4 }} />
-              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, marginTop: 4 }}>
-                Max depth: {n + 1} frames
-              </div>
-            </div>
-
-            {/* Stack depth visual */}
-            <div style={{ marginBottom: 22 }}>
-              <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 10, letterSpacing: 3 }}>
-                STACK DEPTH [{frames.length} / {infinite ? "∞" : maxDepth}]
-              </div>
-              <div style={{ display: "flex", gap: 3 }}>
-                {Array.from({ length: infinite ? 9 : maxDepth }).map((_, i) => {
-                  const filled = i < frames.length;
-                  const isDanger = infinite && filled;
-                  return (
-                    <motion.div
-                      key={i}
-                      animate={{
-                        background: isDanger ? T.neon2 : filled ? T.neon4 : T.dim,
-                        boxShadow: isDanger ? `0 0 14px ${T.neon2}` : filled ? `0 0 8px ${T.neon4}60` : "none",
-                      }}
-                      style={{ flex: 1, height: 32, borderRadius: 5, transition: "all 0.3s" }}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Buttons */}
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
-              <motion.button
-                whileHover={{ scale: 1.04, boxShadow: `0 0 30px ${T.neon4}50` }}
-                whileTap={{ scale: 0.97 }}
-                onClick={runSim}
-                disabled={running}
-                style={{
-                  flex: 2, fontFamily: T.display, fontSize: 13, letterSpacing: 4,
-                  color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.neon4}, ${T.neon})`,
-                  border: "none", borderRadius: 8, padding: "12px", cursor: running ? "not-allowed" : "pointer",
-                }}
-              >{running ? "RUNNING…" : `▶ RUN fact(${n})`}</motion.button>
-              <motion.button
-                whileHover={{ scale: 1.04, boxShadow: `0 0 25px ${T.neon2}50` }}
-                whileTap={{ scale: 0.97 }}
-                onClick={runInfinite}
-                disabled={running}
-                style={{
-                  flex: 1, fontFamily: T.display, fontSize: 11, letterSpacing: 3,
-                  color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.neon2}, #FF0055)`,
-                  border: "none", borderRadius: 8, padding: "12px", cursor: running ? "not-allowed" : "pointer",
-                }}
-              >☠ INFINITE</motion.button>
-              <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
-                style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer" }}
-              >↺</motion.button>
-            </div>
-
-            {/* Output */}
-            <AnimatePresence mode="wait">
-              {output && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  style={{
-                    padding: "16px 20px", borderRadius: 11, textAlign: "center",
-                    background: infinite ? `${T.neon2}18` : `${T.neon3}14`,
-                    border: `2px solid ${infinite ? T.neon2 : T.neon3}`,
-                    boxShadow: `0 0 30px ${infinite ? T.neon2 : T.neon3}50`,
-                    fontFamily: T.display, fontSize: 26, letterSpacing: 5,
-                    color: infinite ? T.neon2 : T.neon3,
-                  }}
-                >{infinite ? output : `= ${output}`}</motion.div>
-              )}
-            </AnimatePresence>
-          </GlassCard>
-
-          {/* Right: Live stack cards */}
-          <GlassCard style={{ padding: 24, overflow: "hidden" }}>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon4, marginBottom: 16 }}>▸ LIVE STACK (top = newest)</div>
-
-            <div style={{ display: "flex", flexDirection: "column-reverse", gap: 6, minHeight: 300 }}>
-              <AnimatePresence>
-                {frames.map((frame, i) => {
-                  const isTop = i === frames.length - 1;
-                  const color = frame.phase === "base" ? T.neon3 : frame.phase === "return" ? T.neon4 : (infinite ? T.neon2 : T.neon);
-                  return (
-                    <motion.div
-                      key={frame.id}
-                      layout
-                      initial={{ opacity: 0, y: -20, scale: 0.92 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 20, scale: 0.88, transition: { duration: 0.3 } }}
-                      transition={{ type: "spring", stiffness: 300, damping: 26 }}
-                      style={{
-                        padding: "10px 16px", borderRadius: 9,
-                        background: isTop ? `${color}22` : `${color}0A`,
-                        border: `${isTop ? "2px" : "1px"} solid ${isTop ? color : `${color}40`}`,
-                        boxShadow: isTop ? `0 0 25px ${color}50` : "none",
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
-                      }}
-                    >
-                      <span style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 700, color }}>{frame.n < 999 ? `fact(${frame.n})` : `fact(∞)`}</span>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 2 }}>{frame.phase.toUpperCase()}</div>
-                        {frame.result !== null && (
-                          <div style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 700, color: T.neon3 }}>→ {frame.result}</div>
-                        )}
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-
-              {frames.length === 0 && (
-                <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, textAlign: "center", paddingTop: 80 }}>
-                  Press ▶ RUN to fill stack
-                </div>
-              )}
-            </div>
-          </GlassCard>
+      <GlassCard style={{ padding: 26, marginBottom: 28 }}>
+        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon4, marginBottom: 20 }}>🔬 ANATOMY OF A STACK FRAME</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 16 }}>
+          {[
+            { label: "Return Address", desc: "Where to jump back to when this function finishes. Stored automatically by CPU.", color: T.neon, icon: "↩" },
+            { label: "Parameters",     desc: "Copies of the arguments passed to the function (or the address if pointer).", color: T.neon2, icon: "📥" },
+            { label: "Local Vars",     desc: "Variables declared inside this function. Live only while function is running.", color: T.neon4, icon: "📦" },
+          ].map((f, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 14 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.12 }}
+              style={{ padding: "16px", borderRadius: 10, background: `${f.color}08`, border: `1px solid ${f.color}30`, textAlign: "center" }}>
+              <div style={{ fontSize: 22, marginBottom: 10 }}>{f.icon}</div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, color: f.color, letterSpacing: 3, marginBottom: 8 }}>{f.label}</div>
+              <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, lineHeight: 1.8 }}>{f.desc}</div>
+            </motion.div>
+          ))}
         </div>
-      </div>
-    </section>
-  );
-}
+      </GlassCard>
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 5: COMBINED — LINKED LIST TRAVERSAL
-// ─────────────────────────────────────────────────────────────────────────────
-const NODES = [
-  { id: 0, val: 10, next: 1, addr: "0xA100" },
-  { id: 1, val: 25, next: 2, addr: "0xA200" },
-  { id: 2, val: 37, next: 3, addr: "0xA300" },
-  { id: 3, val: 42, next: 4, addr: "0xA400" },
-  { id: 4, val: 58, next: null, addr: "0xA500" },
-];
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 28 }}>
+        <GlassCard style={{ padding: 28 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon4, marginBottom: 20 }}>▸ CONFIGURE SIMULATION</div>
 
-function CombinedSection() {
-  const [activeNode, setActiveNode] = useState(-1);
-  const [stack, setStack] = useState([]);
-  const [running, setRunning] = useState(false);
-  const [done, setDone] = useState(false);
-  const runRef = useRef(false);
-
-  const runTraversal = async () => {
-    if (runRef.current) return;
-    runRef.current = true;
-    setRunning(true);
-    setStack([]);
-    setDone(false);
-    setActiveNode(-1);
-
-    // Simulate recursive traversal: visit all nodes, then unwind
-    for (let i = 0; i < NODES.length; i++) {
-      if (!runRef.current) break;
-      setActiveNode(i);
-      setStack(prev => [...prev, { ...NODES[i], phase: "visit" }]);
-      await new Promise(r => setTimeout(r, 750));
-    }
-
-    // Base case (NULL reached)
-    await new Promise(r => setTimeout(r, 500));
-
-    // Unwind
-    for (let i = NODES.length - 1; i >= 0; i--) {
-      if (!runRef.current) break;
-      setActiveNode(i);
-      setStack(prev => prev.filter((_, idx) => idx < i + 1));
-      await new Promise(r => setTimeout(r, 600));
-    }
-
-    setActiveNode(-1);
-    setDone(true);
-    runRef.current = false;
-    setRunning(false);
-  };
-
-  const reset = () => {
-    runRef.current = false;
-    setRunning(false);
-    setActiveNode(-1);
-    setStack([]);
-    setDone(false);
-  };
-
-  return (
-    <section id="combined" style={{
-      padding: "90px 0 120px",
-      background: `radial-gradient(ellipse 80% 60% at 50% 20%, rgba(157,78,221,0.08) 0%, transparent 55%),
-                   radial-gradient(ellipse 60% 40% at 10% 80%, rgba(0,200,255,0.05) 0%, transparent 55%),
-                   ${T.bg}`,
-    }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 40px" }}>
-
-        <motion.div
-          initial={{ opacity: 0, x: -30 }}
-          whileInView={{ opacity: 1, x: 0 }}
-          viewport={{ once: true, amount: 0.3 }}
-          transition={{ duration: 0.8 }}
-          style={{ marginBottom: 44, display: "flex", alignItems: "flex-end", gap: 20 }}
-        >
-          <span style={{ fontFamily: T.mono, fontSize: 60, fontWeight: 700, color: T.dim, lineHeight: 1 }}>05</span>
-          <div>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.purple, marginBottom: 5 }}>POINTERS + RECURSION</div>
-            <h2 style={{ fontFamily: T.display, fontSize: 38, fontWeight: 400, color: T.text, letterSpacing: 3 }}>LINKED LIST TRAVERSAL</h2>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>factorial(n) where n =</span>
+              <motion.span key={n} animate={{ scale: [1.4, 1] }} style={{ fontFamily: T.mono, fontSize: 22, fontWeight: 700, color: T.neon4 }}>{n}</motion.span>
+            </div>
+            <input type="range" min={1} max={8} value={n} onChange={e => { setN(Number(e.target.value)); reset(); }}
+              style={{ width: "100%", accentColor: T.neon4 }} />
           </div>
-        </motion.div>
 
-        {/* Linked list visual */}
-        <GlassCard style={{ padding: 30, marginBottom: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.purple }}>▸ NODE CHAIN</div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <motion.button
-                whileHover={{ scale: 1.04, boxShadow: `0 0 28px ${T.purple}50` }}
-                whileTap={{ scale: 0.97 }}
-                onClick={runTraversal}
-                disabled={running}
-                style={{
-                  fontFamily: T.display, fontSize: 13, letterSpacing: 4,
-                  color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.purple}, ${T.neon})`,
-                  border: "none", borderRadius: 8, padding: "9px 22px", cursor: running ? "not-allowed" : "pointer",
-                }}
-              >{running ? "TRAVERSING…" : "▶ TRAVERSE"}</motion.button>
-              <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
-                style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 7, padding: "9px 14px", cursor: "pointer" }}
-              >↺</motion.button>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 10, letterSpacing: 3 }}>DEPTH METER [{frames.length} / {infinite ? "∞" : n + 1}]</div>
+            <div style={{ display: "flex", gap: 3, flexWrap: "wrap" }}>
+              {Array.from({ length: infinite ? 10 : n + 1 }).map((_, i) => {
+                const filled = i < frames.length;
+                return (
+                  <motion.div key={i}
+                    animate={{ background: filled ? (infinite ? T.neon3 : T.neon4) : T.dim, boxShadow: filled ? `0 0 8px ${infinite ? T.neon3 : T.neon4}60` : "none" }}
+                    transition={{ duration: 0.4 }}
+                    style={{ flex: 1, minWidth: 20, height: 36, borderRadius: 5, display: "flex", alignItems: "flex-end", paddingBottom: 4, justifyContent: "center" }}>
+                    {filled && <span style={{ fontFamily: T.mono, fontSize: 8, color: infinite ? T.neon3 : "#000", fontWeight: 700 }}>f</span>}
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Nodes row */}
-          <div style={{ display: "flex", alignItems: "center", gap: 0, overflowX: "auto", paddingBottom: 8 }}>
-            {NODES.map((node, i) => {
-              const isActive = activeNode === i;
-              return (
-                <div key={i} style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
-                  <motion.div
-                    animate={{
-                      borderColor: isActive ? T.purple : `${T.neon}25`,
-                      background: isActive ? `${T.purple}22` : `${T.neon}06`,
-                      boxShadow: isActive ? `0 0 35px ${T.purple}70` : "none",
-                      scale: isActive ? 1.08 : 1,
-                    }}
-                    transition={{ type: "spring", stiffness: 280, damping: 24 }}
-                    style={{ width: 110, borderRadius: 12, border: "2px solid", padding: "14px 12px" }}
-                  >
-                    <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 4 }}>{node.addr}</div>
-                    <div style={{ fontFamily: T.mono, fontSize: 22, fontWeight: 700, color: isActive ? T.purple : T.neon, marginBottom: 6, textAlign: "center" }}>{node.val}</div>
-                    <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, textAlign: "center" }}>
-                      next → {node.next !== null ? NODES[node.next].addr : "NULL"}
-                    </div>
-                  </motion.div>
-
-                  {node.next !== null && (
-                    <motion.div
-                      animate={{ opacity: activeNode >= i ? 1 : 0.25, color: activeNode === i ? T.purple : T.muted }}
-                      style={{ padding: "0 6px", fontFamily: T.mono, fontSize: 22, color: T.muted, transition: "all 0.4s" }}
-                    >→</motion.div>
-                  )}
-                  {node.next === null && (
-                    <div style={{ padding: "0 8px", fontFamily: T.mono, fontSize: 10, color: T.neon2 }}>NULL</div>
-                  )}
-                </div>
-              );
-            })}
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              onClick={runSim} disabled={running}
+              style={{ flex: 2, minWidth: 100, fontFamily: T.display, fontSize: 13, letterSpacing: 4, color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.neon4}, ${T.neon2})`, border: "none", borderRadius: 8, padding: "12px", cursor: running ? "not-allowed" : "pointer" }}>
+              {running ? "RUNNING…" : `▶ RUN fact(${n})`}
+            </motion.button>
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
+              onClick={runInfinite} disabled={running}
+              style={{ flex: 1, minWidth: 80, fontFamily: T.display, fontSize: 11, letterSpacing: 3, color: "#000", background: running ? T.muted : `linear-gradient(135deg, ${T.neon3}, #FF0055)`, border: "none", borderRadius: 8, padding: "12px", cursor: running ? "not-allowed" : "pointer" }}>
+              ☠ OVERFLOW
+            </motion.button>
+            <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
+              style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 8, padding: "12px 14px", cursor: "pointer" }}>↺</motion.button>
           </div>
 
-          {/* Pointer indicator */}
-          <AnimatePresence>
-            {activeNode >= 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                style={{ marginTop: 16, fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8 }}
-              >
-                <span style={{ color: T.purple }}>curr</span> → <AddressTag addr={NODES[activeNode].addr} color={T.purple} /> → value = <strong style={{ color: T.neon3 }}>{NODES[activeNode].val}</strong>
-                <span style={{ color: T.muted, marginLeft: 16 }}>stack depth: {stack.length}</span>
+          <AnimatePresence mode="wait">
+            {output && (
+              <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.5 }}
+                style={{ padding: "16px 20px", borderRadius: 11, textAlign: "center", background: infinite ? `${T.neon3}18` : `${T.neon4}14`, border: `2px solid ${infinite ? T.neon3 : T.neon4}`, fontFamily: T.display, fontSize: 24, letterSpacing: 5, color: infinite ? T.neon3 : T.neon4 }}>
+                {infinite ? output : `= ${output}`}
               </motion.div>
             )}
           </AnimatePresence>
 
-          {done && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              style={{
-                marginTop: 14, padding: "12px 20px", borderRadius: 9,
-                background: `${T.neon3}12`, border: `1px solid ${T.neon3}50`,
-                fontFamily: T.mono, fontSize: 13, color: T.neon3, textAlign: "center",
-              }}
-            >
-              ✓ Traversal complete — all {NODES.length} nodes visited
+          {soExplain && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+              style={{ marginTop: 14, padding: "14px", borderRadius: 10, background: `${T.neon3}08`, border: `1px solid ${T.neon3}40` }}>
+              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.neon3, letterSpacing: 3, marginBottom: 8 }}>☠ STACK OVERFLOW EXPLAINED</div>
+              <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.9 }}>
+                The OS allocates ~1-8MB for the stack. Each frame takes space. Infinite recursion keeps pushing frames until RAM runs out.
+                <br /><br /><span style={{ color: T.neon3 }}>Fix:</span> Always ensure your base case is reachable!
+              </div>
             </motion.div>
           )}
         </GlassCard>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+        <GlassCard style={{ padding: 24, overflow: "hidden" }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon4, marginBottom: 6 }}>▸ LIVE STACK</div>
+          <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginBottom: 16, letterSpacing: 2 }}>↑ TOP (currently executing)</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 5, minHeight: 320 }}>
+            <AnimatePresence>
+              {[...frames].reverse().map((frame, i) => {
+                const isTop = i === 0;
+                const color = frame.phase === "base" ? T.neon4 : frame.phase === "return" ? T.neon3 : (infinite ? T.neon3 : T.neon2);
+                return (
+                  <motion.div key={frame.id} layout
+                    initial={{ opacity: 0, y: -28, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -28, scale: 0.88 }}
+                    transition={{ type: "spring", stiffness: 240, damping: 24 }}
+                    style={{ padding: "10px 16px", borderRadius: 9, background: isTop ? `${color}22` : `${color}0A`, border: `${isTop ? "2px" : "1px"} solid ${isTop ? color : `${color}40`}`, boxShadow: isTop ? `0 0 25px ${color}50` : "none", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <div style={{ fontFamily: T.mono, fontSize: 8, color, letterSpacing: 2, marginBottom: 2 }}>{isTop ? "▶ EXECUTING" : `waiting...`}</div>
+                      <span style={{ fontFamily: T.mono, fontSize: 14, fontWeight: 700, color }}>
+                        {frame.n < 999 ? `fact(${frame.n})` : `fact(∞)`}
+                      </span>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted }}>{frame.phase.toUpperCase()}</div>
+                      {frame.result !== null && <div style={{ fontFamily: T.mono, fontSize: 13, fontWeight: 700, color: T.neon4 }}>→ {frame.result}</div>}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+            {frames.length === 0 && <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted, textAlign: "center", paddingTop: 80 }}>Press ▶ RUN to fill stack</div>}
+          </div>
+          {frames.length > 0 && (
+            <div style={{ marginTop: 10, fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 2, textAlign: "center" }}>
+              ↓ BOTTOM (first call — suspended, waiting to resume)
+            </div>
+          )}
+        </GlassCard>
+      </div>
+    </Section>
+  );
+}
 
-          {/* Stack during traversal */}
-          <GlassCard style={{ padding: 22, overflow: "hidden" }}>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.purple, marginBottom: 14 }}>▸ CALL STACK</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5, minHeight: 180 }}>
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION 07 — ENGINE
+// ─────────────────────────────────────────────────────────────────────────────
+const ENGINE_PROGS = [
+  {
+    name: "PTR BASICS", color: T.neon, filename: "ptr_basics.c",
+    lines: ["int x = 42;", "int *p = &x;", "", 'printf("%p", p);    // address', 'printf("%d", *p);   // 42', "*p = 100;", 'printf("%d", x);    // 100'],
+    steps: [
+      { line: 0, mem: { x: 42 }, out: "" },
+      { line: 1, mem: { x: 42, p: "0x2000→x" }, out: "" },
+      { line: 3, mem: { x: 42, p: "0x2000→x" }, out: "0x2000" },
+      { line: 4, mem: { x: 42, p: "0x2000→x" }, out: "42" },
+      { line: 5, mem: { x: 100, p: "0x2000→x" }, out: "" },
+      { line: 6, mem: { x: 100, p: "0x2000→x" }, out: "100" },
+    ],
+    note: "x changed from 42 → 100 via the pointer. The pointer didn't move — we wrote THROUGH it.",
+  },
+  {
+    name: "PASS BY PTR", color: T.neon3, filename: "pass_ptr.c",
+    lines: ["void triple(int *p) {", "    *p = *p * 3;", "}", "", "int x = 7;", "triple(&x);", 'printf("%d", x); // 21'],
+    steps: [
+      { line: 4, mem: { x: 7 }, out: "" },
+      { line: 5, mem: { x: 7, "p (in triple)": "&x = 0x4000" }, out: "" },
+      { line: 1, mem: { x: 7, "p (in triple)": "&x = 0x4000", "*p was": "7" }, out: "" },
+      { line: 1, mem: { x: 21, "p (in triple)": "&x = 0x4000" }, out: "" },
+      { line: 6, mem: { x: 21 }, out: "21" },
+    ],
+    note: "triple() received the address of x, so writing *p directly modified x in main's stack frame.",
+  },
+  {
+    name: "RECURSION", color: T.neon2, filename: "recursion.c",
+    lines: ["int fact(int n) {", "  if (n <= 1) return 1;", "  return n * fact(n-1);", "}", "", "int r = fact(4);", 'printf("%d", r); // 24'],
+    steps: [
+      { line: 5, mem: { "calling": "fact(4)" }, out: "" },
+      { line: 1, mem: { n: 4, "calling": "fact(3)" }, out: "" },
+      { line: 1, mem: { n: 3, "calling": "fact(2)" }, out: "" },
+      { line: 1, mem: { n: 2, "calling": "fact(1)" }, out: "" },
+      { line: 1, mem: { n: 1, "base!": "return 1" }, out: "" },
+      { line: 2, mem: { "unwind": "2×1=2, 3×2=6, 4×6=24" }, out: "" },
+      { line: 6, mem: { r: 24 }, out: "24" },
+    ],
+    note: "fact(4) pushed 4 frames. Base case returned 1. Values multiplied back up: 24.",
+  },
+  {
+    name: "PTR + RECUR", color: T.accent, filename: "combined.c",
+    lines: ["void fill(int *arr, int n) {", "  if (n == 0) return;", "  arr[n-1] = n * n;", "  fill(arr, n-1);", "}", "", "int a[4];", "fill(a, 4);", "// a = {1, 4, 9, 16}"],
+    steps: [
+      { line: 6, mem: { "a[]": "uninitialized" }, out: "" },
+      { line: 7, mem: { "a[]": "uninitialized", ptr: "a = &a[0]" }, out: "" },
+      { line: 2, mem: { "a[3]": 16, n: 4 }, out: "" },
+      { line: 2, mem: { "a[3]": 16, "a[2]": 9, n: 3 }, out: "" },
+      { line: 2, mem: { "a[3]": 16, "a[2]": 9, "a[1]": 4, n: 2 }, out: "" },
+      { line: 2, mem: { "a[3]": 16, "a[2]": 9, "a[1]": 4, "a[0]": 1, n: 1 }, out: "" },
+      { line: 1, mem: { "a[0]": 1, "a[1]": 4, "a[2]": 9, "a[3]": 16, "done!": "✓" }, out: "{1,4,9,16}" },
+    ],
+    note: "Recursion fills the array backwards. Pointer lets function modify the real array in main's memory.",
+  },
+];
+
+function EngineSection({ voice }) {
+  const [progIdx, setProgIdx] = useState(0);
+  const [step, setStep] = useState(-1);
+  const [memory, setMemory] = useState({});
+  const [output, setOutput] = useState("");
+  const [running, setRunning] = useState(false);
+  const runningRef = useRef(false);
+  const prog = ENGINE_PROGS[progIdx];
+
+  const reset = () => { runningRef.current = false; setStep(-1); setMemory({}); setOutput(""); setRunning(false); };
+
+  const run = async () => {
+    if (runningRef.current) return;
+    reset();
+    await new Promise(r => setTimeout(r, 80));
+    runningRef.current = true;
+    setRunning(true);
+    for (let i = 0; i < prog.steps.length; i++) {
+      if (!runningRef.current) break;
+      const s = prog.steps[i];
+      setStep(s.line);
+      setMemory({ ...s.mem });
+      if (s.out) setOutput(s.out);
+      await new Promise(r => setTimeout(r, 1100)); // SLOWER
+    }
+    setStep(-1);
+    setRunning(false);
+    runningRef.current = false;
+  };
+
+  return (
+    <Section id="engine" style={{ borderBottom: "none" }}>
+      <SectionHeader num="07" tag="MASTER ENGINE" title="FULL SIMULATION" color={T.accent} sectionId="engine" voice={voice}
+        subtitle="Run all four programs and watch memory change in real time. This is where pointers and recursion combine into real C programs." />
+
+      <div style={{ display: "flex", gap: 10, marginBottom: 28, flexWrap: "wrap" }}>
+        {ENGINE_PROGS.map((p, i) => (
+          <Pill key={p.name} color={p.color} active={progIdx === i} onClick={() => { setProgIdx(i); reset(); }}>{p.name}</Pill>
+        ))}
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 24, marginBottom: 20 }}>
+        <GlassCard style={{ overflow: "hidden" }}>
+          <div style={{ background: "rgba(0,0,0,0.45)", borderBottom: `1px solid ${T.dim}`, padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <motion.div animate={{ background: running ? prog.color : T.muted, boxShadow: running ? `0 0 12px ${prog.color}` : "none" }}
+                style={{ width: 7, height: 7, borderRadius: "50%" }} />
+              <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted }}>{prog.filename}</span>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <motion.button whileTap={{ scale: 0.95 }} onClick={run} disabled={running}
+                style={{ fontFamily: T.display, fontSize: 11, letterSpacing: 3, color: "#000", background: running ? T.muted : prog.color, border: "none", borderRadius: 5, padding: "6px 16px", cursor: running ? "not-allowed" : "pointer" }}>
+                {running ? "RUNNING…" : "▶ RUN"}
+              </motion.button>
+              <motion.button whileTap={{ scale: 0.95 }} onClick={reset}
+                style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 5, padding: "6px 12px", cursor: "pointer" }}>RESET</motion.button>
+            </div>
+          </div>
+          <div style={{ padding: "14px 0" }}>
+            {prog.lines.map((line, i) => {
+              const isActive = step === i;
+              return (
+                <motion.div key={i} animate={{ background: isActive ? `${prog.color}18` : "transparent", paddingLeft: isActive ? 22 : 16 }} transition={{ duration: 0.4 }}
+                  style={{ display: "flex", alignItems: "center", paddingRight: 16, paddingTop: 3, paddingBottom: 3, borderLeft: `3px solid ${isActive ? prog.color : "transparent"}` }}>
+                  <span style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, minWidth: 26, textAlign: "right", marginRight: 14, userSelect: "none" }}>{i + 1}</span>
+                  <span style={{ fontFamily: T.mono, fontSize: 12, color: isActive ? prog.color : T.text, whiteSpace: "pre" }}>{line}</span>
+                  {isActive && (
+                    <motion.span animate={{ opacity: [1, 0.2, 1] }} transition={{ duration: 0.6, repeat: Infinity }}
+                      style={{ fontFamily: T.mono, fontSize: 8, color: prog.color, marginLeft: "auto", letterSpacing: 2 }}>◀ EXECUTING</motion.span>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+        </GlassCard>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <GlassCard style={{ padding: 0, overflow: "hidden", flex: 1 }}>
+            <div style={{ background: "rgba(0,0,0,0.4)", borderBottom: `1px solid ${T.dim}`, padding: "10px 16px", fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon2 }}>MEMORY STATE</div>
+            <div style={{ padding: "16px", minHeight: 140 }}>
               <AnimatePresence>
-                {stack.map((frame, i) => (
-                  <motion.div
-                    key={`${frame.id}-${i}`}
-                    initial={{ opacity: 0, x: -12, scale: 0.94 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: 12, scale: 0.94, transition: { duration: 0.25 } }}
-                    style={{
-                      padding: "9px 14px", borderRadius: 8,
-                      background: `${T.purple}12`, border: `1px solid ${T.purple}40`,
-                      display: "flex", justifyContent: "space-between",
-                    }}
-                  >
-                    <span style={{ fontFamily: T.mono, fontSize: 12, color: T.purple }}>print({frame.val})</span>
-                    <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>{frame.addr}</span>
+                {Object.keys(memory).length === 0 ? (
+                  <div style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>No variables yet...</div>
+                ) : Object.entries(memory).map(([k, v]) => (
+                  <motion.div key={k} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                    style={{ display: "flex", alignItems: "center", gap: 12, fontFamily: T.mono, fontSize: 12, marginBottom: 10 }}>
+                    <span style={{ color: T.neon2, minWidth: 90 }}>{k}</span>
+                    <motion.div key={String(v)} initial={{ scale: 1.4, color: prog.color }} animate={{ scale: 1, color: T.text }} transition={{ duration: 0.4 }}
+                      style={{ background: `${prog.color}15`, border: `1px solid ${prog.color}40`, borderRadius: 5, padding: "3px 12px", fontWeight: 700, fontFamily: T.mono, fontSize: 11 }}>
+                      {String(v)}
+                    </motion.div>
                   </motion.div>
                 ))}
               </AnimatePresence>
-              {stack.length === 0 && (
-                <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, textAlign: "center", paddingTop: 50 }}>Stack builds as we traverse…</div>
-              )}
             </div>
           </GlassCard>
 
-          {/* Code */}
-          <GlassCard style={{ overflow: "hidden" }}>
-            <div style={{ padding: "9px 16px", borderBottom: `1px solid ${T.dim}`, display: "flex", gap: 6, alignItems: "center" }}>
-              {["#FF5F57", "#FEBC2E", "#28C840"].map((c, i) => <div key={i} style={{ width: 9, height: 9, borderRadius: "50%", background: c }} />)}
-              <span style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, marginLeft: 8, letterSpacing: 2 }}>traverse.c</span>
-            </div>
-            <div style={{ padding: "16px 20px" }}>
-              {[
-                { line: "struct Node {", color: T.purple, active: false },
-                { line: "  int val;", color: T.text, active: false },
-                { line: "  struct Node *next; // ptr", color: T.neon, active: running && activeNode >= 0 },
-                { line: "};", color: T.purple, active: false },
-                { line: "", color: T.text, active: false },
-                { line: "void traverse(Node *curr) {", color: T.neon4, active: false },
-                { line: "  if (!curr) return;  //base", color: T.neon3, active: running && activeNode < 0 },
-                { line: "  printf(\"%d\", curr->val);", color: T.neon2, active: running && activeNode >= 0 },
-                { line: "  traverse(curr->next);", color: T.neon, active: running && activeNode >= 0 },
-                { line: "}", color: T.purple, active: false },
-              ].map((item, i) => (
-                <motion.div key={i}
-                  animate={{ background: item.active ? `${item.color}14` : "transparent", borderLeftColor: item.active ? item.color : "transparent" }}
-                  style={{ fontFamily: T.mono, fontSize: 11, lineHeight: 2, paddingLeft: 10, borderLeft: "3px solid", color: item.color, transition: "all 0.3s" }}
-                >
-                  {item.line !== "" && <span style={{ color: T.muted, marginRight: 12, fontSize: 9 }}>{i + 1}</span>}
-                  {item.line}
-                </motion.div>
-              ))}
+          <GlassCard style={{ padding: 0, overflow: "hidden" }}>
+            <div style={{ background: "rgba(0,0,0,0.4)", borderBottom: `1px solid ${T.dim}`, padding: "10px 16px", fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon3 }}>OUTPUT</div>
+            <div style={{ padding: "14px 16px", minHeight: 56 }}>
+              {output ? (
+                <motion.pre initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
+                  style={{ fontFamily: T.mono, fontSize: 18, color: T.neon4 }}>
+                  {output}
+                </motion.pre>
+              ) : (
+                <span style={{ fontFamily: T.mono, fontSize: 11, color: T.muted }}>{running ? "executing..." : "press ▶ RUN"}</span>
+              )}
             </div>
           </GlassCard>
         </div>
       </div>
-    </section>
+
+      <motion.div key={progIdx} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+        style={{ padding: "16px 20px", borderRadius: 10, background: `${prog.color}08`, border: `1px solid ${prog.color}30`, marginBottom: 28 }}>
+        <span style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: prog.color }}>💡 NOTE: </span>
+        <span style={{ fontFamily: T.mono, fontSize: 11, color: T.text }}>{prog.note}</span>
+      </motion.div>
+
+      <GlassCard style={{ padding: 30 }} glowColor={T.accent}>
+        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.accent, marginBottom: 20 }}>🚀 CHAPTER COMPLETE — THE COMPLETE PICTURE</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 16 }}>
+          {[
+            { icon: "⬜", color: T.neon4, title: "POINTERS",        text: "Store addresses. Use & to get addr, * to follow it. Essential for modifying caller's data." },
+            { icon: "ƒ",  color: T.neon3, title: "FUNCTIONS + PTR", text: "Pass &x to let a function modify x. The function receives a pointer, writes through it with *p." },
+            { icon: "↻",  color: T.neon2, title: "RECURSION",       text: "Function calls itself with smaller input. Must have base case + shrink toward it every call." },
+            { icon: "⧖",  color: T.neon,  title: "CALL STACK",      text: "Each call pushes a frame. Return pops it. Stack is finite. Infinite recursion = overflow crash." },
+          ].map((f, i) => (
+            <motion.div key={i} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.12 }}
+              style={{ padding: "18px", borderRadius: 12, background: `${f.color}08`, border: `1px solid ${f.color}30`, textAlign: "center" }}>
+              <div style={{ fontSize: 28, marginBottom: 12 }}>{f.icon}</div>
+              <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: f.color, marginBottom: 10 }}>{f.title}</div>
+              <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, lineHeight: 1.8 }}>{f.text}</div>
+            </motion.div>
+          ))}
+        </div>
+      </GlassCard>
+    </Section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NAVIGATION BAR
+// SIDEBAR — Improved responsive nav
 // ─────────────────────────────────────────────────────────────────────────────
-function NavBar({ active }) {
-  const sections = [
-    { id: "hero", label: "MEMORY", num: "01" },
-    { id: "playground", label: "PTRS", num: "02" },
-    { id: "recursion", label: "RECUR", num: "03" },
-    { id: "simulator", label: "STACK", num: "04" },
-    { id: "combined", label: "COMBO", num: "05" },
-  ];
-
-  const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-
+function Sidebar({ activeSection, isOpen, onClose }) {
   return (
-    <motion.nav
-      initial={{ y: -60, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ delay: 0.5, duration: 0.7 }}
-      style={{
-        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "14px 40px",
-        background: "rgba(3,5,10,0.88)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        borderBottom: `1px solid ${T.dim}`,
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <motion.div
-          animate={{ boxShadow: [`0 0 8px ${T.neon}60`, `0 0 20px ${T.neon}90`, `0 0 8px ${T.neon}60`] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          style={{ width: 8, height: 8, borderRadius: "50%", background: T.neon }}
-        />
-        <span style={{ fontFamily: T.display, fontSize: 16, letterSpacing: 4, color: T.neon }}>C · CH.6</span>
-      </div>
+    <>
+      {/* Mobile overlay */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={onClose}
+            style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", zIndex: 40, display: "none" }}
+            className="sidebar-overlay" />
+        )}
+      </AnimatePresence>
 
-      <div style={{ display: "flex", gap: 4 }}>
-        {sections.map(sec => (
-          <motion.button
-            key={sec.id}
-            whileHover={{ color: T.neon }}
-            onClick={() => scrollTo(sec.id)}
-            style={{
-              fontFamily: T.mono, fontSize: 9, letterSpacing: 2,
-              color: active === sec.id ? T.neon : T.muted,
-              background: active === sec.id ? `${T.neon}10` : "transparent",
-              border: active === sec.id ? `1px solid ${T.neon}40` : "1px solid transparent",
-              borderRadius: 5, padding: "5px 12px", cursor: "pointer",
-              transition: "all 0.2s",
-            }}
-          ><span style={{ opacity: 0.4, marginRight: 4 }}>{sec.num}</span>{sec.label}</motion.button>
-        ))}
-      </div>
+      <motion.aside
+        initial={false}
+        style={{
+          width: 215, minWidth: 215, flexShrink: 0,
+          background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
+          borderRight: `1px solid ${T.dim}`,
+          display: "flex", flexDirection: "column",
+          padding: "26px 0", position: "sticky", top: 0, height: "100vh", overflow: "hidden",
+          zIndex: 50,
+        }}
+        className="sidebar-desktop"
+      >
+        <div style={{ padding: "0 18px 20px" }}>
+          <div style={{ fontFamily: T.display, fontSize: 18, letterSpacing: 4, color: T.neon }}>C LANG</div>
+          <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.muted, marginTop: 2 }}>CH.7 · PTR + RECURSION</div>
+        </div>
+        <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}40, transparent)`, marginBottom: 14 }} />
 
-      <div style={{ fontFamily: T.mono, fontSize: 9, color: T.muted, letterSpacing: 2 }}>
-        PTR + RECURSION
-      </div>
-    </motion.nav>
+        <nav style={{ overflowY: "auto", flex: 1, scrollbarWidth: "none" }}>
+          {NAV_ITEMS.map(item => {
+            const isActive = activeSection === item.id;
+            return (
+              <motion.a key={item.id} href={`#${item.id}`}
+                onClick={e => { e.preventDefault(); document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" }); onClose?.(); }}
+                animate={{ color: isActive ? T.neon : T.muted, background: isActive ? `${T.neon}08` : "transparent" }}
+                whileHover={{ color: T.text, paddingLeft: 24 }}
+                transition={{ duration: 0.18 }}
+                style={{ display: "flex", alignItems: "center", gap: 9, padding: "11px 18px", fontFamily: T.mono, fontSize: 10, fontWeight: 600, letterSpacing: 1.5, textDecoration: "none", borderLeft: `2px solid ${isActive ? T.neon : "transparent"}`, position: "relative" }}>
+                <span style={{ fontSize: 12, width: 18, textAlign: "center" }}>{item.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 7, opacity: 0.4, marginBottom: 1, letterSpacing: 3 }}>{item.num}</div>
+                  {item.label}
+                </div>
+                {isActive && (
+                  <motion.div layoutId="nav-dot-c7"
+                    style={{ width: 5, height: 5, borderRadius: "50%", background: T.neon, boxShadow: `0 0 8px ${T.neon}` }} />
+                )}
+              </motion.a>
+            );
+          })}
+        </nav>
+
+        <div style={{ padding: "14px 18px", borderTop: `1px solid ${T.dim}`, fontFamily: T.mono, fontSize: 8, color: T.dim, letterSpacing: 2, lineHeight: 2 }}>
+          C VISUAL SIM · v7.0
+        </div>
+      </motion.aside>
+
+      <style>{`
+        @media (max-width: 900px) {
+          .sidebar-desktop {
+            position: fixed !important;
+            left: ${isOpen ? "0" : "-215px"} !important;
+            top: 0 !important;
+            height: 100vh !important;
+            transition: left 0.3s ease;
+            z-index: 50 !important;
+          }
+          .sidebar-overlay {
+            display: block !important;
+          }
+        }
+      `}</style>
+    </>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FOOTER WITH PREV/NEXT NAV
+// MOBILE TOP NAV BAR
 // ─────────────────────────────────────────────────────────────────────────────
-function Footer() {
-  const router = useRouter();
+function MobileNavBar({ activeSection, onMenuClick, voice }) {
+  const current = NAV_ITEMS.find(n => n.id === activeSection) || NAV_ITEMS[0];
+  const progress = (NAV_ITEMS.findIndex(n => n.id === activeSection) + 1) / NAV_ITEMS.length;
 
   return (
-    <footer style={{
-      padding: "60px 40px",
-      background: T.bg1,
-      borderTop: `1px solid ${T.dim}`,
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      maxWidth: "100%",
-    }}>
+    <div style={{
+      display: "none",
+      position: "sticky", top: 0, zIndex: 30,
+      background: T.bg1, borderBottom: `1px solid ${T.dim}`,
+      padding: "10px 16px",
+      alignItems: "center", gap: 12,
+    }} className="mobile-nav">
+      <motion.button whileTap={{ scale: 0.93 }} onClick={onMenuClick}
+        style={{ width: 36, height: 36, borderRadius: 8, background: `${T.neon}15`, border: `1px solid ${T.neon}40`, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", gap: 4, cursor: "pointer" }}>
+        {[0,1,2].map(i => <div key={i} style={{ width: 16, height: 2, background: T.neon, borderRadius: 1 }} />)}
+      </motion.button>
+      <div style={{ flex: 1 }}>
+        <div style={{ fontFamily: T.mono, fontSize: 8, color: T.muted, letterSpacing: 3 }}>{current.num} · {current.icon}</div>
+        <div style={{ fontFamily: T.display, fontSize: 14, letterSpacing: 3, color: T.neon }}>{current.label}</div>
+      </div>
+      <div style={{ width: 50, height: 4, borderRadius: 2, background: T.dim, overflow: "hidden" }}>
+        <motion.div animate={{ width: `${progress * 100}%` }} transition={{ duration: 0.5 }}
+          style={{ height: "100%", background: T.neon, borderRadius: 2 }} />
+      </div>
+      <style>{`.mobile-nav { display: flex !important; } @media (min-width: 901px) { .mobile-nav { display: none !important; } }`}</style>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RIGHT PANEL
+// ─────────────────────────────────────────────────────────────────────────────
+const DEEP = {
+  hero:       { title: "Chapter 7",   color: T.neon,  why: "Pointers and recursion unlock systems programming. Every OS, game, and compiler uses them.", mistake: "Treating pointers as magic. They're just integers holding addresses.", model: "A pointer is a variable that stores an address — period. No magic." },
+  ram:        { title: "RAM Model",   color: T.neon2, why: "Without understanding RAM, pointers feel like magic. With it, they're obvious.", mistake: "Assuming variables are always adjacent — alignment gaps can exist.", model: "RAM = a street of numbered houses. &x = x's house number." },
+  pointers:   { title: "Pointers",    color: T.neon,  why: "Pointers let you work with addresses instead of values — modify ANY variable.", mistake: "Using *ptr before ptr is assigned. Always initialize pointers!", model: "ptr is a sign pointing to a house. *ptr = what's inside the house." },
+  ops:        { title: "& and * Ops", color: T.neon2, why: "Only two operators to learn: get address (&) and follow address (*).", mistake: "Confusing int *p (declaration) with *p (dereference). Same symbol, 2 uses.", model: "& = 'where does X live?' * = 'go to that address and look/write'" },
+  "ptr-fn":   { title: "Ptr + Fn",    color: T.neon3, why: "Pass-by-pointer is why C functions can modify caller's variables.", mistake: "Passing by value and wondering why the variable didn't change!", model: "You can't change someone's house by talking about it — go to the address." },
+  recursion:  { title: "Recursion",   color: T.neon3, why: "Elegant solution for problems defined in terms of themselves.", mistake: "Forgetting the base case. This causes infinite recursion + stack overflow.", model: "Russian dolls: open each to find a smaller one. Eventually: empty = stop." },
+  callstack:  { title: "Call Stack",  color: T.neon4, why: "Understanding the stack explains local variables, recursion depth, overflow.", mistake: "Deep recursion on large inputs — use iteration or increase stack size.", model: "Stack = tower of cafeteria trays. Push on call, pop on return." },
+  engine:     { title: "Full Engine", color: T.accent,why: "Combining pointers + recursion = linked lists, trees, parsers, compilers.", mistake: "Using recursion where a loop is clearer. Recursion has overhead!", model: "Master Chapter 7 = understand how every OS and database is built." },
+};
+
+function RightPanel({ activeSection, voice }) {
+  const data = DEEP[activeSection] || DEEP.hero;
+  const [liveTime, setLiveTime] = useState(0);
+  useEffect(() => {
+    const iv = setInterval(() => setLiveTime(t => t + 1), 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  return (
+    <aside style={{
+      width: 270, minWidth: 270, flexShrink: 0,
+      background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
+      borderLeft: `1px solid ${T.dim}`,
+      padding: "26px 14px",
+      display: "flex", flexDirection: "column", gap: 12,
+      overflowY: "auto", overflowX: "hidden",
+      position: "sticky", top: 0, height: "100vh",
+      scrollbarWidth: "none",
+    }} className="right-panel">
       <div>
-        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.muted, marginBottom: 6 }}>YOU LEARNED</div>
-        <div style={{ fontFamily: T.display, fontSize: 28, letterSpacing: 4, color: T.text }}>POINTERS + RECURSION</div>
-        <div style={{ fontFamily: T.mono, fontSize: 10, color: T.muted, marginTop: 4 }}>C · Chapter 6 · Complete</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon }}>DEEP</div>
+          <VoiceButton sectionId={activeSection} voice={voice} style={{ fontSize: 8, padding: "5px 10px", letterSpacing: 1 }} />
+        </div>
+        <div style={{ height: 1, background: `linear-gradient(90deg, ${T.neon}40, transparent)` }} />
       </div>
 
-      <div style={{ display: "flex", gap: 14 }}>
-        <motion.button
-          whileHover={{ scale: 1.05, boxShadow: `0 0 40px ${T.neon}50`, borderColor: `${T.neon}70` }}
-          whileTap={{ scale: 0.96 }}
-          onClick={() => router.push("/c-5")}
-          style={{
-            fontFamily: T.display, fontSize: 14, letterSpacing: 5,
-            color: T.neon, background: "transparent",
-            border: `1px solid ${T.neon}35`, borderRadius: 10,
-            padding: "16px 36px", cursor: "pointer",
-            backdropFilter: "blur(12px)",
-            boxShadow: `inset 0 1px 0 rgba(0,200,255,0.08)`,
-          }}
-        >← PREV: C5</motion.button>
-
-        <motion.button
-          whileHover={{ scale: 1.05, boxShadow: `0 0 50px ${T.neon}70` }}
-          whileTap={{ scale: 0.96 }}
-          onClick={() => router.push("/c-7")}
-          style={{
-            fontFamily: T.display, fontSize: 14, letterSpacing: 5,
-            color: "#000", background: `linear-gradient(135deg, ${T.neon}, ${T.purple})`,
-            border: "none", borderRadius: 10, padding: "16px 40px", cursor: "pointer",
-          }}
-        >NEXT: C7 →</motion.button>
+      <div style={{ background: `${T.neon}05`, border: `1px solid ${T.neon}18`, borderRadius: 9, padding: "10px 12px" }}>
+        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon, marginBottom: 8 }}>⚙ LIVE</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {[
+            { label: "SECTION", value: (activeSection || "hero").toUpperCase().slice(0, 8), color: data.color },
+            { label: "UPTIME",  value: `${liveTime}s`, color: T.neon2 },
+            { label: "TOPICS",  value: "8", color: T.neon4 },
+            { label: "ENGINE",  value: "LIVE", color: T.neon },
+          ].map(({ label, value, color }) => (
+            <div key={label}>
+              <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 2, color: T.muted }}>{label}</div>
+              <motion.div key={value} initial={{ opacity: 0.4 }} animate={{ opacity: 1 }}
+                style={{ fontFamily: T.mono, fontSize: 12, fontWeight: 700, color }}>{value}</motion.div>
+            </div>
+          ))}
+        </div>
       </div>
-    </footer>
+
+      <AnimatePresence mode="wait">
+        <motion.div key={activeSection} initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }} transition={{ duration: 0.35 }}
+          style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ padding: "12px 14px", borderRadius: 10, background: `${data.color}10`, border: `1px solid ${data.color}35` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: data.color, marginBottom: 4 }}>CURRENT</div>
+            <div style={{ fontFamily: T.display, fontSize: 20, letterSpacing: 3, color: data.color }}>{data.title}</div>
+          </div>
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.dim}` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon, marginBottom: 8 }}>💡 WHY</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.85 }}>{data.why}</div>
+          </div>
+          <div style={{ padding: "14px", borderRadius: 10, background: `${T.neon3}08`, border: `1px solid ${T.neon3}25` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon3, marginBottom: 8 }}>⚠ MISTAKE</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.85 }}>{data.mistake}</div>
+          </div>
+          <div style={{ padding: "14px", borderRadius: 10, background: `${data.color}08`, border: `1px solid ${data.color}20` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: data.color, marginBottom: 8 }}>🧠 MODEL</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.85, fontStyle: "italic" }}>"{data.model}"</div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Section quick-jump */}
+      <div style={{ marginTop: "auto" }}>
+        <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.dim}, transparent)`, marginBottom: 12 }} />
+        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.muted, marginBottom: 8 }}>QUICK JUMP</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {NAV_ITEMS.slice(0, 4).map(item => (
+            <motion.button key={item.id} whileHover={{ x: 4 }} whileTap={{ scale: 0.97 }}
+              onClick={() => document.getElementById(item.id)?.scrollIntoView({ behavior: "smooth" })}
+              style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: T.mono, fontSize: 9, color: activeSection === item.id ? T.neon : T.muted, background: "transparent", border: "none", cursor: "pointer", textAlign: "left", padding: "4px 0" }}>
+              <span>{item.icon}</span> {item.label}
+            </motion.button>
+          ))}
+        </div>
+      </div>
+
+      <style>{`@media (max-width: 1100px) { .right-panel { display: none !important; } }`}</style>
+    </aside>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ROOT PAGE
 // ─────────────────────────────────────────────────────────────────────────────
-export default function C6Page() {
+export default function C7Page() {
   const [activeSection, setActiveSection] = useState("hero");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const voice = useVoiceNarration();
 
   useEffect(() => {
-    const sections = ["hero", "playground", "recursion", "simulator", "combined"];
     const observer = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }),
-      { threshold: 0.25, rootMargin: "-5% 0px -5% 0px" }
+      entries => { entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }); },
+      { threshold: 0.15, rootMargin: "-10% 0px -10% 0px" }
     );
-    sections.forEach(id => { const el = document.getElementById(id); if (el) observer.observe(el); });
+    NAV_ITEMS.forEach(item => {
+      const el = document.getElementById(item.id);
+      if (el) observer.observe(el);
+    });
     return () => observer.disconnect();
   }, []);
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fira+Code:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fira+Code:wght@300;400;500;600;700&display=swap');
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html { scroll-behavior: smooth; }
-        body { background: ${T.bg}; color: ${T.text}; overflow-x: hidden; font-family: ${T.sans}; }
+        body { background: ${T.bg}; color: ${T.text}; overflow-x: hidden; }
         ::-webkit-scrollbar { width: 3px; }
         ::-webkit-scrollbar-track { background: ${T.bg}; }
         ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 2px; }
@@ -2942,20 +1988,54 @@ export default function C6Page() {
         input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
         button { outline: none; }
         a { text-decoration: none; }
-        section { will-change: transform; }
+
+        /* Responsive layout */
+        @media (max-width: 900px) {
+          .sidebar-desktop { display: none; }
+          .mobile-nav { display: flex !important; }
+          .main-content { padding: 0 16px !important; }
+        }
+        @media (min-width: 901px) {
+          .sidebar-desktop { display: flex !important; }
+          .mobile-nav { display: none !important; }
+        }
       `}</style>
 
-      <NavBar active={activeSection} />
+      {/* Mobile bottom progress bar */}
+      <motion.div
+        style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, height: 3, zIndex: 100,
+          background: T.dim,
+        }}
+        className="mobile-nav"
+      >
+        <motion.div
+          animate={{ width: `${((NAV_ITEMS.findIndex(n => n.id === activeSection) + 1) / NAV_ITEMS.length) * 100}%` }}
+          transition={{ duration: 0.5 }}
+          style={{ height: "100%", background: `linear-gradient(90deg, ${T.neon}, ${T.neon2})` }}
+        />
+      </motion.div>
 
-      <main style={{ paddingTop: 56 }}>
-        <HeroSection />
-        <PointerPlayground />
-        <RecursionIntro />
-        <StackSimulator />
-        <CombinedSection />
-      </main>
+      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: T.bg }}>
+        <Sidebar activeSection={activeSection} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <Footer />
+        <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minWidth: 0, display: "flex", flexDirection: "column" }}>
+          <MobileNavBar activeSection={activeSection} onMenuClick={() => setSidebarOpen(true)} voice={voice} />
+          <div style={{ maxWidth: "100%", padding: "0 38px", flex: 1 }} className="main-content">
+            <HeroSection voice={voice} />
+            <RamSection voice={voice} />
+            <PointersSection voice={voice} />
+            <OpsSection voice={voice} />
+            <PtrFnSection voice={voice} />
+            <RecursionSection voice={voice} />
+            <CallStackSection voice={voice} />
+            <EngineSection voice={voice} />
+            <div style={{ height: 80 }} />
+          </div>
+        </main>
+
+        <RightPanel activeSection={activeSection} voice={voice} />
+      </div>
     </>
   );
 }
