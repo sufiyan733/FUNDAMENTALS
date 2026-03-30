@@ -2442,7 +2442,7 @@ function HeroSection() {
           }}>
           <motion.span animate={{ opacity: [1, 0.2, 1], scale: [1, 0.7, 1] }} transition={{ duration: 1.2, repeat: Infinity }}
             style={{ width: 5, height: 5, borderRadius: "50%", background: T.neon, display: "inline-block" }} />
-          C LANGUAGE · CHAPTER 4 · FUNCTIONS + ARRAYS + STRINGS
+            FUNCTIONS + ARRAYS + STRINGS
         </motion.div>
 
         <motion.h1 initial={{ opacity: 0, y: 36 }} animate={{ opacity: 1, y: 0 }}
@@ -2458,7 +2458,7 @@ function HeroSection() {
             animate={{ textShadow: [`0 0 60px ${T.accent}80`, `0 0 80px ${T.accent}A0`, `0 0 60px ${T.accent}80`] }}
             transition={{ duration: 2.5, repeat: Infinity }}
             style={{ color: T.accent }}>
-            CHAPTER 4
+            CHAP 4
           </motion.span>
           <br />
           <span style={{ color: T.muted, fontSize: "0.29em", letterSpacing: 8, fontWeight: 400, fontFamily: T.mono }}>
@@ -2519,13 +2519,104 @@ function HeroSection() {
 // SIDEBAR
 // ─────────────────────────────────────────────────────────────────────────────
 function Sidebar({ activeSection }) {
+  const data = DEEP[activeSection] || DEEP.hero;
+  const [liveTime, setLiveTime] = useState(0);
+
+  useEffect(() => {
+    const iv = setInterval(() => setLiveTime(t => t + 1), 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  return (
+    <aside style={{
+      width: 378, minWidth: 378, flexShrink: 0,
+      background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
+      borderRight: `1px solid ${T.dim}`,    // was borderLeft → now borderRight
+      padding: "26px 14px",
+      display: "flex", flexDirection: "column", gap: 12,
+      overflowY: "auto", overflowX: "hidden",
+      position: "sticky", top: 0, height: "100vh",
+    }}>
+      <div>
+        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, marginBottom: 8 }}>DEEP UNDERSTANDING</div>
+        <div style={{ height: 1, background: `linear-gradient(90deg, ${T.neon}35, transparent)` }} />
+      </div>
+
+      {/* Live stats */}
+      <div style={{ background: `${T.neon}05`, border: `1px solid ${T.neon}18`, borderRadius: 8, padding: "10px 12px" }}>
+        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon, marginBottom: 8 }}>⚙ LIVE</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {[
+            { label: "SECTION", value: (activeSection || "hero").toUpperCase().slice(0, 8), color: data.color },
+            { label: "UPTIME",  value: `${liveTime}s`, color: T.neon2 },
+            { label: "TOPICS",  value: "12", color: T.neon4 },
+            { label: "ENGINE",  value: "LIVE", color: T.neon },
+          ].map(({ label, value, color }) => (
+            <div key={label}>
+              <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 2, color: T.muted }}>{label}</div>
+              <motion.div key={value} initial={{ opacity: 0.5 }} animate={{ opacity: 1 }}
+                style={{ fontFamily: T.mono, fontSize: 12, fontWeight: 700, color }}>{value}</motion.div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div key={activeSection} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -14 }}
+          transition={{ duration: 0.3 }}
+          style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div style={{ padding: "12px 14px", borderRadius: 10, background: `${data.color}10`, border: `1px solid ${data.color}30` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: data.color, marginBottom: 4 }}>CURRENT TOPIC</div>
+            <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 800, color: data.color }}>{data.title}</div>
+          </div>
+
+          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.dim}` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon, marginBottom: 8 }}>💡 WHY THIS WORKS</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8 }}>{data.why}</div>
+          </div>
+
+          <div style={{ padding: "14px", borderRadius: 10, background: `${T.neon3}08`, border: `1px solid ${T.neon3}25` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon3, marginBottom: 8 }}>⚠ COMMON MISTAKE</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8 }}>{data.mistake}</div>
+          </div>
+
+          <div style={{ padding: "14px", borderRadius: 10, background: `${data.color}08`, border: `1px solid ${data.color}20` }}>
+            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: data.color, marginBottom: 8 }}>🧠 MENTAL MODEL</div>
+            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8, fontStyle: "italic" }}>"{data.model}"</div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+    </aside>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RIGHT PANEL
+// ─────────────────────────────────────────────────────────────────────────────
+const DEEP = {
+  hero:         { title: "Chapter 4",     color: T.neon,   why: "Functions, arrays, and strings are the foundation of all real C programs. Master these and you can build anything.", mistake: "Treating these as separate topics. In real code, functions operate on arrays of strings — they always work together.", model: "Functions = verbs. Arrays = nouns (collections). Strings = labeled data. Programs combine all three." },
+  "why-fn":     { title: "Why Functions", color: T.neon,   why: "Every function enforces a contract: same input always gives same output. This predictability is the bedrock of reliable software.", mistake: "God functions — one 500-line function that does everything. Unmaintainable, untestable.", model: "If you can't describe a function in one sentence, it's doing too much. Split it." },
+  "fn-anatomy": { title: "Fn Anatomy",    color: T.neon2,  why: "Arguments are COPIED into parameters (pass-by-value). The function operates on copies — the original is safe. Pointers change this rule.", mistake: "Assuming the function modifies your original variable. It doesn't unless you pass a pointer.", model: "Function call = create new stack frame + copy args + execute + destroy frame + return value." },
+  "fn-types":   { title: "Fn Types",      color: T.neon4,  why: "The arg/return taxonomy tells you the function's relationship with the outside world. Pure functions (arg+return) are the safest and most testable.", mistake: "Mixing I/O with logic in the same function — printf inside a calculation function.", model: "Separate concerns: one function computes, one displays. Never both." },
+  scope:        { title: "Scope",          color: T.accent, why: "Scope prevents name collisions and controls lifetime. Without it, all variables would fight for global namespace.", mistake: "Shadowing: declaring a local var with same name as global. Compiles fine but causes subtle logic bugs.", model: "Think in lifetime: 'this variable exists from declaration to its closing brace.'" },
+  recursion:    { title: "Recursion",      color: T.neon4,  why: "Recursion is not magic — it's the call stack doing bookkeeping. Each call is an entirely separate function execution.", mistake: "Forgetting the base case. Without it: infinite recursion → stack overflow → crash.", model: "Trust the recursion. Define base case. Assume it works for n-1. Use it for n. That's all." },
+  "arrays-1d":  { title: "1D Arrays",     color: T.neon,   why: "Arrays are contiguous memory — the CPU can access arr[i] in O(1) by simple pointer arithmetic: base + i*sizeof(type).", mistake: "arr[n] — reading one past the end. C won't stop you. You'll read garbage or crash.", model: "Array = address of first element. Index = offset. arr[i] = *(arr + i)." },
+  "arrays-2d":  { title: "2D Arrays",     color: T.neon2,  why: "2D arrays are still flat in memory — row by row. m[r][c] = *(m + r*COLS + c). Matrix is an illusion on top of a 1D array.", mistake: "Column traversal in loops — skips COLS×4 bytes each step, causing cache misses.", model: "Row-major: adjacent elements in a row are adjacent in memory. Prefer row traversal." },
+  traversal:    { title: "Traversal",      color: T.neon,   why: "Array traversal is O(n) — there's no shortcut to touch every element. The question is only how you express it.", mistake: "i <= n instead of i < n — classic off-by-one, reads one past the end.", model: "Pointer-based and index-based traversal compile to the same machine code." },
+  "array-probs":{ title: "Array Probs",   color: T.neon4,  why: "Sum, max, reverse are the building blocks of all algorithms. Master these and sorting, searching, and dynamic programming follow naturally.", mistake: "Not resetting accumulators between runs, or using wrong initial value for max.", model: "For max: start with arr[0], not 0. Starting with 0 fails if all values are negative." },
+  strings:      { title: "Strings",        color: T.neon2,  why: "Strings have no length field — the null terminator IS the length marker. strlen() traverses until it finds \\0.", mistake: "char s[5] = \"Hello\" — no room for \\0! Needs [6]. Silent buffer overflow.", model: "Always allocate strlen(s) + 1 bytes — the +1 is for \\0." },
+  "str-fns":    { title: "String Fns",     color: T.neon3,  why: "string.h functions are fast (often hand-optimized in libc) but they trust YOU to provide valid null-terminated strings.", mistake: "if (strcmp(a, b)) — this is TRUE when strings differ, FALSE when equal! strcmp returns 0 on match.", model: "Always use strncpy/strncat over strcpy/strcat. The 'n' variants prevent buffer overflow." },
+  engine:       { title: "Full Engine",    color: T.neon,   why: "Real programs combine all of these: functions that operate on arrays of strings. They're inseparable in practice.", mistake: "Passing arrays to functions — you're passing a pointer, not a copy. Changes inside the function affect the original!", model: "Master functions + arrays + strings and you're ready for pointers, structs, and file I/O." },
+};
+
+function RightPanel({ activeSection }) {
   return (
     <aside style={{
       width: "16%",                 // 18% - 10% of 18% ≈ 16.2% → using 16%
       minWidth: 160,               // adjusted minimum
       flexShrink: 0,
       background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
-      borderRight: `1px solid ${T.dim}`,
+      borderLeft: `1px solid ${T.dim}`,    // was borderRight → now borderLeft
       display: "flex", flexDirection: "column",
       padding: "26px 0",
       position: "sticky", top: 0, height: "100vh",
@@ -2534,7 +2625,7 @@ function Sidebar({ activeSection }) {
       {/* Header */}
       <div style={{ padding: "0 16px 20px" }}>
         <div style={{ fontFamily: T.display, fontWeight: 800, fontSize: 16, letterSpacing: 2, color: T.neon }}>
-          C LANG
+          C 
         </div>
         <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 4, color: T.muted, marginTop: 2 }}>
           CH.4 · DATA ENGINE
@@ -2643,97 +2734,6 @@ function Sidebar({ activeSection }) {
           </motion.a>
         </Link>
       </div>
-    </aside>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// RIGHT PANEL
-// ─────────────────────────────────────────────────────────────────────────────
-const DEEP = {
-  hero:         { title: "Chapter 4",     color: T.neon,   why: "Functions, arrays, and strings are the foundation of all real C programs. Master these and you can build anything.", mistake: "Treating these as separate topics. In real code, functions operate on arrays of strings — they always work together.", model: "Functions = verbs. Arrays = nouns (collections). Strings = labeled data. Programs combine all three." },
-  "why-fn":     { title: "Why Functions", color: T.neon,   why: "Every function enforces a contract: same input always gives same output. This predictability is the bedrock of reliable software.", mistake: "God functions — one 500-line function that does everything. Unmaintainable, untestable.", model: "If you can't describe a function in one sentence, it's doing too much. Split it." },
-  "fn-anatomy": { title: "Fn Anatomy",    color: T.neon2,  why: "Arguments are COPIED into parameters (pass-by-value). The function operates on copies — the original is safe. Pointers change this rule.", mistake: "Assuming the function modifies your original variable. It doesn't unless you pass a pointer.", model: "Function call = create new stack frame + copy args + execute + destroy frame + return value." },
-  "fn-types":   { title: "Fn Types",      color: T.neon4,  why: "The arg/return taxonomy tells you the function's relationship with the outside world. Pure functions (arg+return) are the safest and most testable.", mistake: "Mixing I/O with logic in the same function — printf inside a calculation function.", model: "Separate concerns: one function computes, one displays. Never both." },
-  scope:        { title: "Scope",          color: T.accent, why: "Scope prevents name collisions and controls lifetime. Without it, all variables would fight for global namespace.", mistake: "Shadowing: declaring a local var with same name as global. Compiles fine but causes subtle logic bugs.", model: "Think in lifetime: 'this variable exists from declaration to its closing brace.'" },
-  recursion:    { title: "Recursion",      color: T.neon4,  why: "Recursion is not magic — it's the call stack doing bookkeeping. Each call is an entirely separate function execution.", mistake: "Forgetting the base case. Without it: infinite recursion → stack overflow → crash.", model: "Trust the recursion. Define base case. Assume it works for n-1. Use it for n. That's all." },
-  "arrays-1d":  { title: "1D Arrays",     color: T.neon,   why: "Arrays are contiguous memory — the CPU can access arr[i] in O(1) by simple pointer arithmetic: base + i*sizeof(type).", mistake: "arr[n] — reading one past the end. C won't stop you. You'll read garbage or crash.", model: "Array = address of first element. Index = offset. arr[i] = *(arr + i)." },
-  "arrays-2d":  { title: "2D Arrays",     color: T.neon2,  why: "2D arrays are still flat in memory — row by row. m[r][c] = *(m + r*COLS + c). Matrix is an illusion on top of a 1D array.", mistake: "Column traversal in loops — skips COLS×4 bytes each step, causing cache misses.", model: "Row-major: adjacent elements in a row are adjacent in memory. Prefer row traversal." },
-  traversal:    { title: "Traversal",      color: T.neon,   why: "Array traversal is O(n) — there's no shortcut to touch every element. The question is only how you express it.", mistake: "i <= n instead of i < n — classic off-by-one, reads one past the end.", model: "Pointer-based and index-based traversal compile to the same machine code." },
-  "array-probs":{ title: "Array Probs",   color: T.neon4,  why: "Sum, max, reverse are the building blocks of all algorithms. Master these and sorting, searching, and dynamic programming follow naturally.", mistake: "Not resetting accumulators between runs, or using wrong initial value for max.", model: "For max: start with arr[0], not 0. Starting with 0 fails if all values are negative." },
-  strings:      { title: "Strings",        color: T.neon2,  why: "Strings have no length field — the null terminator IS the length marker. strlen() traverses until it finds \\0.", mistake: "char s[5] = \"Hello\" — no room for \\0! Needs [6]. Silent buffer overflow.", model: "Always allocate strlen(s) + 1 bytes — the +1 is for \\0." },
-  "str-fns":    { title: "String Fns",     color: T.neon3,  why: "string.h functions are fast (often hand-optimized in libc) but they trust YOU to provide valid null-terminated strings.", mistake: "if (strcmp(a, b)) — this is TRUE when strings differ, FALSE when equal! strcmp returns 0 on match.", model: "Always use strncpy/strncat over strcpy/strcat. The 'n' variants prevent buffer overflow." },
-  engine:       { title: "Full Engine",    color: T.neon,   why: "Real programs combine all of these: functions that operate on arrays of strings. They're inseparable in practice.", mistake: "Passing arrays to functions — you're passing a pointer, not a copy. Changes inside the function affect the original!", model: "Master functions + arrays + strings and you're ready for pointers, structs, and file I/O." },
-};
-
-function RightPanel({ activeSection }) {
-  const data = DEEP[activeSection] || DEEP.hero;
-  const [liveTime, setLiveTime] = useState(0);
-
-  useEffect(() => {
-    const iv = setInterval(() => setLiveTime(t => t + 1), 1000);
-    return () => clearInterval(iv);
-  }, []);
-
-  return (
-    <aside style={{
-      width: 378, minWidth: 378, flexShrink: 0,
-      background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
-      borderLeft: `1px solid ${T.dim}`,
-      padding: "26px 14px",
-      display: "flex", flexDirection: "column", gap: 12,
-      overflowY: "auto", overflowX: "hidden",
-      position: "sticky", top: 0, height: "100vh",
-    }}>
-      <div>
-        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, marginBottom: 8 }}>DEEP UNDERSTANDING</div>
-        <div style={{ height: 1, background: `linear-gradient(90deg, ${T.neon}35, transparent)` }} />
-      </div>
-
-      {/* Live stats */}
-      <div style={{ background: `${T.neon}05`, border: `1px solid ${T.neon}18`, borderRadius: 8, padding: "10px 12px" }}>
-        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon, marginBottom: 8 }}>⚙ LIVE</div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-          {[
-            { label: "SECTION", value: (activeSection || "hero").toUpperCase().slice(0, 8), color: data.color },
-            { label: "UPTIME",  value: `${liveTime}s`, color: T.neon2 },
-            { label: "TOPICS",  value: "12", color: T.neon4 },
-            { label: "ENGINE",  value: "LIVE", color: T.neon },
-          ].map(({ label, value, color }) => (
-            <div key={label}>
-              <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 2, color: T.muted }}>{label}</div>
-              <motion.div key={value} initial={{ opacity: 0.5 }} animate={{ opacity: 1 }}
-                style={{ fontFamily: T.mono, fontSize: 12, fontWeight: 700, color }}>{value}</motion.div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <AnimatePresence mode="wait">
-        <motion.div key={activeSection} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -14 }}
-          transition={{ duration: 0.3 }}
-          style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <div style={{ padding: "12px 14px", borderRadius: 10, background: `${data.color}10`, border: `1px solid ${data.color}30` }}>
-            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: data.color, marginBottom: 4 }}>CURRENT TOPIC</div>
-            <div style={{ fontFamily: T.display, fontSize: 18, fontWeight: 800, color: data.color }}>{data.title}</div>
-          </div>
-
-          <div style={{ padding: "14px", borderRadius: 10, background: "rgba(255,255,255,0.02)", border: `1px solid ${T.dim}` }}>
-            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon, marginBottom: 8 }}>💡 WHY THIS WORKS</div>
-            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8 }}>{data.why}</div>
-          </div>
-
-          <div style={{ padding: "14px", borderRadius: 10, background: `${T.neon3}08`, border: `1px solid ${T.neon3}25` }}>
-            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon3, marginBottom: 8 }}>⚠ COMMON MISTAKE</div>
-            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8 }}>{data.mistake}</div>
-          </div>
-
-          <div style={{ padding: "14px", borderRadius: 10, background: `${data.color}08`, border: `1px solid ${data.color}20` }}>
-            <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: data.color, marginBottom: 8 }}>🧠 MENTAL MODEL</div>
-            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8, fontStyle: "italic" }}>"{data.model}"</div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
     </aside>
   );
 }
