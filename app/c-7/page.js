@@ -5,6 +5,86 @@ import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// VOICE SYSTEM – PREMIUM MALE VOICE (browser native)
+// ─────────────────────────────────────────────────────────────────────────────
+function useTextToSpeech() {
+  const [voice, setVoice] = useState(null);
+  const synthRef = useRef(null);
+  const speakingRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    synthRef.current = window.speechSynthesis;
+
+    const loadVoices = () => {
+      const voices = synthRef.current.getVoices();
+      // Try to pick a natural male voice (Google UK English Male, Microsoft David, etc.)
+      const preferred = voices.find(v =>
+        v.name.includes("Google UK English Male") ||
+        v.name.includes("Microsoft David") ||
+        (v.lang === "en-US" && v.name.includes("Male")) ||
+        (v.lang === "en-GB" && v.name.includes("Male"))
+      ) || voices.find(v => v.lang === "en-US") || voices[0];
+      setVoice(preferred);
+    };
+
+    loadVoices();
+    if (synthRef.current.onvoiceschanged !== undefined) {
+      synthRef.current.onvoiceschanged = loadVoices;
+    }
+  }, []);
+
+  const speak = useCallback((text) => {
+    if (!synthRef.current || !text) return;
+    // Cancel any ongoing speech
+    synthRef.current.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.9;
+    utterance.pitch = 1.0;
+    if (voice) utterance.voice = voice;
+    utterance.onend = () => { speakingRef.current = false; };
+    utterance.onerror = () => { speakingRef.current = false; };
+    speakingRef.current = true;
+    synthRef.current.speak(utterance);
+  }, [voice]);
+
+  return { speak, isSpeaking: speakingRef.current };
+}
+
+function VoiceButton({ text, label = "🔊", color = "#FF6400" }) {
+  const { speak } = useTextToSpeech();
+  const handleClick = (e) => {
+    e.stopPropagation();
+    speak(text);
+  };
+  return (
+    <motion.button
+      whileHover={{ scale: 1.1, rotate: 6 }}
+      whileTap={{ scale: 0.9 }}
+      onClick={handleClick}
+      style={{
+        background: "transparent",
+        border: `1px solid ${color}40`,
+        borderRadius: "50%",
+        width: 28,
+        height: 28,
+        fontSize: 14,
+        cursor: "pointer",
+        color: color,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        marginLeft: 8,
+        transition: "all 0.2s",
+      }}
+      title="Voice explanation"
+    >
+      {label}
+    </motion.button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // DESIGN TOKENS
 // ─────────────────────────────────────────────────────────────────────────────
 const T = {
@@ -66,7 +146,7 @@ function Section({ id, children, style = {} }) {
   );
 }
 
-function SectionHeader({ num, tag, title, subtitle, color = T.neon }) {
+function SectionHeader({ num, tag, title, subtitle, color = T.neon, voiceText }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -30 }}
@@ -77,8 +157,11 @@ function SectionHeader({ num, tag, title, subtitle, color = T.neon }) {
     >
       <div style={{ display: "flex", alignItems: "flex-end", gap: 20, marginBottom: subtitle ? 14 : 0 }}>
         <span style={{ fontFamily: T.mono, fontSize: 52, fontWeight: 700, color: T.dim, lineHeight: 1, letterSpacing: -2 }}>{num}</span>
-        <div>
-          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color, fontWeight: 600, marginBottom: 5 }}>{tag}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color, fontWeight: 600, marginBottom: 5 }}>{tag}</div>
+            {voiceText && <VoiceButton text={voiceText} color={color} />}
+          </div>
           <h2 style={{ fontFamily: T.display, fontSize: 38, fontWeight: 400, color: T.text, letterSpacing: 3, lineHeight: 1 }}>{title}</h2>
         </div>
       </div>
@@ -111,7 +194,7 @@ function Pill({ children, color = T.neon, active = false, onClick, style = {} })
   );
 }
 
-// Animated SVG arrow between two DOM elements
+// Animated SVG arrow between two DOM elements (simplified placeholder)
 function SvgArrow({ from, to, color = T.neon, label = "", visible = true, animated = true }) {
   const [coords, setCoords] = useState(null);
   const containerRef = useRef(null);
@@ -175,7 +258,7 @@ function SvgArrow({ from, to, color = T.neon, label = "", visible = true, animat
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HERO
+// HERO SECTION
 // ─────────────────────────────────────────────────────────────────────────────
 function HeroSection() {
   const canvasRef = useRef(null);
@@ -194,7 +277,6 @@ function HeroSection() {
     return () => clearInterval(iv);
   }, []);
 
-  // GSAP-style particle canvas — pure JS canvas animation
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -318,7 +400,7 @@ function HeroSection() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 01 — RAM MODEL (the true mental model)
+// SECTION 01 — RAM MODEL
 // ─────────────────────────────────────────────────────────────────────────────
 function RamSection() {
   const [step, setStep] = useState(0);
@@ -382,6 +464,7 @@ function RamSection() {
   ];
 
   const current = CONCEPTS[step];
+  const voiceText = "RAM is like a giant array of bytes. Every byte has a unique address. When you declare a variable, the compiler reserves a block of memory at a certain address. A pointer stores that address. Let's see how it works.";
 
   return (
     <Section id="ram">
@@ -389,6 +472,7 @@ function RamSection() {
         num="01" tag="RAM MODEL" title="MEMORY IS AN ARRAY"
         color={T.neon}
         subtitle="Before pointers make sense, you must SEE what RAM looks like. Every variable is just bytes at an address. A pointer is just a variable that stores an address — that's literally it."
+        voiceText={voiceText}
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
@@ -586,12 +670,15 @@ function PointersSection() {
 
   const reset = () => { runRef.current = false; setRunning(false); setStep(-1); setArrowVisible(false); };
 
+  const voiceText = "A pointer holds the address of another variable. The ampersand operator gets an address. The star operator dereferences it, meaning it follows the address to the actual value. Watch the animation to see the arrow from pointer to variable.";
+
   return (
     <Section id="pointers">
       <SectionHeader
         num="02" tag="POINTERS" title="FOLLOW THE ARROW"
         color={T.neon}
         subtitle="A pointer is just a variable that holds an address. There's no magic. When you write *ptr, the CPU follows the stored address — like following a road sign to a destination."
+        voiceText={voiceText}
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 28 }}>
@@ -815,6 +902,7 @@ function OpsSection() {
   };
 
   const target = allVars[pTarget];
+  const voiceText = "The & operator gives you the address of a variable. The * operator gives you the value at that address. Remember, when declaring a pointer, the star indicates it's a pointer type. When using it, the star means dereference.";
 
   return (
     <Section id="ops">
@@ -822,6 +910,7 @@ function OpsSection() {
         num="03" tag="& and * OPS" title="POINTER OPERATORS"
         color={T.neon2}
         subtitle="The & and * operators are the only two things you need to master. & gets an address. * follows an address. Use this playground until it's muscle memory."
+        voiceText={voiceText}
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 28 }}>
@@ -967,7 +1056,7 @@ function OpsSection() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 04 — POINTERS + FUNCTIONS
+// SECTION 04 — POINTERS + FUNCTIONS (enhanced with side‑by‑side visual)
 // ─────────────────────────────────────────────────────────────────────────────
 function PtrFnSection() {
   const [mode, setMode] = useState("copy"); // copy | pointer
@@ -1010,14 +1099,81 @@ function PtrFnSection() {
   ];
   const steps = mode === "copy" ? copySteps : ptrSteps;
 
+  const voiceText = "This section shows the crucial difference between pass by value and pass by pointer. In pass by value, the function gets a copy. In pass by pointer, the function gets the address and can modify the original. Watch the stack frames change.";
+
   return (
     <Section id="ptr-fn">
       <SectionHeader
         num="04" tag="POINTERS + FUNCTIONS" title="PASS BY POINTER"
         color={T.neon3}
         subtitle="Functions receive COPIES of arguments by default. To modify a caller's variable, you must pass its address. This is the #1 real-world use of pointers."
+        voiceText={voiceText}
       />
 
+      {/* SPLIT VISUAL – by value vs by pointer side‑by‑side (CRAZY VISUAL) */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 32 }}>
+        <GlassCard style={{ padding: 20, border: `2px solid ${T.neon3}30` }}>
+          <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon3, letterSpacing: 4, marginBottom: 12 }}>❌ BY VALUE (NO CHANGE)</div>
+          <motion.div
+            animate={{
+              borderColor: mode === "copy" && ran ? T.neon3 : `${T.neon3}50`,
+              boxShadow: mode === "copy" && ran ? `0 0 30px ${T.neon3}50` : "none",
+            }}
+            style={{ padding: 12, borderRadius: 8, background: `${T.neon3}08`, border: `1px solid` }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>int x</span>
+              <motion.span
+                key={`val-copy-${val}`}
+                animate={{ scale: [1.2, 1] }}
+                style={{ fontFamily: T.mono, fontSize: 28, fontWeight: 700, color: T.neon3 }}
+              >
+                {ran && mode === "copy" ? "5" : val}
+              </motion.span>
+            </div>
+            {ran && mode === "copy" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: T.neon3, fontSize: 10, marginTop: 8 }}>
+                ✗ unchanged
+              </motion.div>
+            )}
+          </motion.div>
+          <div style={{ marginTop: 12, fontFamily: T.mono, fontSize: 9, color: T.muted }}>
+            Function receives a <span style={{ color: T.neon3 }}>COPY</span> – original remains untouched.
+          </div>
+        </GlassCard>
+
+        <GlassCard style={{ padding: 20, border: `2px solid ${T.neon4}30` }}>
+          <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon4, letterSpacing: 4, marginBottom: 12 }}>✓ BY POINTER (CHANGES ORIGINAL)</div>
+          <motion.div
+            animate={{
+              borderColor: mode === "pointer" && ran ? T.neon4 : `${T.neon4}50`,
+              boxShadow: mode === "pointer" && ran ? `0 0 30px ${T.neon4}50` : "none",
+            }}
+            style={{ padding: 12, borderRadius: 8, background: `${T.neon4}08`, border: `1px solid` }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontFamily: T.mono, fontSize: 10, color: T.muted }}>int x</span>
+              <motion.span
+                key={`val-ptr-${val}`}
+                animate={{ scale: [1.2, 1] }}
+                style={{ fontFamily: T.mono, fontSize: 28, fontWeight: 700, color: T.neon4 }}
+              >
+                {ran && mode === "pointer" ? "10" : val}
+              </motion.span>
+            </div>
+            {ran && mode === "pointer" && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: T.neon4, fontSize: 10, marginTop: 8 }}>
+                ✓ changed to 10
+              </motion.div>
+            )}
+          </motion.div>
+          <div style={{ marginTop: 12, fontFamily: T.mono, fontSize: 9, color: T.muted }}>
+            Function receives the <span style={{ color: T.neon4 }}>ADDRESS</span> and writes through it.
+          </div>
+        </GlassCard>
+      </div>
+
+      {/* Original interactive simulation – keep as is */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28 }}>
         <GlassCard style={{ padding: 30 }}>
           <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
@@ -1111,6 +1267,7 @@ function PtrFnSection() {
           </div>
         </GlassCard>
 
+        {/* Right side code panel – unchanged */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <GlassCard style={{ padding: 0, overflow: "hidden" }}>
             <div style={{ padding: "8px 14px", borderBottom: `1px solid ${T.dim}`, display: "flex", gap: 6, alignItems: "center" }}>
@@ -1135,8 +1292,8 @@ function PtrFnSection() {
                 "    double_good(&x); // x = 10 ✓",
                 "}",
               ].map((line, i) => (
-                <div key={i} style={{ fontFamily: T.mono, fontSize: 11, lineHeight: 2.0, padding: "0 18px", color: [0].includes(i) ? T.dim : [5].includes(i) ? T.neon4 : [6, 7, 8].includes(i) ? T.neon4 : [1, 2, 3].includes(i) ? `${T.neon3}90` : T.text, whiteSpace: "pre" }}>
-                  <span style={{ color: T.dim, marginRight: 14, fontSize: 9 }}>{String(i + 1).padStart(2)}</span>
+                <div key={i} style={{ fontFamily: T.mono, fontSize: 11, lineHeight: 2.0, padding: "0 18px", color: [0].includes(i) ? T.dim : [5].includes(i) ? T.neon4 : [6,7,8].includes(i) ? T.neon4 : [1,2,3].includes(i) ? `${T.neon3}90` : T.text, whiteSpace: "pre" }}>
+                  <span style={{ color: T.dim, marginRight: 14, fontSize: 9 }}>{String(i+1).padStart(2)}</span>
                   {line}
                 </div>
               ))}
@@ -1150,22 +1307,6 @@ function PtrFnSection() {
               <br /><br />
               <span style={{ color: T.neon2 }}>scanf("%d", &x)</span> — now you know why scanf takes &x! It needs the address to write the user's input back into x.
             </div>
-          </GlassCard>
-
-          <GlassCard style={{ padding: 22 }} glowColor={T.neon2}>
-            <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2, marginBottom: 14 }}>⚡ REAL WORLD USES</div>
-            {[
-              { icon: "1", text: "scanf(&x) — read user input into variable" },
-              { icon: "2", text: "swap(int *a, int *b) — swap two vars" },
-              { icon: "3", text: "Pass large structs without copying (performance)" },
-              { icon: "4", text: "Return multiple values from a function" },
-              { icon: "5", text: "Dynamic memory: malloc returns a pointer" },
-            ].map((f, i) => (
-              <div key={i} style={{ display: "flex", gap: 10, marginBottom: 8 }}>
-                <div style={{ width: 18, height: 18, borderRadius: "50%", background: `${T.neon2}20`, border: `1px solid ${T.neon2}50`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: T.mono, fontSize: 8, color: T.neon2, flexShrink: 0 }}>{f.icon}</div>
-                <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.7 }}>{f.text}</div>
-              </div>
-            ))}
           </GlassCard>
         </div>
       </div>
@@ -1192,7 +1333,7 @@ function RecursionSection() {
   const [animIdx, setAnimIdx] = useState(-1);
   const [stack, setStack] = useState([]);
   const [running, setRunning] = useState(false);
-  const [phase, setPhase] = useState("idle"); // idle | diving | unwinding | done
+  const [phase, setPhase] = useState("idle");
   const runRef = useRef(false);
 
   const stateColor = s => s === "base" ? T.neon4 : s === "return" ? T.neon3 : T.neon2;
@@ -1227,6 +1368,7 @@ function RecursionSection() {
 
   const reset = () => { runRef.current = false; setRunning(false); setStack([]); setAnimIdx(-1); setPhase("idle"); };
   const current = animIdx >= 0 ? FACT_STEPS[animIdx] : null;
+  const voiceText = "Recursion is a function that calls itself. It needs a base case to stop, and each call must move closer to the base case. The call stack builds up frames, then unwinds as results return. Factorial is a classic example.";
 
   return (
     <Section id="recursion">
@@ -1234,6 +1376,7 @@ function RecursionSection() {
         num="05" tag="RECURSION" title="FUNCTION CALLS ITSELF"
         color={T.neon3}
         subtitle="Recursion is not magic. It's just a function calling itself with a smaller problem. Two rules: 1) Must have a base case (where to stop). 2) Each call must get closer to the base case."
+        voiceText={voiceText}
       />
 
       {/* The mental model before the demo */}
@@ -1477,6 +1620,7 @@ function CallStackSection() {
 
   const reset = () => { runRef.current = false; setRunning(false); setFrames([]); setOutput(null); setInfinite(false); setSoExplain(false); };
   const maxDepth = n + 1;
+  const voiceText = "The call stack is a region of memory that stores function frames. Each frame holds local variables, parameters, and the return address. Too many calls can overflow the stack. Run the simulation to see it in action.";
 
   return (
     <Section id="callstack">
@@ -1484,6 +1628,7 @@ function CallStackSection() {
         num="06" tag="CALL STACK" title="UNDER THE HOOD"
         color={T.neon4}
         subtitle="The call stack is a region of RAM. Every function call PUSHES a new frame (local variables, return address). Return POPS the frame. Stack is finite — too many calls = overflow."
+        voiceText={voiceText}
       />
 
       {/* Stack anatomy diagram */}
@@ -1756,12 +1901,15 @@ function EngineSection() {
     runningRef.current = false;
   };
 
+  const voiceText = "This final simulation combines pointers and recursion in real programs. Watch how memory changes as code executes. You've now mastered the core concepts of C that power operating systems and game engines.";
+
   return (
     <Section id="engine" style={{ borderBottom: "none" }}>
       <SectionHeader
         num="07" tag="MASTER ENGINE" title="FULL SIMULATION"
         color={T.accent}
         subtitle="Run all four programs and watch memory change in real time. This is where pointers and recursion combine into real C programs."
+        voiceText={voiceText}
       />
 
       <div style={{ display: "flex", gap: 10, marginBottom: 28, flexWrap: "wrap" }}>
@@ -1967,7 +2115,7 @@ function RightPanel({ activeSection }) {
         <div style={{ height: 1, background: `linear-gradient(90deg, ${T.neon}40, transparent)` }} />
       </div>
 
-      <div style={{ background: `${T.neon}05`, border: `1px solid ${T.neon}18`, borderRadius: 9, padding: "10px 12px" }}>
+      <div style={{ background: `${T.neon}05`, border: `1px solid ${T.neon}18`, borderRadius: 9, padding: `10px 12px` }}>
         <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon, marginBottom: 8 }}>⚙ LIVE</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {[

@@ -169,6 +169,184 @@ function tokenize(code) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PREMIUM VOICE ENGINE
+// Picks the best available male voice from browser's neural voice list.
+// Fully free — uses Web Speech API. No API key. Works for unlimited users.
+// Includes Chrome 15s bug fix (pause/resume heartbeat).
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Ordered preference list — highest quality first
+const PREFERRED_MALE_VOICES = [
+  "Google UK English Male",
+  "Google US English",
+  "Microsoft Guy Online (Natural) - English (United States)",
+  "Microsoft Ryan Online (Natural) - English (United Kingdom)",
+  "Microsoft Eric Online (Natural) - English (United States)",
+  "Microsoft David - English (United States)",
+  "Microsoft Mark - English (United States)",
+  "Daniel (Enhanced)",
+  "Daniel",
+  "Alex",
+  "Fred",
+  "en-GB-Standard-B",
+  "en-US-Standard-B",
+];
+
+function pickBestMaleVoice(voices) {
+  for (const name of PREFERRED_MALE_VOICES) {
+    const v = voices.find(v => v.name === name);
+    if (v) return v;
+  }
+  // Fallback: any English voice (avoid explicit "Female" in name)
+  return (
+    voices.find(v => v.lang.startsWith("en") && !v.name.toLowerCase().includes("female") && !v.name.toLowerCase().includes("woman")) ||
+    voices.find(v => v.lang.startsWith("en")) ||
+    voices[0] ||
+    null
+  );
+}
+
+function useVoiceEngine() {
+  const synthRef = useRef(null);
+  const voiceRef = useRef(null);
+  const heartbeatRef = useRef(null);
+  const [ready, setReady] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
+  const [voiceName, setVoiceName] = useState("");
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    synthRef.current = window.speechSynthesis;
+
+    const load = () => {
+      const voices = synthRef.current.getVoices();
+      if (voices.length > 0) {
+        voiceRef.current = pickBestMaleVoice(voices);
+        setVoiceName(voiceRef.current?.name || "Default");
+        setReady(true);
+      }
+    };
+
+    load();
+    synthRef.current.addEventListener("voiceschanged", load);
+    return () => {
+      synthRef.current?.removeEventListener("voiceschanged", load);
+      synthRef.current?.cancel();
+      clearInterval(heartbeatRef.current);
+    };
+  }, []);
+
+  const speak = useCallback((text, { rate = 0.88, pitch = 0.92, volume = 1 } = {}) => {
+    if (!synthRef.current) return;
+    synthRef.current.cancel();
+    clearInterval(heartbeatRef.current);
+
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.voice = voiceRef.current;
+    utt.rate = rate;
+    utt.pitch = pitch;
+    utt.volume = volume;
+
+    utt.onstart = () => {
+      setSpeaking(true);
+      // Chrome bug fix: after ~15s Chrome silently stops — keep alive with pause/resume
+      heartbeatRef.current = setInterval(() => {
+        if (synthRef.current?.speaking) {
+          synthRef.current.pause();
+          synthRef.current.resume();
+        }
+      }, 10000);
+    };
+
+    utt.onend = () => {
+      setSpeaking(false);
+      clearInterval(heartbeatRef.current);
+    };
+
+    utt.onerror = () => {
+      setSpeaking(false);
+      clearInterval(heartbeatRef.current);
+    };
+
+    synthRef.current.speak(utt);
+  }, []);
+
+  const stop = useCallback(() => {
+    synthRef.current?.cancel();
+    setSpeaking(false);
+    clearInterval(heartbeatRef.current);
+  }, []);
+
+  return { speak, stop, speaking, ready, voiceName };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VOICE BUTTON — uses shared engine
+// ─────────────────────────────────────────────────────────────────────────────
+function VoiceButton({ text, color = T.neon, engine }) {
+  const isMine = engine.speaking; // simplified — each button tracks via engine
+
+  const handleClick = () => {
+    if (engine.speaking) {
+      engine.stop();
+    } else {
+      engine.speak(text, { rate: 0.88, pitch: 0.92 });
+    }
+  };
+
+  return (
+    <motion.button
+      whileHover={{ scale: 1.12 }}
+      whileTap={{ scale: 0.9 }}
+      onClick={handleClick}
+      title={engine.speaking ? "Stop" : `Voice · ${engine.voiceName}`}
+      style={{
+        background: engine.speaking ? `${color}25` : "transparent",
+        border: `1px solid ${engine.speaking ? color : `${color}40`}`,
+        borderRadius: 40,
+        width: 32, height: 32,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: "pointer",
+        fontSize: 15,
+        color: engine.speaking ? color : T.muted,
+        marginLeft: 10,
+        flexShrink: 0,
+        transition: "all 0.2s",
+        position: "relative",
+      }}
+    >
+      {engine.speaking
+        ? <WaveformIcon color={color} />
+        : "🔈"}
+    </motion.button>
+  );
+}
+
+// Animated waveform icon when speaking
+function WaveformIcon({ color }) {
+  return (
+    <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+      {[0,1,2,3,4].map((i) => (
+        <motion.rect
+          key={i}
+          x={i * 3.2}
+          y={0}
+          width={2}
+          height={12}
+          rx={1}
+          fill={color}
+          animate={{ scaleY: [0.3, 1, 0.3], originY: "50%" }}
+          transition={{ duration: 0.7, repeat: Infinity, delay: i * 0.12, ease: "easeInOut" }}
+          style={{ transformOrigin: "center" }}
+        />
+      ))}
+    </svg>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // THREE.JS BACKGROUND
 // ─────────────────────────────────────────────────────────────────────────────
 function ParticleField() {
@@ -246,31 +424,6 @@ function Section({ id, children, style={} }) {
   );
 }
 
-function SectionHeader({ num, tag, title, subtitle }) {
-  return (
-    <motion.div
-      initial={{ opacity:0, x:-24 }} whileInView={{ opacity:1, x:0 }}
-      viewport={{ once:true, amount:0.5 }} transition={{ duration:0.7, ease:[0.22,1,0.36,1] }}
-      style={{ marginBottom:"clamp(20px,4vw,36px)" }}
-    >
-      <div style={{ display:"flex", alignItems:"flex-end", gap:"clamp(10px,3vw,18px)", marginBottom: subtitle ? 10 : 0 }}>
-        <span style={{ fontFamily:T.mono, fontSize:"clamp(32px,8vw,56px)", fontWeight:700, color:T.dim, lineHeight:1, letterSpacing:-2 }}>
-          {num}
-        </span>
-        <div>
-          <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:5, color:T.neon, fontWeight:500, marginBottom:4 }}>{tag}</div>
-          <h2 style={{ fontFamily:T.display, fontSize:"clamp(18px,4vw,28px)", fontWeight:800, color:T.text, letterSpacing:-0.5, lineHeight:1 }}>{title}</h2>
-        </div>
-      </div>
-      {subtitle && (
-        <p style={{ fontFamily:T.mono, fontSize:"clamp(11px,2vw,13px)", color:T.muted, lineHeight:1.8, maxWidth:600, marginLeft:"clamp(42px,8vw,74px)" }}>
-          {subtitle}
-        </p>
-      )}
-    </motion.div>
-  );
-}
-
 function NeonTag({ children, color=T.neon }) {
   return (
     <span style={{ fontFamily:T.mono, fontSize:9, letterSpacing:2, fontWeight:700, color, background:`${color}14`, border:`1px solid ${color}28`, padding:"2px 7px", borderRadius:3 }}>
@@ -289,7 +442,6 @@ function ScanLine() {
   );
 }
 
-// Animated counter
 function Counter({ to, duration=2, suffix="" }) {
   const [val, setVal] = useState(0);
   const ref = useRef(null);
@@ -306,6 +458,61 @@ function Counter({ to, duration=2, suffix="" }) {
   }, [to, duration]);
   return <>{val.toLocaleString()}{suffix}</>;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SECTION HEADER — with VoiceButton wired to shared engine
+// ─────────────────────────────────────────────────────────────────────────────
+function SectionHeader({ num, tag, title, subtitle, voiceText, engine }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -24 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true, amount: 0.5 }}
+      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      style={{ marginBottom: 'clamp(20px,4vw,36px)' }}
+    >
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'clamp(10px,3vw,18px)', marginBottom: subtitle ? 10 : 0, flexWrap: 'wrap' }}>
+        <span style={{ fontFamily: T.mono, fontSize: 'clamp(32px,8vw,56px)', fontWeight: 700, color: T.dim, lineHeight: 1, letterSpacing: -2 }}>
+          {num}
+        </span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, fontWeight: 500, marginBottom: 4 }}>
+            {tag}
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <h2 style={{ fontFamily: T.display, fontSize: 'clamp(18px,4vw,28px)', fontWeight: 800, color: T.text, letterSpacing: -0.5, lineHeight: 1 }}>
+              {title}
+            </h2>
+            {voiceText && engine && (
+              <VoiceButton text={voiceText} engine={engine} />
+            )}
+          </div>
+        </div>
+      </div>
+      {subtitle && (
+        <p style={{ fontFamily: T.mono, fontSize: 'clamp(11px,2vw,13px)', color: T.muted, lineHeight: 1.8, maxWidth: 600, marginLeft: 'clamp(42px,8vw,74px)' }}>
+          {subtitle}
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CLAUDE AI ASSISTANT — Floating chat bubble, asks questions about C
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CLAUDE_SUGGESTIONS = [
+  "What's the difference between malloc and calloc?",
+  "Explain pointers in C simply",
+  "When should I use struct vs union?",
+  "What is undefined behavior in C?",
+  "How does printf format specifiers work?",
+  "Explain stack vs heap memory",
+  "What is a segmentation fault?",
+  "How do I read a file in C?",
+];
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HERO
@@ -340,7 +547,6 @@ function HeroSection({ isMobile }) {
         radial-gradient(ellipse 50% 30% at 90% 60%,rgba(0,212,255,0.05) 0%,transparent 60%),
         ${T.bg}`,
     }}>
-      {/* 3D Canvas bg */}
       <div style={{ position:"absolute", inset:0, zIndex:0 }}>
         {!isMobile && (
           <Canvas camera={{ position:[0,0,8], fov:60 }}>
@@ -349,12 +555,8 @@ function HeroSection({ isMobile }) {
           </Canvas>
         )}
       </div>
-
-      {/* Grid overlay */}
       <div style={{ position:"absolute", inset:0, zIndex:1, pointerEvents:"none", backgroundImage:`linear-gradient(rgba(0,255,163,0.018) 1px,transparent 1px),linear-gradient(90deg,rgba(0,255,163,0.018) 1px,transparent 1px)`, backgroundSize:"52px 52px" }} />
       <div style={{ position:"absolute", inset:0, zIndex:1, overflow:"hidden", pointerEvents:"none" }}><ScanLine /></div>
-
-      {/* Floating binary */}
       <div style={{ position:"absolute", inset:0, zIndex:1, overflow:"hidden", pointerEvents:"none", opacity:0.055 }}>
         <div style={{ fontFamily:T.mono, fontSize:10, color:T.neon, wordBreak:"break-all", lineHeight:1.9, padding:"0 24px", animation:"scrollUp 28s linear infinite" }}>
           {binaryChars.repeat(8)}
@@ -362,7 +564,6 @@ function HeroSection({ isMobile }) {
       </div>
 
       <div style={{ position:"relative", zIndex:10, textAlign:"center", maxWidth:880, padding:"0 clamp(16px,5vw,24px)", width:"100%" }}>
-        {/* Badge */}
         <motion.div initial={{ opacity:0, y:-12 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.2, duration:0.6 }}
           style={{ display:"inline-flex", alignItems:"center", gap:8, fontFamily:T.mono, fontSize:9, letterSpacing:5, color:T.neon, border:`1px solid ${T.border}`, background:"rgba(0,255,163,0.04)", padding:"6px 20px", borderRadius:100, marginBottom:30 }}>
           <motion.span animate={{ opacity:[1,0.2,1], scale:[1,0.7,1] }} transition={{ duration:1.2, repeat:Infinity }}
@@ -370,7 +571,6 @@ function HeroSection({ isMobile }) {
           VISUAL LEARNING ENGINE · LESSON 01
         </motion.div>
 
-        {/* Big C */}
         <motion.h1 initial={{ opacity:0, y:36 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.35, duration:0.9, ease:[0.22,1,0.36,1] }}
           style={{ fontFamily:T.display, fontWeight:800, fontSize:"clamp(72px,18vw,140px)", lineHeight:0.88, letterSpacing:-6, color:T.text, marginBottom:16 }}>
           <motion.span
@@ -384,7 +584,6 @@ function HeroSection({ isMobile }) {
           </span>
         </motion.h1>
 
-        {/* Rotating subtitle */}
         <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.6 }}
           style={{ height:32, marginBottom:36, overflow:"hidden" }}>
           <AnimatePresence mode="wait">
@@ -395,7 +594,6 @@ function HeroSection({ isMobile }) {
           </AnimatePresence>
         </motion.div>
 
-        {/* Stats row */}
         <motion.div initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.7, duration:0.6 }}
           style={{ display:"flex", justifyContent:"center", gap:"clamp(16px,4vw,48px)", marginBottom:40, flexWrap:"wrap" }}>
           {statsRow.map((s, i) => (
@@ -407,7 +605,6 @@ function HeroSection({ isMobile }) {
           ))}
         </motion.div>
 
-        {/* Pipeline mini */}
         <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.8, duration:0.7 }}
           style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:isMobile?8:0, alignItems:"center", marginBottom:44, justifyContent:"center" }}>
           {PIPELINE_STAGES.map((stage,i) => (
@@ -431,7 +628,6 @@ function HeroSection({ isMobile }) {
           ))}
         </motion.div>
 
-        {/* CTA */}
         <motion.button initial={{ opacity:0, y:12 }} animate={{ opacity:1, y:0 }} transition={{ delay:1.1 }}
           whileHover={{ scale:1.06, boxShadow:`0 0 50px ${T.neon}60` }} whileTap={{ scale:0.96 }}
           onClick={() => document.getElementById("whatIsc")?.scrollIntoView({ behavior:"smooth" })}
@@ -440,7 +636,6 @@ function HeroSection({ isMobile }) {
         </motion.button>
       </div>
 
-      {/* Scroll indicator */}
       <motion.div animate={{ y:[0,9,0] }} transition={{ duration:2.2, repeat:Infinity }}
         style={{ position:"absolute", bottom:30, zIndex:10, display:"flex", flexDirection:"column", alignItems:"center", gap:6, fontFamily:T.mono, fontSize:8, letterSpacing:5, color:T.muted }}>
         SCROLL
@@ -456,9 +651,9 @@ function HeroSection({ isMobile }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WHAT IS C — enhanced with memory model diagram
+// WHAT IS C
 // ─────────────────────────────────────────────────────────────────────────────
-function WhatIsC({ isMobile }) {
+function WhatIsC({ isMobile, engine }) {
   const [activeStage, setActiveStage] = useState(null);
   const active = PIPELINE_STAGES.find(s => s.id === activeStage);
 
@@ -481,10 +676,15 @@ function WhatIsC({ isMobile }) {
 
   return (
     <Section id="whatIsc">
-      <SectionHeader num="01" tag="FOUNDATION · WHAT IS C" title="A Language That Speaks CPU"
-        subtitle="C is the closest you can get to hardware without writing assembly. Every other mainstream language has C in its DNA." />
+      <SectionHeader
+        num="01"
+        tag="FOUNDATION · WHAT IS C"
+        title="A Language That Speaks CPU"
+        subtitle="C is the closest you can get to hardware without writing assembly. Every other mainstream language has C in its DNA."
+        voiceText="C is a low-level systems programming language created in 1972 at Bell Labs by Dennis Ritchie. It compiles directly to CPU machine code with zero runtime overhead, making it the fastest general-purpose language. The Linux kernel, Python interpreter, SQLite, Git, nginx, and Redis are all written in C. C++ extends it. Java mirrors its syntax. Python's runtime is C. You cannot escape C's DNA."
+        engine={engine}
+      />
 
-      {/* Pipeline clickable tabs */}
       <div style={{ marginBottom:28 }}>
         <div style={{ fontFamily:T.mono, fontSize:9, color:T.muted, marginBottom:14, letterSpacing:3 }}>↓ CLICK A STAGE TO LEARN MORE</div>
         <div style={{ display:"flex", alignItems:"stretch", overflowX:"auto", borderRadius:14, border:`1px solid ${T.dim}`, WebkitOverflowScrolling:"touch" }}>
@@ -521,7 +721,6 @@ function WhatIsC({ isMobile }) {
         </AnimatePresence>
       </div>
 
-      {/* Speed + use-cases */}
       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:20, marginBottom:20 }}>
         <GlassCard style={{ padding:"clamp(16px,4vw,24px)" }}>
           <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:4, color:T.neon, fontWeight:700, marginBottom:20 }}>⚡ RELATIVE EXECUTION SPEED</div>
@@ -559,7 +758,6 @@ function WhatIsC({ isMobile }) {
         </GlassCard>
       </div>
 
-      {/* Memory model visual */}
       <GlassCard style={{ padding:"clamp(16px,4vw,24px)" }} hover={false}>
         <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:4, color:T.accent, fontWeight:700, marginBottom:18 }}>🧠 C MEMORY LAYOUT — EVERY RUNNING PROGRAM</div>
         <div style={{ display:"flex", gap:8, alignItems:"stretch", overflowX:"auto" }}>
@@ -589,9 +787,9 @@ function WhatIsC({ isMobile }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// PROGRAM STRUCTURE — enhanced
+// PROGRAM STRUCTURE
 // ─────────────────────────────────────────────────────────────────────────────
-function ProgramStructure({ isMobile }) {
+function ProgramStructure({ isMobile, engine }) {
   const [selectedPart, setSelectedPart] = useState(null);
   const [execStep, setExecStep] = useState(-1);
   const [isRunning, setIsRunning] = useState(false);
@@ -619,8 +817,14 @@ function ProgramStructure({ isMobile }) {
 
   return (
     <Section id="structure">
-      <SectionHeader num="02" tag="ANATOMY · PROGRAM STRUCTURE" title="Dissect a C Program"
-        subtitle="Every C program follows the same skeleton. Click any part to understand exactly what it does." />
+      <SectionHeader
+        num="02"
+        tag="ANATOMY · PROGRAM STRUCTURE"
+        title="Dissect a C Program"
+        subtitle="Every C program follows the same skeleton. Click any part to understand exactly what it does."
+        voiceText="Every C program has a rigid structure. First come preprocessor directives like hash include — these run before compilation, pasting header file contents inline. Then comes the main function, which is the mandatory entry point the operating system calls. Inside main, you write statements — instructions terminated by semicolons. Finally, return zero signals success to the operating system. Without main, your program has no entry point and will not compile."
+        engine={engine}
+      />
       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:24 }}>
         <div>
           <GlassCard style={{ overflow:"hidden" }}>
@@ -660,7 +864,6 @@ function ProgramStructure({ isMobile }) {
                 );
               })}
             </div>
-            {/* Terminal output */}
             <AnimatePresence>
               {output && (
                 <motion.div initial={{ height:0, opacity:0 }} animate={{ height:"auto", opacity:1 }} exit={{ height:0, opacity:0 }}
@@ -709,7 +912,6 @@ function ProgramStructure({ isMobile }) {
             </motion.div>
           ))}
 
-          {/* Pro tip card */}
           <GlassCard style={{ padding:"14px 18px", background:`${T.accent}08`, border:`1px solid ${T.accent}25`, marginTop:4 }} hover={false}>
             <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.accent, marginBottom:8 }}>💡 PRO TIP</div>
             <div style={{ fontFamily:T.mono, fontSize:11, color:T.text, lineHeight:1.75 }}>
@@ -723,9 +925,9 @@ function ProgramStructure({ isMobile }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// KEYWORDS — enhanced
+// KEYWORDS
 // ─────────────────────────────────────────────────────────────────────────────
-function KeywordsIdentifiers({ isMobile }) {
+function KeywordsIdentifiers({ isMobile, engine }) {
   const [code, setCode] = useState(`int main() {\n    int age = 25;\n    float score = 99.5;\n    char grade = 'A';\n    return 0;\n}`);
   const [hoveredKw, setHoveredKw] = useState(null);
   const tokens = useMemo(() => tokenize(code), [code]);
@@ -772,7 +974,6 @@ function KeywordsIdentifiers({ isMobile }) {
     });
   };
 
-  // All 32 keywords grouped
   const kwGroups = [
     { label:"Data Types", color:"#89DDFF", items:["int","float","double","char","void","short","long","signed","unsigned"] },
     { label:"Control Flow", color:"#C3E88D", items:["if","else","while","for","do","break","continue","return","switch","case","default","goto"] },
@@ -782,8 +983,14 @@ function KeywordsIdentifiers({ isMobile }) {
 
   return (
     <Section id="keywords">
-      <SectionHeader num="03" tag="PARSER LAB · KEYWORDS & IDENTIFIERS" title="Live Token Classifier"
-        subtitle="C has only 32 reserved keywords — yet builds entire operating systems. Type code below to see every token classified in real time." />
+      <SectionHeader
+        num="03"
+        tag="PARSER LAB · KEYWORDS & IDENTIFIERS"
+        title="Live Token Classifier"
+        subtitle="C has only 32 reserved keywords — yet builds entire operating systems. Type code below to see every token classified in real time."
+        voiceText="C has only 32 reserved keywords. These include data types like int, float, double, and char. Control flow like if, else, while, for, and return. Storage class specifiers like static, extern, and const. And structural keywords like struct, union, enum, and typedef. You cannot use any keyword as a variable name — they are owned by the language. Your own identifiers must start with a letter or underscore, followed by letters, digits, or underscores, and are case-sensitive."
+        engine={engine}
+      />
       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 300px", gap:22, marginBottom:28 }}>
         <div>
           <GlassCard style={{ overflow:"hidden" }}>
@@ -847,7 +1054,6 @@ function KeywordsIdentifiers({ isMobile }) {
         </div>
       </div>
 
-      {/* All 32 keywords grid */}
       <GlassCard style={{ padding:"clamp(16px,4vw,24px)" }} hover={false}>
         <div style={{ fontFamily:T.mono, fontSize:9, letterSpacing:4, color:T.neon4, fontWeight:700, marginBottom:18 }}>ALL 32 C KEYWORDS — GROUPED BY PURPOSE</div>
         <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)", gap:16 }}>
@@ -873,7 +1079,7 @@ function KeywordsIdentifiers({ isMobile }) {
 // ─────────────────────────────────────────────────────────────────────────────
 // COMPILATION PIPELINE
 // ─────────────────────────────────────────────────────────────────────────────
-function CompilationPipeline({ isMobile }) {
+function CompilationPipeline({ isMobile, engine }) {
   const [step, setStep] = useState(0);
   const [animDir, setAnimDir] = useState(1);
   const [autoPlay, setAutoPlay] = useState(false);
@@ -892,16 +1098,20 @@ function CompilationPipeline({ isMobile }) {
 
   return (
     <Section id="compilation">
-      <SectionHeader num="04" tag="DEEP PIPELINE · HOW C COMPILES" title="The 6-Stage Transformation"
-        subtitle="Your .c file goes through six distinct transformations before the CPU ever sees it. Each stage strips abstraction until only raw machine instructions remain." />
+      <SectionHeader
+        num="04"
+        tag="DEEP PIPELINE · HOW C COMPILES"
+        title="The 6-Stage Transformation"
+        subtitle="Your .c file goes through six distinct transformations before the CPU ever sees it. Each stage strips abstraction until only raw machine instructions remain."
+        voiceText="Compiling a C program has six stages. Stage one: you write source code in a dot-c file. Stage two: the preprocessor expands macros, strips comments, and pastes header files. Stage three: GCC compiles your pure C into human-readable assembly — you can actually see the CPU instructions. Stage four: the assembler converts assembly mnemonics into raw binary machine code in an object file. Stage five: the linker combines your object file with the C standard library, resolves all symbol references, and produces the final executable. Stage six: the operating system loads it into RAM and the CPU executes billions of instructions per second."
+        engine={engine}
+      />
 
-      {/* Progress bar */}
       <div style={{ height:3, background:T.dim, borderRadius:2, marginBottom:24, overflow:"hidden" }}>
         <motion.div animate={{ width:`${((step+1)/COMPILE_STAGES.length)*100}%`, background:current.color }}
           transition={{ duration:0.4 }} style={{ height:"100%", borderRadius:2 }} />
       </div>
 
-      {/* Stage tabs */}
       <div style={{ display:"flex", background:"rgba(0,0,0,0.4)", border:`1px solid ${T.dim}`, borderRadius:10, padding:5, gap:3, marginBottom:24, overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
         {COMPILE_STAGES.map((s,i) => (
           <motion.button key={s.id} whileTap={{ scale:0.95 }} onClick={() => goTo(i)}
@@ -968,9 +1178,9 @@ function CompilationPipeline({ isMobile }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EXECUTION VISUALIZER — enhanced
+// EXECUTION VISUALIZER
 // ─────────────────────────────────────────────────────────────────────────────
-function ExecutionVisualizer({ isMobile }) {
+function ExecutionVisualizer({ isMobile, engine }) {
   const [running, setRunning] = useState(false);
   const [currentLine, setCurrentLine] = useState(-1);
   const [memory, setMemory] = useState({});
@@ -1000,8 +1210,14 @@ function ExecutionVisualizer({ isMobile }) {
 
   return (
     <Section id="execution" style={{ borderBottom:"none" }}>
-      <SectionHeader num="05" tag="RUNTIME SIM · EXECUTION VISUALIZER" title="Watch Code Run Live"
-        subtitle="Step through a real C program. See memory being allocated, the call stack growing, and output appearing — in real time." />
+      <SectionHeader
+        num="05"
+        tag="RUNTIME SIM · EXECUTION VISUALIZER"
+        title="Watch Code Run Live"
+        subtitle="Step through a real C program. See memory being allocated, the call stack growing, and output appearing — in real time."
+        voiceText="When a C program runs, the operating system loads your binary into RAM and calls main. As each line executes, local variables are allocated on the stack — each with a specific memory address. When printf is called, it's pushed onto the call stack above main. The function runs, writes to standard output, then pops off the stack. When main returns zero, the process exits successfully, and the OS reclaims all memory."
+        engine={engine}
+      />
       <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:22 }}>
         <GlassCard style={{ overflow:"hidden" }}>
           <div style={{ background:"rgba(0,0,0,0.45)", borderBottom:`1px solid ${T.dim}`, padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexWrap:"wrap", gap:8 }}>
@@ -1043,7 +1259,6 @@ function ExecutionVisualizer({ isMobile }) {
         </GlassCard>
 
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          {/* Call Stack */}
           <GlassCard style={{ padding:0, overflow:"hidden" }}>
             <div style={{ background:"rgba(0,0,0,0.4)", borderBottom:`1px solid ${T.dim}`, padding:"10px 16px", fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.accent }}>CALL STACK</div>
             <div style={{ padding:"10px 16px", minHeight:52 }}>
@@ -1060,7 +1275,6 @@ function ExecutionVisualizer({ isMobile }) {
             </div>
           </GlassCard>
 
-          {/* Stack Memory */}
           <GlassCard style={{ padding:0, overflow:"hidden", flex:1 }}>
             <div style={{ background:"rgba(0,0,0,0.4)", borderBottom:`1px solid ${T.dim}`, padding:"10px 16px", fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.neon2 }}>STACK MEMORY</div>
             <div style={{ padding:"14px 16px" }}>
@@ -1083,7 +1297,6 @@ function ExecutionVisualizer({ isMobile }) {
             </div>
           </GlassCard>
 
-          {/* Terminal */}
           <GlassCard style={{ padding:0, overflow:"hidden" }}>
             <div style={{ background:"rgba(0,0,0,0.4)", borderBottom:`1px solid ${T.dim}`, padding:"10px 16px", fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.neon3 }}>TERMINAL OUTPUT</div>
             <div style={{ padding:"14px 16px", minHeight:68 }}>
@@ -1108,9 +1321,9 @@ function ExecutionVisualizer({ isMobile }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RIGHT SIDEBAR (Navigation with Next Lesson button) — previously left
+// RIGHT SIDEBAR
 // ─────────────────────────────────────────────────────────────────────────────
-function RightSidebar({ activeSection }) {
+function RightSidebar({ activeSection, engine }) {
   return (
     <aside style={{ width:240, minWidth:240, background:`linear-gradient(180deg,${T.bg1} 0%,${T.bg} 100%)`, borderLeft:`1px solid ${T.dim}`, display:"flex", flexDirection:"column", padding:"26px 0", position:"sticky", top:0, height:"100vh", overflow:"hidden", flexShrink:0 }}>
       <div style={{ padding:"0 18px 22px" }}>
@@ -1119,6 +1332,19 @@ function RightSidebar({ activeSection }) {
           C LANG
         </motion.div>
         <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:5, color:T.muted, marginTop:2 }}>LESSON 01 / 05</div>
+
+        {/* Voice engine status */}
+        {engine && (
+          <div style={{ marginTop:10, display:"flex", alignItems:"center", gap:6 }}>
+            <motion.div
+              animate={{ background: engine.speaking ? T.neon : engine.ready ? "#1D9E75" : T.muted }}
+              style={{ width:5, height:5, borderRadius:"50%", flexShrink:0 }}
+            />
+            <div style={{ fontFamily:T.mono, fontSize:8, color:T.muted, letterSpacing:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {engine.speaking ? "SPEAKING..." : engine.ready ? engine.voiceName.split(" ").slice(0,3).join(" ") : "VOICE LOADING"}
+            </div>
+          </div>
+        )}
       </div>
       <div style={{ height:1, background:`linear-gradient(90deg,transparent,${T.neon}35,transparent)`, marginBottom:14 }} />
       <nav style={{ flex:1 }}>
@@ -1140,7 +1366,6 @@ function RightSidebar({ activeSection }) {
           );
         })}
       </nav>
-      {/* Sidebar footer progress + Next button */}
       <div style={{ padding:"14px 18px", borderTop:`1px solid ${T.dim}` }}>
         <div style={{ fontFamily:T.mono, fontSize:8, letterSpacing:3, color:T.muted, marginBottom:8 }}>COURSE PROGRESS</div>
         <div style={{ height:3, background:T.dim, borderRadius:2, overflow:"hidden" }}>
@@ -1148,7 +1373,6 @@ function RightSidebar({ activeSection }) {
         </div>
         <div style={{ fontFamily:T.mono, fontSize:9, color:T.neon, marginTop:6, marginBottom:16 }}>1 / 7 complete</div>
 
-        {/* Updated Next button matching the provided design */}
         <Link href="/c-2" passHref legacyBehavior>
           <motion.a whileHover={{ x: 4, borderColor: T.neon }} style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -1286,7 +1510,7 @@ function MobileBottomNav({ activeSection, onInsightOpen }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// NEXT PAGE BUTTON (for mobile/tablet only)
+// NEXT PAGE BUTTON
 // ─────────────────────────────────────────────────────────────────────────────
 function NextPageButton({ isMobile, isTablet }) {
   const [hovered, setHovered] = useState(false);
@@ -1296,10 +1520,6 @@ function NextPageButton({ isMobile, isTablet }) {
     const iv = setInterval(() => setPulse(p => !p), 2000);
     return () => clearInterval(iv);
   }, []);
-
-  const goToNext = () => {
-    window.location.href = "/c-2";
-  };
 
   if (!isMobile && !isTablet) return null;
 
@@ -1318,15 +1538,11 @@ function NextPageButton({ isMobile, isTablet }) {
       }}
     >
       <motion.button
-        onClick={goToNext}
+        onClick={() => { window.location.href = "/c-2"; }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         whileTap={{ scale: 0.96 }}
-        animate={{
-          boxShadow: pulse
-            ? `0 0 30px ${T.neon}60, 0 0 60px ${T.neon}20`
-            : `0 0 15px ${T.neon}30`,
-        }}
+        animate={{ boxShadow: pulse ? `0 0 30px ${T.neon}60, 0 0 60px ${T.neon}20` : `0 0 15px ${T.neon}30` }}
         transition={{ duration: 1, ease: "easeInOut" }}
         style={{
           width: isMobile ? "100%" : "auto",
@@ -1341,8 +1557,7 @@ function NextPageButton({ isMobile, isTablet }) {
         }}
       >
         <span>NEXT: MEMORY & DATA</span>
-        <motion.span animate={{ x: hovered ? 4 : 0 }} transition={{ type:"spring", stiffness:300 }}
-          style={{ fontSize: 18 }}>→</motion.span>
+        <motion.span animate={{ x: hovered ? 4 : 0 }} transition={{ type:"spring", stiffness:300 }} style={{ fontSize: 18 }}>→</motion.span>
         <span style={{ fontFamily: T.mono, fontSize: 9, opacity: 0.7, letterSpacing: 2 }}>LESSON 02</span>
       </motion.button>
     </motion.div>
@@ -1354,10 +1569,13 @@ function NextPageButton({ isMobile, isTablet }) {
 // ─────────────────────────────────────────────────────────────────────────────
 export default function CIntroPage() {
   const { isMobile, isTablet, isDesktop } = useBreakpoint();
-  const showLeftPanel = isDesktop;      // Insight panel on left
-  const showRightSidebar = isDesktop;   // Navigation on right
+  const showLeftPanel = isDesktop;
+  const showRightSidebar = isDesktop;
   const [activeSection, setActiveSection] = useState("hero");
   const [insightOpen, setInsightOpen] = useState(false);
+
+  // Single shared voice engine — one instance for whole page
+  const engine = useVoiceEngine();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -1382,30 +1600,28 @@ export default function CIntroPage() {
         ::-webkit-scrollbar-track { background: ${T.bg}; }
         ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 2px; }
         @keyframes scrollUp { from{transform:translateY(0)} to{transform:translateY(-50%)} }
+        textarea { color-scheme: dark; }
+        textarea::placeholder { color: ${T.muted}; }
       `}</style>
 
       <div style={{ display:"flex", height:isMobile||isTablet?"auto":"100vh", overflow:isMobile||isTablet?"visible":"hidden", background:T.bg }}>
-        {/* LEFT: Insight Panel */}
         {showLeftPanel && <LeftInsightPanel isMobile={false} isOpen={false} onClose={() => {}} />}
 
-        {/* MAIN CONTENT */}
         <main style={{ flex:7, overflowY:isMobile||isTablet?"visible":"auto", overflowX:"hidden", minWidth:0, paddingBottom:bottomPad }}>
           <div style={{ maxWidth:"100%", padding:mainPadding }}>
             <HeroSection isMobile={isMobile} />
-            <WhatIsC isMobile={isMobile} />
-            <ProgramStructure isMobile={isMobile} />
-            <KeywordsIdentifiers isMobile={isMobile} />
-            <CompilationPipeline isMobile={isMobile} />
-            <ExecutionVisualizer isMobile={isMobile} />
+            <WhatIsC isMobile={isMobile} engine={engine} />
+            <ProgramStructure isMobile={isMobile} engine={engine} />
+            <KeywordsIdentifiers isMobile={isMobile} engine={engine} />
+            <CompilationPipeline isMobile={isMobile} engine={engine} />
+            <ExecutionVisualizer isMobile={isMobile} engine={engine} />
             <div style={{ height:48 }} />
           </div>
         </main>
 
-        {/* RIGHT: Navigation Sidebar */}
-        {showRightSidebar && <RightSidebar activeSection={activeSection} />}
+        {showRightSidebar && <RightSidebar activeSection={activeSection} engine={engine} />}
       </div>
 
-      {/* Mobile nav + drawer */}
       {(isMobile || isTablet) && (
         <>
           <MobileBottomNav activeSection={activeSection} onInsightOpen={() => setInsightOpen(true)} />
@@ -1413,8 +1629,8 @@ export default function CIntroPage() {
         </>
       )}
 
-      {/* Next button only for mobile/tablet (desktop version is inside right sidebar) */}
       <NextPageButton isMobile={isMobile} isTablet={isTablet} />
+
     </>
   );
 }

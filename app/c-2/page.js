@@ -3,8 +3,7 @@
 /**
  * C PROGRAMMING — FUNDAMENTALS PAGE (PAGE 2)
  * ============================================
- * Enhanced version with swapped sidebars, responsive design, and prev/next navigation.
- * Next.js App Router → app/c-fundamentals/page.jsx
+ * Premium Voice Engine + Reduced Left Sidebar (324px, -10%)
  */
 
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
@@ -15,7 +14,7 @@ import * as THREE from "three";
 import Link from "next/link";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DESIGN TOKENS — enhanced with more vibrant colors
+// DESIGN TOKENS
 // ─────────────────────────────────────────────────────────────────────────────
 const T = {
   bg:      "#030810",
@@ -36,7 +35,244 @@ const T = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DATA DEFINITIONS (unchanged but enhanced with more educational notes)
+// ★ PREMIUM VOICE ENGINE
+// Uses Web Speech API — free, unlimited, works in all modern browsers.
+// Intelligently selects the highest-quality male voice available on the device.
+// Applies prosody (rate/pitch/volume) tuning for a rich, radio-host quality feel.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const VOICE_PRIORITY = [
+  // Google Neural voices (Chrome/Edge — best quality)
+  "Google UK English Male",
+  "Google US English",
+  // Microsoft Neural voices (Edge)
+  "Microsoft Ryan Online (Natural) - English (United Kingdom)",
+  "Microsoft Guy Online (Natural) - English (United States)",
+  "Microsoft David - English (United States)",
+  "Microsoft Mark - English (United States)",
+  // macOS / iOS premium voices
+  "Daniel",
+  "Alex",
+  "Tom",
+  // Android
+  "en-gb-x-gbd-network",
+  "en-us-x-sfg-network",
+];
+
+function pickBestMaleVoice(voices) {
+  for (const name of VOICE_PRIORITY) {
+    const found = voices.find(v => v.name === name);
+    if (found) return found;
+  }
+  // Fallback: any English male-sounding voice
+  const englishMale = voices.find(
+    v => v.lang.startsWith("en") && /male|man|guy|ryan|david|mark|daniel|alex|tom|george|james/i.test(v.name)
+  );
+  if (englishMale) return englishMale;
+  // Last resort: any English voice
+  return voices.find(v => v.lang.startsWith("en")) || voices[0] || null;
+}
+
+// Craft "crazy level" explanations with dramatic pauses using SSML-like text tricks
+// We insert commas and ellipses to force natural pauses in the Web Speech API
+function buildDramaticScript(text) {
+  return text
+    // Add breathing pause after colons
+    .replace(/: /g, "… ")
+    // Add micro pause after em-dash concepts
+    .replace(/— /g, ", — ")
+    // Slow down for numbers/technical terms
+    .replace(/(\d+)/g, "$1,")
+    // Remove double commas
+    .replace(/,,/g, ",");
+}
+
+// The main speak function — returns a cancel handle
+function speakPremium({ text, onStart, onEnd, onError, mode = "beginner" }) {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    onError?.("Speech synthesis not supported");
+    return () => {};
+  }
+
+  window.speechSynthesis.cancel();
+
+  const voices = window.speechSynthesis.getVoices();
+  const voice = pickBestMaleVoice(voices);
+
+  const dramaticText = buildDramaticScript(text);
+  const utt = new SpeechSynthesisUtterance(dramaticText);
+
+  if (voice) utt.voice = voice;
+  utt.lang = "en-US";
+
+  // Prosody tuning for "premium radio host" feel
+  if (mode === "beginner") {
+    utt.rate   = 0.88;   // Slightly slower, very clear
+    utt.pitch  = 0.95;   // Slightly deeper, authoritative
+    utt.volume = 1.0;
+  } else {
+    utt.rate   = 0.82;   // Even slower for complex deep-dive content
+    utt.pitch  = 0.90;   // Deeper, more gravitas
+    utt.volume = 1.0;
+  }
+
+  utt.onstart = () => onStart?.();
+  utt.onend   = () => onEnd?.();
+  utt.onerror = (e) => onError?.(e.error);
+
+  // Chrome bug workaround: voices may not be loaded yet
+  if (voices.length === 0) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      const v2 = window.speechSynthesis.getVoices();
+      const bestVoice = pickBestMaleVoice(v2);
+      if (bestVoice) utt.voice = bestVoice;
+      window.speechSynthesis.speak(utt);
+    };
+  } else {
+    window.speechSynthesis.speak(utt);
+  }
+
+  return () => window.speechSynthesis.cancel();
+}
+
+// Hook: manage speak state cleanly
+function usePremiumVoice() {
+  const [speaking, setSpeaking] = useState(false);
+  const [speakingId, setSpeakingId] = useState(null);
+  const cancelRef = useRef(null);
+
+  const speak = useCallback(({ id, text, mode }) => {
+    cancelRef.current?.();
+    setSpeaking(true);
+    setSpeakingId(id ?? "default");
+    cancelRef.current = speakPremium({
+      text,
+      mode,
+      onStart: () => { setSpeaking(true); setSpeakingId(id ?? "default"); },
+      onEnd:   () => { setSpeaking(false); setSpeakingId(null); },
+      onError: () => { setSpeaking(false); setSpeakingId(null); },
+    });
+  }, []);
+
+  const stop = useCallback(() => {
+    cancelRef.current?.();
+    setSpeaking(false);
+    setSpeakingId(null);
+  }, []);
+
+  useEffect(() => () => cancelRef.current?.(), []);
+
+  return { speaking, speakingId, speak, stop };
+}
+
+// Crazy-level scripts by section — rich, educational, dramatic storytelling
+const CRAZY_SCRIPTS = {
+  hero2: `Welcome… to the world beneath the surface of every program ever written.
+Right now… your computer's RAM is a vast ocean of bytes. And C… is the only language that lets you swim in it directly.
+No training wheels. No garbage collector holding your hand. Just you… the compiler… and raw memory.
+In this chapter, you will learn how C names memory, how it stores different kinds of data, and how it talks to the outside world through printf and scanf.
+By the end… you won't just write C code. You'll SEE what it does to memory. Line. By. Line.`,
+
+  datatype_char: `The char. One single byte. Eight bits. That's all.
+And yet… every character you've ever typed — every letter, every space, every punctuation mark — is just a number hiding behind a mask.
+Press the letter A on your keyboard? The computer doesn't see A. It sees… sixty-five. That's ASCII. The American Standard Code for Information Interchange.
+Seventy years old… and still running inside every computer on the planet.
+When you write char c equals quote A, you're telling C: give me ONE byte of memory… and store the number sixty-five in it.
+The quotes are just a convenience. Underneath, char is nothing more than a tiny, tiny integer.`,
+
+  datatype_int: `The int. Thirty-two bits. Four bytes. The workhorse of C.
+This is the type your CPU was BORN to handle. When your processor fetches an int from memory, it does it in one single clock cycle. One tick. Instant.
+Why four bytes? Because modern CPUs have thirty-two-bit or sixty-four-bit internal registers. Four bytes fits perfectly into the pipeline.
+The range? Negative two point one billion… to positive two point one billion.
+That sounds like a lot. But exceed it by even ONE… and something terrifying happens. The number wraps around to the most negative value possible. Silent. Invisible. Catastrophic.
+This is called integer overflow. And it has crashed spacecraft, corrupted financial records, and caused some of the most devastating bugs in software history.`,
+
+  datatype_float: `Now we enter the realm of approximation.
+Float. Four bytes. But these four bytes do something extraordinary — they represent numbers with decimal points across an enormous range.
+How? Through a standard called IEEE 754. The thirty-two bits are split three ways: one bit for the sign — positive or negative. Eight bits for the exponent — how big or small. And twenty-three bits for the mantissa — the actual digits.
+Here's the mind-bending part: because of how binary fractions work… the number zero point one… cannot be represented exactly.
+You read that right.
+Zero. Point. One. Does. Not. Exist. In. Binary.
+It's rounded to the nearest representable value. Which is why zero point one plus zero point two does not equal zero point three in C.
+Never. Use. Float. For. Money.`,
+
+  datatype_double: `Double. Eight bytes. Sixty-four bits.
+If float gives you seven significant decimal digits of precision… double gives you FIFTEEN.
+The extra thirty-two bits go entirely into the mantissa — doubling the number of significant digits your calculation can track.
+This is why scientific computing, physics simulations, orbital mechanics, and financial modeling use double.
+When in doubt… use double. The performance cost is negligible on modern hardware. The accuracy improvement? Enormous.`,
+
+  datatype_short: `Short. Two bytes. Sixteen bits.
+Half the size of int. Perfect when you have thousands, or millions, of small values and memory matters.
+Audio samples are often stored as shorts. Sensor readings from embedded systems. Pixel color channels in some formats.
+The range is negative thirty-two thousand seven hundred sixty-eight… to positive thirty-two thousand seven hundred sixty-seven.
+Small. Efficient. Precise when you know your values stay small.`,
+
+  datatype_long: `Long long. Eight bytes. Sixty-four bits.
+This is the nuclear option for integer storage.
+Nine point two QUINTILLION. That's the maximum value. Written out: nine followed by eighteen zeros.
+You'll need this for: Unix timestamps beyond the year 2038, file sizes larger than two gigabytes, cryptographic calculations, unique ID generation for massive distributed systems.
+The double L suffix — nine billion L L — is how you tell the compiler: yes, I KNOW this is a long long literal. Don't truncate it.`,
+
+  variables: `Let's talk about variables. And what they REALLY are.
+When you write int x equals five… you're not creating a concept. You're not storing an idea.
+You're asking the operating system for four bytes of stack memory… giving that memory a name… and writing the bits representing five into those bytes.
+The name x? The compiler throws it away at compile time. It becomes a memory address. Something like zero x F F one zero.
+When you later write x equals ten… you're not changing a variable. You're writing the bit pattern for ten… to that same address.
+Now. Constants. The keyword const tells the COMPILER: if anyone tries to assign a new value to this name… shout an error and refuse to compile.
+But here's the dark secret of C: const is not a hardware lock. A sufficiently determined programmer can cast away const with a pointer and write to it anyway.
+const is a SOCIAL CONTRACT. A promise to yourself and your team. Not a wall.`,
+
+  io: `printf and scanf. The two functions every C programmer meets on day one.
+And most C programmers… never fully understand them.
+Let's fix that.
+printf takes a format string — a template with percent-sign placeholders. It walks through the string character by character. When it hits a percent sign, it knows: the next character tells me how to interpret the next argument.
+Percent D? Read four bytes as a signed integer. Percent F? Read eight bytes as a double. Percent C? Read one byte as a character.
+If you get this wrong — if you pass a float but use percent D — printf reads the float's bytes AS IF they were an integer. The result is garbage. And in some cases, it corrupts the stack.
+Now. scanf. This one trips up every beginner. Every. Single. One.
+scanf needs to WRITE to your variable. It needs to store the user's input somewhere.
+If you pass the value of x… scanf gets a COPY of that value. It writes the input there, into the void, and x is never updated.
+You must pass the ADDRESS of x. That's what the ampersand operator does. Ampersand x means: give me the memory address where x lives.
+scanf can then navigate to that address and write the user's input directly into your variable's memory slot.
+No ampersand, no update. It's that simple. And that easy to forget.`,
+
+  formatspec: `Format specifiers. The Rosetta Stone between C values and human-readable output.
+Every percent-sign code is an instruction to printf: here's a chunk of memory. Interpret it THIS way. Display it THAT way.
+Percent D: treat these four bytes as a signed decimal integer.
+Percent F: treat these eight bytes as a floating-point number, show six decimal places.
+Percent C: treat this one byte as an ASCII character code, show the character.
+Percent S: treat this value as a memory address pointing to a string. Walk forward from there, printing characters, until you hit a null byte.
+The precision modifier — dot, then a number — controls decimal places for floats.
+The width modifier — a number before the specifier — controls minimum field width for alignment.
+And the danger: type mismatch. If you have a float and you print it with percent D, printf reads the four bytes of that float's IEEE 754 representation AS IF they were a signed integer.
+The result? A seemingly random number in the billions. Not a crash. Not a warning. Just… silent wrongness.
+C trusts you to get this right. That trust is both a gift and a curse.`,
+
+  stepexec: `Let's step through a complete C program. Line. By. Line.
+The preprocessor directive at the top — hash include stdio dot h — is not actually C code.
+It runs BEFORE compilation. The preprocessor physically replaces that line with the entire contents of stdio dot h. Thousands of lines of function declarations suddenly appear in your file.
+Then main. The entry point. The OS calls this function when your program starts. The int before main means it returns an exit code — zero for success, anything else for failure.
+The opening brace begins a scope. All variables declared inside this scope live on the stack. When the closing brace is reached, the stack pointer moves back, and they're gone forever.
+int score equals zero. Four bytes allocated on the stack. Initialized to zero. Address: something like zero x F F one zero.
+float gpa equals three point eight f. Four more bytes. The f suffix is critical — without it, three point eight is a double literal: eight bytes. C would then warn you about implicit conversion.
+char grade equals quote A. One byte. Stores the number sixty-five.
+score equals ninety-five. The value in score's four bytes is OVERWRITTEN. The old zero? Gone.
+printf. The format string is parsed. Each specifier is matched to an argument in order. The substitutions happen. The formatted string is sent to standard output.
+Return zero. The stack frame is destroyed. Every local variable evaporates. The OS takes back the memory.
+That's it. That's C. Precise. Deterministic. Unforgiving. Beautiful.`,
+};
+
+// Get the right script for a context
+function getScript(context, mode = "beginner") {
+  const base = CRAZY_SCRIPTS[context] || CRAZY_SCRIPTS["hero2"];
+  if (mode === "deep") {
+    return `[DEEP DIVE] — ` + base + ` ... And at the hardware level, this maps directly to machine instructions. The compiler translates each of these operations into assembly language — MOV, ADD, SUB — which the CPU executes in nanoseconds. This is why C is still the language of operating systems, embedded firmware, and anything where performance is life or death.`;
+  }
+  return base;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA DEFINITIONS
 // ─────────────────────────────────────────────────────────────────────────────
 const DATA_TYPES = [
   {
@@ -50,6 +286,7 @@ const DATA_TYPES = [
     example: "char c = 'A';  // stores 65",
     glowColor: "rgba(0,255,163,0.3)",
     blockSize: 1,
+    scriptKey: "datatype_char",
   },
   {
     id: "short",
@@ -62,6 +299,7 @@ const DATA_TYPES = [
     example: "short s = 1000;",
     glowColor: "rgba(0,212,255,0.3)",
     blockSize: 2,
+    scriptKey: "datatype_short",
   },
   {
     id: "int",
@@ -74,6 +312,7 @@ const DATA_TYPES = [
     example: "int x = 42;",
     glowColor: "rgba(255,179,71,0.3)",
     blockSize: 4,
+    scriptKey: "datatype_int",
   },
   {
     id: "float",
@@ -86,6 +325,7 @@ const DATA_TYPES = [
     example: "float pi = 3.14159f;",
     glowColor: "rgba(255,111,216,0.3)",
     blockSize: 4,
+    scriptKey: "datatype_float",
   },
   {
     id: "double",
@@ -98,6 +338,7 @@ const DATA_TYPES = [
     example: "double d = 3.14159265358979;",
     glowColor: "rgba(189,105,255,0.3)",
     blockSize: 8,
+    scriptKey: "datatype_double",
   },
   {
     id: "long",
@@ -110,6 +351,7 @@ const DATA_TYPES = [
     example: "long long big = 9000000000LL;",
     glowColor: "rgba(255,107,107,0.3)",
     blockSize: 8,
+    scriptKey: "datatype_long",
   },
 ];
 
@@ -171,7 +413,7 @@ const DEEP_INSIGHTS_BY_SECTION = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// THREE.JS — SAME COMPONENTS AS PAGE 1 (enhanced with more particles)
+// THREE.JS COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
 function ParticleField() {
   const mesh = useRef();
@@ -219,7 +461,7 @@ function GlowOrb() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SHARED COMPONENTS — enhanced with better hover effects
+// SHARED COMPONENTS
 // ─────────────────────────────────────────────────────────────────────────────
 function GlassCard({ children, style = {}, hover = true, glowColor = T.neon, ...props }) {
   return (
@@ -293,10 +535,47 @@ function ScanLine() {
   );
 }
 
+// ★ Premium Voice Button — reusable component
+function VoiceButton({ id, label = "🎙 EXPLAIN", text, mode = "beginner", voice }) {
+  const isActive = voice.speakingId === id && voice.speaking;
+  return (
+    <motion.button
+      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.04 }}
+      onClick={() => isActive ? voice.stop() : voice.speak({ id, text, mode })}
+      style={{
+        display: "inline-flex", alignItems: "center", gap: 8,
+        fontFamily: T.mono, fontSize: 9, letterSpacing: 2, fontWeight: 700,
+        color: isActive ? "#000" : T.neon4,
+        background: isActive
+          ? `linear-gradient(135deg, ${T.neon4}, ${T.neon})`
+          : "transparent",
+        border: `1px solid ${isActive ? T.neon4 : T.dim}`,
+        borderRadius: 6, padding: "7px 16px", cursor: "pointer",
+        transition: "all 0.2s",
+        boxShadow: isActive ? `0 0 24px ${T.neon4}60` : "none",
+      }}
+    >
+      {isActive ? (
+        <>
+          <motion.span
+            animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
+            transition={{ duration: 0.6, repeat: Infinity }}
+            style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: "#000" }}
+          />
+          SPEAKING… (STOP)
+        </>
+      ) : (
+        <>🎙 {label}</>
+      )}
+    </motion.button>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 1 HERO — page 2 intro (enhanced with more animations)
+// SECTION 0: HERO
 // ─────────────────────────────────────────────────────────────────────────────
-function Hero2() {
+function Hero2({ voice }) {
   const [tick, setTick] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setTick(x => x + 1), 90);
@@ -378,12 +657,23 @@ function Hero2() {
         </motion.h1>
 
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}
-          style={{ fontFamily: T.mono, fontSize: 14, color: T.neon2, letterSpacing: 1, marginBottom: 42 }}>
+          style={{ fontFamily: T.mono, fontSize: 14, color: T.neon2, letterSpacing: 1, marginBottom: 28 }}>
           visualize how C stores, names, and moves data through memory
         </motion.p>
 
+        {/* Hero voice button */}
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.75 }}
+          style={{ marginBottom: 30 }}>
+          <VoiceButton
+            id="hero2"
+            label="PLAY CHAPTER INTRO"
+            text={getScript("hero2")}
+            voice={voice}
+          />
+        </motion.div>
+
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.8, duration: 0.7 }}
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, flexWrap: "wrap", marginBottom: 52 }}>
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, flexWrap: "wrap", marginBottom: 42 }}>
           {pills.map((p, i) => (
             <motion.div key={p.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.9 + i * 0.1 }}
               whileHover={{ y: -5, boxShadow: `0 10px 35px ${p.color}40` }}
@@ -427,7 +717,7 @@ function Hero2() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 1: DATA TYPES — 3D Memory Visualizer (unchanged but enhanced)
+// SECTION 1: DATA TYPES
 // ─────────────────────────────────────────────────────────────────────────────
 function MemoryGrid3D({ selectedType, showBinary, overflowDemo }) {
   const groupRef = useRef();
@@ -481,12 +771,11 @@ function MemoryGrid3D({ selectedType, showBinary, overflowDemo }) {
   );
 }
 
-function DataTypesSection() {
+function DataTypesSection({ voice }) {
   const [selectedType, setSelectedType] = useState("int");
   const [inputValue, setInputValue] = useState("42");
   const [showBinary, setShowBinary] = useState(false);
   const [overflowDemo, setOverflowDemo] = useState(false);
-  const [speak, setSpeak] = useState(false);
 
   const dt = DATA_TYPES.find(d => d.id === selectedType);
 
@@ -505,17 +794,6 @@ function DataTypesSection() {
     if (dt.id === "int") return n > 2147483647 || n < -2147483648;
     return false;
   }, [inputValue, dt]);
-
-  const speakExplanation = () => {
-    if (!dt || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const text = `${dt.label} uses ${dt.bytes} byte${dt.bytes > 1 ? "s" : ""}. ${dt.desc} ${dt.why}`;
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.rate = 0.9;
-    window.speechSynthesis.speak(utt);
-    setSpeak(true);
-    utt.onend = () => setSpeak(false);
-  };
 
   return (
     <Section id="datatypes">
@@ -650,19 +928,15 @@ function DataTypesSection() {
               </div>
               <div>
                 <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: dt?.color, marginBottom: 10 }}>EXAMPLE CODE</div>
-                <div style={{ fontFamily: T.mono, fontSize: 13, color: "#C3E88D", background: "rgba(0,0,0,0.5)", borderRadius: 8, padding: "12px 16px", lineHeight: 1.7 }}>
+                <div style={{ fontFamily: T.mono, fontSize: 13, color: "#C3E88D", background: "rgba(0,0,0,0.5)", borderRadius: 8, padding: "12px 16px", lineHeight: 1.7, marginBottom: 12 }}>
                   {dt?.example}
                 </div>
-                <motion.button whileTap={{ scale: 0.95 }}
-                  onClick={speakExplanation}
-                  style={{
-                    marginTop: 12, fontFamily: T.mono, fontSize: 8, letterSpacing: 2,
-                    color: speak ? "#000" : T.neon4, background: speak ? T.neon4 : "transparent",
-                    border: `1px solid ${speak ? T.neon4 : T.dim}`, borderRadius: 5,
-                    padding: "6px 14px", cursor: "pointer",
-                  }}>
-                  {speak ? "🔊 SPEAKING…" : "🔊 EXPLAIN THIS"}
-                </motion.button>
+                <VoiceButton
+                  id={`dt-${selectedType}`}
+                  label="EXPLAIN THIS TYPE"
+                  text={getScript(dt?.scriptKey || "datatype_int")}
+                  voice={voice}
+                />
               </div>
             </div>
           </GlassCard>
@@ -703,9 +977,9 @@ function DataTypesSection() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 2: VARIABLES & CONSTANTS — State Machine (unchanged)
+// SECTION 2: VARIABLES & CONSTANTS
 // ─────────────────────────────────────────────────────────────────────────────
-function VariablesSection() {
+function VariablesSection({ voice }) {
   const [containers, setContainers] = useState([]);
   const [newName, setNewName] = useState("");
   const [newValue, setNewValue] = useState("");
@@ -715,7 +989,6 @@ function VariablesSection() {
   const [editValue, setEditValue] = useState("");
   const [error, setError] = useState("");
   const [memBase] = useState(0xFF10);
-  const [speak, setSpeak] = useState(false);
 
   const addContainer = () => {
     if (!newName.trim()) return;
@@ -747,18 +1020,10 @@ function VariablesSection() {
     setEditingId(null);
   };
 
-  const speakMemory = (c) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const text = c.isConst
-      ? `${c.name} is a constant with value ${c.value}. It cannot be changed after initialization. The compiler will reject any attempt to reassign it.`
-      : `${c.name} is a variable of type ${c.type}, currently holding the value ${c.value}, stored at memory address ${c.address}.`;
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.rate = 0.9;
-    window.speechSynthesis.speak(utt);
-    setSpeak(c.id);
-    utt.onend = () => setSpeak(null);
-  };
+  const getContainerScript = (c) =>
+    c.isConst
+      ? `${c.name} is a constant with value ${c.value}. Once set, it cannot change. The compiler enforces this at compile time — any attempt to reassign it will cause a compilation error and refuse to build your program. Constants are promises. To the compiler, to your team, and to yourself.`
+      : `${c.name} is a variable of type ${c.type}, currently holding the value ${c.value}, stored at memory address ${c.address}. This is a real location in your computer's RAM. Four bytes. Right now, those four bytes contain the bit pattern representing ${c.value}. You can change it at any time — just assign a new value, and those bytes get overwritten.`;
 
   return (
     <Section id="variables">
@@ -820,7 +1085,7 @@ function VariablesSection() {
             </AnimatePresence>
           </GlassCard>
 
-          <GlassCard style={{ padding: 20 }} hover={false}>
+          <GlassCard style={{ padding: 20, marginBottom: 16 }} hover={false}>
             <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon2, fontWeight: 700, marginBottom: 14 }}>HOW IT WORKS</div>
             {[
               { step: "1", text: "int x = 5; reserves 4 bytes on the stack", color: T.neon },
@@ -834,6 +1099,14 @@ function VariablesSection() {
               </div>
             ))}
           </GlassCard>
+
+          {/* Section-level voice button */}
+          <VoiceButton
+            id="variables-section"
+            label="EXPLAIN VARIABLES & CONSTANTS"
+            text={getScript("variables")}
+            voice={voice}
+          />
         </div>
 
         <div>
@@ -904,16 +1177,12 @@ function VariablesSection() {
                       }}>
                       {c.isConst ? "🔒 LOCKED" : "✏️ EDIT"}
                     </motion.button>
-                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => speakMemory(c)}
-                      style={{
-                        fontFamily: T.mono, fontSize: 8, letterSpacing: 1,
-                        color: speak === c.id ? "#000" : T.neon4,
-                        background: speak === c.id ? T.neon4 : "transparent",
-                        border: `1px solid ${speak === c.id ? T.neon4 : T.dim}`,
-                        borderRadius: 5, padding: "5px 12px", cursor: "pointer",
-                      }}>
-                      {speak === c.id ? "🔊 …" : "🔊 EXPLAIN"}
-                    </motion.button>
+                    <VoiceButton
+                      id={`var-${c.id}`}
+                      label="EXPLAIN"
+                      text={getContainerScript(c)}
+                      voice={voice}
+                    />
                     <motion.button whileTap={{ scale: 0.95 }}
                       onClick={() => setContainers(prev => prev.filter(x => x.id !== c.id))}
                       style={{
@@ -961,17 +1230,13 @@ function VariablesSection() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 3: printf / scanf — Terminal Simulation (unchanged)
+// SECTION 3: printf / scanf
 // ─────────────────────────────────────────────────────────────────────────────
-function IOSection() {
+function IOSection({ voice }) {
   const [scanfValue, setScanfValue] = useState("");
   const [variable, setVariable] = useState(null);
-  const [output, setOutput] = useState([]);
   const [phase, setPhase] = useState("idle");
   const [formatStr, setFormatStr] = useState("Your score is: %d points!");
-  const [speak, setSpeak] = useState(false);
-
-  const typewriterQueue = useRef([]);
   const [displayedOutput, setDisplayedOutput] = useState("");
 
   const runFlow = async () => {
@@ -1000,17 +1265,6 @@ function IOSection() {
 
   const reset = () => {
     setPhase("idle"); setScanfValue(""); setVariable(null); setDisplayedOutput("");
-  };
-
-  const speakExplain = () => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const text = `Here is how printf and scanf work. scanf reads input from the user and stores it at a memory address using the ampersand operator. The value is stored in the variable. Then printf takes the format string and substitutes the format specifier with the variable's value, printing the result to the terminal.`;
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.rate = 0.85;
-    window.speechSynthesis.speak(utt);
-    setSpeak(true);
-    utt.onend = () => setSpeak(false);
   };
 
   const phaseColors = { idle: T.muted, scanning: T.neon2, printing: T.neon, done: "#C3E88D" };
@@ -1098,14 +1352,13 @@ function IOSection() {
             </div>
           </GlassCard>
 
-          <motion.button whileTap={{ scale: 0.95 }} onClick={speakExplain}
-            style={{
-              fontFamily: T.mono, fontSize: 9, letterSpacing: 2, fontWeight: 700,
-              color: speak ? "#000" : T.neon4, background: speak ? T.neon4 : "transparent",
-              border: `1px solid ${speak ? T.neon4 : T.dim}`, borderRadius: 7, padding: "12px 20px", cursor: "pointer",
-            }}>
-            {speak ? "🔊 EXPLAINING…" : "🔊 EXPLAIN printf & scanf"}
-          </motion.button>
+          <VoiceButton
+            id="io-section"
+            label="EXPLAIN printf & scanf (DEEP)"
+            text={getScript("io", "deep")}
+            mode="deep"
+            voice={voice}
+          />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -1187,9 +1440,9 @@ function IOSection() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 4: FORMAT SPECIFIER VISUALIZER (unchanged)
+// SECTION 4: FORMAT SPECIFIERS
 // ─────────────────────────────────────────────────────────────────────────────
-function FormatSpecSection() {
+function FormatSpecSection({ voice }) {
   const [selected, setSelected] = useState(FORMAT_SPECIFIERS[0]);
   const [mismatchDemo, setMismatchDemo] = useState(false);
   const [glitching, setGlitching] = useState(false);
@@ -1228,7 +1481,7 @@ function FormatSpecSection() {
             ))}
           </div>
 
-          <GlassCard style={{ padding: 20 }} hover={false}>
+          <GlassCard style={{ padding: 20, marginBottom: 16 }} hover={false}>
             <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 3, color: T.neon3, marginBottom: 12 }}>⚠ TYPE MISMATCH DEMO</div>
             <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.8, marginBottom: 14 }}>
               What happens when you use <span style={{ color: T.neon4 }}>%d</span> with a <span style={{ color: "#FF6FD8" }}>float</span>?
@@ -1237,11 +1490,20 @@ function FormatSpecSection() {
               float x = 3.14f;<br />
               printf(<span style={{ color: T.neon3 }}>"%d"</span>, x);  // ← wrong!
             </div>
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-              onClick={triggerMismatch}
-              style={{ fontFamily: T.display, fontWeight: 700, fontSize: 10, letterSpacing: 3, color: "#000", background: T.neon3, border: "none", borderRadius: 7, padding: "12px 24px", cursor: "pointer" }}>
-              TRIGGER MISMATCH
-            </motion.button>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
+                onClick={triggerMismatch}
+                style={{ fontFamily: T.display, fontWeight: 700, fontSize: 10, letterSpacing: 3, color: "#000", background: T.neon3, border: "none", borderRadius: 7, padding: "12px 24px", cursor: "pointer" }}>
+                TRIGGER MISMATCH
+              </motion.button>
+              <VoiceButton
+                id="formatspec-section"
+                label="EXPLAIN FORMAT SPECS"
+                text={getScript("formatspec", "deep")}
+                mode="deep"
+                voice={voice}
+              />
+            </div>
           </GlassCard>
         </div>
 
@@ -1317,7 +1579,7 @@ function FormatSpecSection() {
               </div>
             </div>
             <div style={{ fontFamily: T.mono, fontSize: 12, color: T.text, lineHeight: 1.8 }}>
-              <span style={{ color: T.neon4 }}>&amp;</span> is the "address-of" operator. scanf needs to <em>write</em> to your variable — so it needs to know <em>where</em> in memory it lives. Without &amp;, you pass a copy of the value, not a pointer to it.
+              <span style={{ color: T.neon4 }}>&amp;</span> is the "address-of" operator. scanf needs to <em>write</em> to your variable — so it needs to know <em>where</em> in memory it lives.
             </div>
           </GlassCard>
         </div>
@@ -1327,88 +1589,24 @@ function FormatSpecSection() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SECTION 5: STEP EXECUTION ENGINE (unchanged)
+// SECTION 5: STEP EXECUTION
 // ─────────────────────────────────────────────────────────────────────────────
 const STEP_PROGRAM = [
-  {
-    line: "#include <stdio.h>",
-    type: "preprocessor",
-    desc: "Preprocessor directive. Before compilation, cpp replaces this with the entire contents of stdio.h — giving us printf and scanf.",
-    memory: {},
-    output: "",
-    color: T.accent,
-  },
-  {
-    line: "int main() {",
-    type: "entry",
-    desc: "Entry point. The OS calls main() first. 'int' means it returns an exit code. The '{' opens the function's scope — variables declared here live on the stack.",
-    memory: {},
-    output: "",
-    color: T.neon2,
-  },
-  {
-    line: "    int score = 0;",
-    type: "declare",
-    desc: "Allocates 4 bytes on the stack for 'score'. Initializes to 0. The address might be 0xFF10. Memory now holds: 0xFF10 → 0",
-    memory: { score: 0 },
-    output: "",
-    color: T.neon4,
-  },
-  {
-    line: "    float gpa = 3.8f;",
-    type: "declare",
-    desc: "Allocates 4 bytes for a float. The 'f' suffix marks this as float literal (not double). IEEE 754 representation: 0x40733333. Memory now holds: 0xFF14 → 3.8",
-    memory: { score: 0, gpa: 3.8 },
-    output: "",
-    color: "#FF6FD8",
-  },
-  {
-    line: '    char grade = \'A\';',
-    type: "declare",
-    desc: "Allocates 1 byte for char. 'A' is ASCII code 65. Memory holds: 0xFF18 → 65. char is literally a small integer — 'A' + 1 = 'B' in C.",
-    memory: { score: 0, gpa: 3.8, grade: "'A'" },
-    output: "",
-    color: T.neon,
-  },
-  {
-    line: "    score = 95;",
-    type: "assign",
-    desc: "Assignment. Writes integer 95 into the 4 bytes at score's address (0xFF10). The old value (0) is overwritten. Memory: 0xFF10 → 95",
-    memory: { score: 95, gpa: 3.8, grade: "'A'" },
-    output: "",
-    color: T.neon4,
-  },
-  {
-    line: '    printf("Score: %d, GPA: %.1f, Grade: %c\\n", score, gpa, grade);',
-    type: "output",
-    desc: "printf reads the format string. %d → substitutes score (95). %.1f → formats gpa with 1 decimal (3.8). %c → converts grade's ASCII value to character 'A'. \\n adds a newline.",
-    memory: { score: 95, gpa: 3.8, grade: "'A'" },
-    output: "Score: 95, GPA: 3.8, Grade: A\n",
-    color: T.neon,
-  },
-  {
-    line: "    return 0;",
-    type: "return",
-    desc: "Exits main() and returns 0 to the OS. Exit code 0 = success. The stack frame is destroyed — score, gpa, grade are all gone from memory. OS reclaims the stack space.",
-    memory: { score: 95, gpa: 3.8, grade: "'A'" },
-    output: "Score: 95, GPA: 3.8, Grade: A\n",
-    color: T.neon3,
-  },
-  {
-    line: "}",
-    type: "close",
-    desc: "Closing brace. End of main(). All local variables go out of scope. The stack pointer moves back. Memory 0xFF10–0xFF18 is reclaimed for future use.",
-    memory: {},
-    output: "Score: 95, GPA: 3.8, Grade: A\n",
-    color: T.neon2,
-  },
+  { line: "#include <stdio.h>", type: "preprocessor", desc: "Preprocessor directive. Before compilation, cpp replaces this with the entire contents of stdio.h — giving us printf and scanf.", memory: {}, output: "", color: T.accent },
+  { line: "int main() {", type: "entry", desc: "Entry point. The OS calls main() first. 'int' means it returns an exit code. The '{' opens the function's scope — variables declared here live on the stack.", memory: {}, output: "", color: T.neon2 },
+  { line: "    int score = 0;", type: "declare", desc: "Allocates 4 bytes on the stack for 'score'. Initializes to 0. The address might be 0xFF10. Memory now holds: 0xFF10 → 0", memory: { score: 0 }, output: "", color: T.neon4 },
+  { line: "    float gpa = 3.8f;", type: "declare", desc: "Allocates 4 bytes for a float. The 'f' suffix marks this as float literal (not double). IEEE 754 representation: 0x40733333. Memory now holds: 0xFF14 → 3.8", memory: { score: 0, gpa: 3.8 }, output: "", color: "#FF6FD8" },
+  { line: "    char grade = 'A';", type: "declare", desc: "Allocates 1 byte for char. 'A' is ASCII code 65. Memory holds: 0xFF18 → 65. char is literally a small integer — 'A' + 1 = 'B' in C.", memory: { score: 0, gpa: 3.8, grade: "'A'" }, output: "", color: T.neon },
+  { line: "    score = 95;", type: "assign", desc: "Assignment. Writes integer 95 into the 4 bytes at score's address (0xFF10). The old value (0) is overwritten. Memory: 0xFF10 → 95", memory: { score: 95, gpa: 3.8, grade: "'A'" }, output: "", color: T.neon4 },
+  { line: '    printf("Score: %d, GPA: %.1f, Grade: %c\\n", score, gpa, grade);', type: "output", desc: "printf reads the format string. %d → substitutes score (95). %.1f → formats gpa with 1 decimal (3.8). %c → converts grade's ASCII value to character 'A'. \\n adds a newline.", memory: { score: 95, gpa: 3.8, grade: "'A'" }, output: "Score: 95, GPA: 3.8, Grade: A\n", color: T.neon },
+  { line: "    return 0;", type: "return", desc: "Exits main() and returns 0 to the OS. Exit code 0 = success. The stack frame is destroyed — score, gpa, grade are all gone from memory. OS reclaims the stack space.", memory: { score: 95, gpa: 3.8, grade: "'A'" }, output: "Score: 95, GPA: 3.8, Grade: A\n", color: T.neon3 },
+  { line: "}", type: "close", desc: "Closing brace. End of main(). All local variables go out of scope. The stack pointer moves back. Memory 0xFF10–0xFF18 is reclaimed for future use.", memory: {}, output: "Score: 95, GPA: 3.8, Grade: A\n", color: T.neon2 },
 ];
 
-function StepExecutionSection() {
+function StepExecutionSection({ voice }) {
   const [step, setStep] = useState(-1);
   const [playing, setPlaying] = useState(false);
   const playRef = useRef(null);
-  const [speak, setSpeak] = useState(false);
 
   const current = step >= 0 ? STEP_PROGRAM[step] : null;
 
@@ -1427,16 +1625,6 @@ function StepExecutionSection() {
     }
     return () => clearInterval(playRef.current);
   }, [playing]);
-
-  const speakStep = () => {
-    if (!current || !window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const utt = new SpeechSynthesisUtterance(current.desc);
-    utt.rate = 0.85;
-    window.speechSynthesis.speak(utt);
-    setSpeak(true);
-    utt.onend = () => setSpeak(false);
-  };
 
   const memEntries = current ? Object.entries(current.memory) : [];
   const memColors = { score: T.neon4, gpa: "#FF6FD8", grade: T.neon };
@@ -1485,19 +1673,18 @@ function StepExecutionSection() {
             </div>
             <AnimatePresence mode="wait">
               <motion.div key={step} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.22 }}>
-                <div style={{ fontFamily: T.mono, fontSize: 12, color: T.text, lineHeight: 1.85 }}>
+                <div style={{ fontFamily: T.mono, fontSize: 12, color: T.text, lineHeight: 1.85, marginBottom: 12 }}>
                   {current?.desc || "Click a line or use the controls below to step through the program."}
                 </div>
               </motion.div>
             </AnimatePresence>
             {current && (
-              <motion.button whileTap={{ scale: 0.95 }} onClick={speakStep} style={{
-                marginTop: 12, fontFamily: T.mono, fontSize: 8, letterSpacing: 2,
-                color: speak ? "#000" : T.neon4, background: speak ? T.neon4 : "transparent",
-                border: `1px solid ${speak ? T.neon4 : T.dim}`, borderRadius: 5, padding: "6px 14px", cursor: "pointer",
-              }}>
-                {speak ? "🔊 …" : "🔊 EXPLAIN"}
-              </motion.button>
+              <VoiceButton
+                id={`step-${step}`}
+                label="EXPLAIN THIS LINE"
+                text={`Line ${step + 1}: ${current.line}. ${current.desc}`}
+                voice={voice}
+              />
             )}
           </GlassCard>
 
@@ -1544,7 +1731,7 @@ function StepExecutionSection() {
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 24 }}>
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, marginTop: 24, flexWrap: "wrap" }}>
         <motion.button whileTap={{ scale: 0.95 }} onClick={() => { setPlaying(false); goTo(-1); }}
           style={{ fontFamily: T.mono, fontSize: 10, letterSpacing: 2, color: T.muted, padding: "10px 18px", background: "transparent", border: `1px solid ${T.dim}`, borderRadius: 7, cursor: "pointer" }}>
           ⏮ RESET
@@ -1571,33 +1758,27 @@ function StepExecutionSection() {
           style={{ fontFamily: T.display, fontWeight: 700, fontSize: 10, letterSpacing: 2, color: step >= STEP_PROGRAM.length - 1 ? T.muted : T.neon, padding: "10px 26px", background: "transparent", border: `1px solid ${step >= STEP_PROGRAM.length - 1 ? T.dim : T.border}`, borderRadius: 7, cursor: step >= STEP_PROGRAM.length - 1 ? "not-allowed" : "pointer" }}>
           NEXT →
         </motion.button>
+
+        <VoiceButton
+          id="stepexec-full"
+          label="NARRATE FULL PROGRAM"
+          text={getScript("stepexec", "deep")}
+          mode="deep"
+          voice={voice}
+        />
       </div>
     </Section>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DEEP UNDERSTANDING PANEL (LEFT SIDEBAR after interchange)
+// DEEP UNDERSTANDING PANEL (LEFT SIDEBAR) — reduced to 324px (-10%)
 // ─────────────────────────────────────────────────────────────────────────────
-function DeepUnderstandingPanel({ activeSection }) {
+function DeepUnderstandingPanel({ activeSection, voice }) {
   const [expanded, setExpanded] = useState(null);
-  const [speakId, setSpeakId] = useState(null);
   const [mode, setMode] = useState("beginner");
 
   const insights = DEEP_INSIGHTS_BY_SECTION[activeSection] || DEEP_INSIGHTS_BY_SECTION["hero2"];
-
-  const speakInsight = (ins) => {
-    if (!window.speechSynthesis) return;
-    window.speechSynthesis.cancel();
-    const text = mode === "beginner"
-      ? `${ins.title}. ${ins.body}`
-      : `Deep explanation: ${ins.title}. ${ins.body} This is a fundamental concept in how C manages memory at the hardware level.`;
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.rate = mode === "beginner" ? 0.9 : 0.85;
-    window.speechSynthesis.speak(utt);
-    setSpeakId(ins.title);
-    utt.onend = () => setSpeakId(null);
-  };
 
   const mentalModels = {
     hero2: [
@@ -1628,29 +1809,42 @@ function DeepUnderstandingPanel({ activeSection }) {
 
   const currentModels = mentalModels[activeSection] || mentalModels["hero2"];
 
+  // Section voice button config
+  const sectionVoiceMap = {
+    hero2: { id: "sidebar-hero2", text: getScript("hero2", mode), label: "NARRATE OVERVIEW" },
+    datatypes: { id: "sidebar-datatypes", text: getScript("datatype_int", mode), label: "NARRATE DATA TYPES" },
+    variables: { id: "sidebar-variables", text: getScript("variables", mode), label: "NARRATE VARIABLES" },
+    io: { id: "sidebar-io", text: getScript("io", mode), label: "NARRATE I/O" },
+    formatspec: { id: "sidebar-formatspec", text: getScript("formatspec", mode), label: "NARRATE FORMAT SPECS" },
+    stepexec: { id: "sidebar-stepexec", text: getScript("stepexec", mode), label: "NARRATE EXECUTION" },
+  };
+  const sv = sectionVoiceMap[activeSection] || sectionVoiceMap["hero2"];
+
   return (
     <aside className="sidebar-left" style={{
-      width: 360, minWidth: 360,
+      width: 324, minWidth: 324,  /* ← 360 × 0.9 = 324 (–10%) */
       background: `linear-gradient(180deg, ${T.bg1} 0%, ${T.bg} 100%)`,
       borderRight: `1px solid ${T.dim}`,
-      padding: "28px 16px",
+      padding: "24px 14px",
       display: "flex", flexDirection: "column", gap: 0,
       overflowY: "auto", overflowX: "hidden",
       position: "sticky", top: 0, height: "100vh", flexShrink: 0,
     }}>
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontFamily: T.mono, fontSize: 11, letterSpacing: 5, color: T.neon, fontWeight: 700, marginBottom: 6 }}>DEEP UNDERSTANDING</div>
-        <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, marginBottom: 10, fontWeight: 600 }}>Updates as you explore</div>
+      {/* Header */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontFamily: T.mono, fontSize: 10, letterSpacing: 4, color: T.neon, fontWeight: 700, marginBottom: 4 }}>DEEP UNDERSTANDING</div>
+        <div style={{ fontFamily: T.mono, fontSize: 10, color: T.text, marginBottom: 8, fontWeight: 600 }}>Updates as you explore</div>
         <div style={{ height: 1, background: `linear-gradient(90deg, ${T.neon}35, transparent)` }} />
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
+      {/* Mode switcher */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
         {["beginner", "deep"].map(m => (
           <motion.button key={m} whileTap={{ scale: 0.95 }}
             onClick={() => setMode(m)}
             style={{
-              flex: 1, fontFamily: T.mono, fontSize: 10, letterSpacing: 2, fontWeight: 700,
-              color: mode === m ? "#000" : T.text, padding: "7px 0",
+              flex: 1, fontFamily: T.mono, fontSize: 9, letterSpacing: 1, fontWeight: 700,
+              color: mode === m ? "#000" : T.text, padding: "6px 0",
               background: mode === m ? T.neon2 : "transparent",
               border: `1px solid ${mode === m ? T.neon2 : T.dim}`, borderRadius: 5, cursor: "pointer",
             }}>
@@ -1659,45 +1853,61 @@ function DeepUnderstandingPanel({ activeSection }) {
         ))}
       </div>
 
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon, marginBottom: 10 }}>⚡ KEY TAKEAWAYS</div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Section narrate button */}
+      <div style={{ marginBottom: 14 }}>
+        <VoiceButton
+          id={sv.id}
+          label={sv.label}
+          text={sv.text}
+          mode={mode}
+          voice={voice}
+        />
+      </div>
+
+      {/* Key Takeaways */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon, marginBottom: 8 }}>⚡ KEY TAKEAWAYS</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <AnimatePresence mode="wait">
             {insights.map((ins, i) => {
               const isExp = expanded === i;
               return (
                 <motion.div key={`${activeSection}-${i}`}
-                  initial={{ opacity: 0, x: 18 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 18 }}
-                  transition={{ delay: i * 0.06 }}
-                  whileHover={{ x: -3 }}
+                  initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 14 }}
+                  transition={{ delay: i * 0.05 }}
+                  whileHover={{ x: -2 }}
                   onClick={() => setExpanded(isExp ? null : i)}
                   style={{
                     background: isExp ? `${ins.color}0E` : "rgba(255,255,255,0.015)",
                     border: `1px solid ${isExp ? `${ins.color}50` : T.dim}`,
-                    borderRadius: 10, padding: "12px 14px", cursor: "pointer",
-                    transition: "border-color 0.2s, background 0.2s",
+                    borderRadius: 10, padding: "10px 12px", cursor: "pointer",
                   }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{ins.icon}</span>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                    <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{ins.icon}</span>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ fontFamily: T.display, fontWeight: 700, fontSize: 13, color: T.text }}>{ins.title}</div>
-                        <motion.div animate={{ rotate: isExp ? 90 : 0 }} style={{ color: T.text, fontSize: 14, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>›</motion.div>
+                        <div style={{ fontFamily: T.display, fontWeight: 700, fontSize: 12, color: T.text }}>{ins.title}</div>
+                        <motion.div animate={{ rotate: isExp ? 90 : 0 }} style={{ color: T.text, fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 6 }}>›</motion.div>
                       </div>
                       <AnimatePresence>
                         {isExp && (
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.22 }} style={{ overflow: "hidden" }}>
-                            <div style={{ fontFamily: T.mono, fontSize: 12, color: T.text, lineHeight: 1.7, marginTop: 8 }}>{ins.body}</div>
-                            <motion.button whileTap={{ scale: 0.95 }} onClick={e => { e.stopPropagation(); speakInsight(ins); }}
-                              style={{ marginTop: 10, fontFamily: T.mono, fontSize: 8, letterSpacing: 2, color: speakId === ins.title ? "#000" : ins.color, background: speakId === ins.title ? ins.color : "transparent", border: `1px solid ${ins.color}50`, borderRadius: 4, padding: "4px 10px", cursor: "pointer" }}>
-                              {speakId === ins.title ? "🔊 …" : "🔊 EXPLAIN"}
-                            </motion.button>
+                            <div style={{ fontFamily: T.mono, fontSize: 11, color: T.text, lineHeight: 1.7, marginTop: 6 }}>{ins.body}</div>
+                            <div style={{ marginTop: 8 }}>
+                              <VoiceButton
+                                id={`ins-${activeSection}-${i}`}
+                                label="EXPLAIN"
+                                text={`${ins.title}. ${ins.body}`}
+                                mode={mode}
+                                voice={voice}
+                              />
+                            </div>
                           </motion.div>
                         )}
                       </AnimatePresence>
                       {!isExp && (
                         <div style={{ fontFamily: T.mono, fontSize: 9, color: T.text, lineHeight: 1.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {ins.body.slice(0, 52)}…
+                          {ins.body.slice(0, 48)}…
                         </div>
                       )}
                     </div>
@@ -1709,36 +1919,38 @@ function DeepUnderstandingPanel({ activeSection }) {
         </div>
       </div>
 
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon2, marginBottom: 10 }}>🧠 MENTAL MODELS</div>
+      {/* Mental Models */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon2, marginBottom: 8 }}>🧠 MENTAL MODELS</div>
         <AnimatePresence mode="wait">
-          <motion.div key={activeSection} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
+          <motion.div key={activeSection} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
             {currentModels.map((m, i) => (
-              <div key={i} style={{ background: "rgba(0,212,255,0.05)", border: `1px solid ${T.neon2}20`, borderRadius: 9, padding: "12px 14px", marginBottom: 10 }}>
-                <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
-                  <span style={{ fontSize: 15 }}>{m.icon}</span>
-                  <div style={{ fontFamily: T.mono, fontSize: 12, fontWeight: 700, color: T.neon2, lineHeight: 1.5 }}>{m.model}</div>
+              <div key={i} style={{ background: "rgba(0,212,255,0.05)", border: `1px solid ${T.neon2}20`, borderRadius: 8, padding: "10px 12px", marginBottom: 8 }}>
+                <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+                  <span style={{ fontSize: 13 }}>{m.icon}</span>
+                  <div style={{ fontFamily: T.mono, fontSize: 11, fontWeight: 700, color: T.neon2, lineHeight: 1.4 }}>{m.model}</div>
                 </div>
-                <div style={{ fontFamily: T.mono, fontSize: 10, color: T.text, lineHeight: 1.6 }}>{m.detail}</div>
+                <div style={{ fontFamily: T.mono, fontSize: 10, color: T.text, lineHeight: 1.5 }}>{m.detail}</div>
               </div>
             ))}
           </motion.div>
         </AnimatePresence>
       </div>
 
+      {/* Common Mistakes */}
       <div>
-        <div style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.neon3, marginBottom: 10 }}>🚫 COMMON MISTAKES</div>
+        <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 4, color: T.neon3, marginBottom: 8 }}>🚫 COMMON MISTAKES</div>
         {[
           { mistake: "Using = instead of == for comparison", fix: "if (x == 5) not if (x = 5)" },
           { mistake: "Forgetting & in scanf", fix: "scanf(\"%d\", &x) not scanf(\"%d\", x)" },
           { mistake: "Integer division truncates", fix: "5/2 = 2 in C, not 2.5 — use 5.0/2" },
           { mistake: "Uninitialized variable", fix: "Always initialize: int x = 0;" },
         ].map((item, i) => (
-          <div key={i} style={{ display: "flex", gap: 10, marginBottom: 10, alignItems: "flex-start" }}>
-            <span style={{ color: T.neon3, fontSize: 11, flexShrink: 0, marginTop: 1 }}>✗</span>
+          <div key={i} style={{ display: "flex", gap: 8, marginBottom: 8, alignItems: "flex-start" }}>
+            <span style={{ color: T.neon3, fontSize: 10, flexShrink: 0, marginTop: 1 }}>✗</span>
             <div>
-              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.neon3, lineHeight: 1.5 }}>{item.mistake}</div>
-              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.neon, marginTop: 3 }}>→ {item.fix}</div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.neon3, lineHeight: 1.4 }}>{item.mistake}</div>
+              <div style={{ fontFamily: T.mono, fontSize: 9, color: T.neon, marginTop: 2 }}>→ {item.fix}</div>
             </div>
           </div>
         ))}
@@ -1748,7 +1960,7 @@ function DeepUnderstandingPanel({ activeSection }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// RIGHT SIDEBAR (NAVIGATION + PREV/NEXT BUTTONS)
+// RIGHT SIDEBAR (NAVIGATION + PREV/NEXT)
 // ─────────────────────────────────────────────────────────────────────────────
 function Sidebar({ activeSection }) {
   return (
@@ -1761,21 +1973,17 @@ function Sidebar({ activeSection }) {
       position: "sticky", top: 0, height: "100vh",
       overflow: "hidden", flexShrink: 0,
     }}>
-      {/* Header – auto height */}
       <div style={{ padding: "0 20px 20px" }}>
         <motion.div
           animate={{ textShadow: [`0 0 22px ${T.neon}70`, `0 0 32px ${T.neon}90`, `0 0 22px ${T.neon}70`] }}
           transition={{ duration: 2.5, repeat: Infinity }}
           style={{ fontFamily: T.display, fontWeight: 800, fontSize: 20, letterSpacing: 2, color: T.neon }}
-        >
-          C
-        </motion.div>
+        >C</motion.div>
         <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 5, color: T.muted, marginTop: 4 }}>LANGUAGE</div>
       </div>
 
       <div style={{ height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}35, transparent)`, marginBottom: 16 }} />
 
-      {/* Navigation – takes most of the space */}
       <nav style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
         {NAV_ITEMS.map(item => {
           const isActive = activeSection === item.id;
@@ -1803,13 +2011,12 @@ function Sidebar({ activeSection }) {
         })}
       </nav>
 
-      {/* Progress section – even smaller height (flex: 0.08) and tighter spacing */}
-      <div style={{ flex: "0.08", flexShrink: 0, padding: "12px 16px 16px", borderTop: `1px solid ${T.dim}`, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ flex: "0 0 auto", padding: "12px 16px 16px", borderTop: `1px solid ${T.dim}`, display: "flex", flexDirection: "column", gap: 8 }}>
         <div style={{ fontFamily: T.mono, fontSize: 7, letterSpacing: 3, color: T.muted }}>COURSE PROGRESS</div>
         <div style={{ height: 2, background: T.dim, borderRadius: 2, overflow: "hidden" }}>
           <motion.div style={{ height: "100%", width: "20%", background: `linear-gradient(90deg,${T.neon},${T.neon2})`, borderRadius: 2 }} />
         </div>
-        <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon, marginTop: 2, marginBottom: 8 }}>2 / 7 complete</div>
+        <div style={{ fontFamily: T.mono, fontSize: 8, color: T.neon, marginTop: 2, marginBottom: 4 }}>2 / 7 complete</div>
 
         <Link href="/c-1" passHref legacyBehavior>
           <motion.a whileHover={{ x: -4, borderColor: T.neon }} style={{
@@ -1841,10 +2048,11 @@ function Sidebar({ activeSection }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROOT PAGE — INTERCHANGED SIDEBARS (LEFT = DEEP INSIGHTS, RIGHT = NAV)
+// ROOT PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 export default function CFundamentalsPage() {
   const [activeSection, setActiveSection] = useState("hero2");
+  const voice = usePremiumVoice();
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -1875,10 +2083,9 @@ export default function CFundamentalsPage() {
         input::placeholder { color: ${T.dim}; }
         input { transition: border-color 0.2s; }
 
-        /* Responsive Layout */
         .page-layout {
           display: grid;
-          grid-template-columns: 360px 1fr 260px;
+          grid-template-columns: 324px 1fr 260px; /* 360 × 0.9 = 324 */
           height: 100vh;
           overflow: hidden;
         }
@@ -1892,49 +2099,40 @@ export default function CFundamentalsPage() {
           .sidebar-left, .sidebar-right {
             position: relative !important;
             width: 100% !important;
+            min-width: unset !important;
             height: auto !important;
             border: none !important;
             border-bottom: 1px solid ${T.dim} !important;
             padding: 20px !important;
           }
-          main {
-            order: 1;
-          }
-          .sidebar-left {
-            order: 2;
-          }
-          .sidebar-right {
-            order: 3;
-          }
+          main { order: 1; }
+          .sidebar-left { order: 2; }
+          .sidebar-right { order: 3; }
         }
         @media (max-width: 640px) {
-          .sidebar-left, .sidebar-right {
-            padding: 16px !important;
-          }
-          main > div {
-            padding: 0 16px !important;
-          }
+          .sidebar-left, .sidebar-right { padding: 16px !important; }
+          main > div { padding: 0 16px !important; }
         }
       `}</style>
 
       <div className="page-layout">
-        {/* LEFT SIDEBAR: Deep Understanding Panel */}
-        <DeepUnderstandingPanel activeSection={activeSection} />
+        {/* LEFT: Deep Understanding + Voice */}
+        <DeepUnderstandingPanel activeSection={activeSection} voice={voice} />
 
         {/* MAIN CONTENT */}
         <main style={{ overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
           <div style={{ maxWidth: "100%", padding: "0 36px" }}>
-            <Hero2 />
-            <DataTypesSection />
-            <VariablesSection />
-            <IOSection />
-            <FormatSpecSection />
-            <StepExecutionSection />
+            <Hero2 voice={voice} />
+            <DataTypesSection voice={voice} />
+            <VariablesSection voice={voice} />
+            <IOSection voice={voice} />
+            <FormatSpecSection voice={voice} />
+            <StepExecutionSection voice={voice} />
             <div style={{ height: 80 }} />
           </div>
         </main>
 
-        {/* RIGHT SIDEBAR: Navigation + Prev/Next */}
+        {/* RIGHT: Navigation */}
         <Sidebar activeSection={activeSection} />
       </div>
     </>
