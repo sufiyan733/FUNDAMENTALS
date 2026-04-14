@@ -10,6 +10,7 @@ import Link from "next/link";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars, Float, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
+import CPageLayout, { useActiveSection } from "@/comps/CPageLayout";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DESIGN TOKENS
@@ -1917,60 +1918,89 @@ function RightPanel({ activeSection }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROOT PAGE
+// ROOT PAGE — uses shared CPageLayout
 // ─────────────────────────────────────────────────────────────────────────────
 export default function C4Page() {
-  const [activeSection, setActiveSection] = useState("hero");
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => { entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }); },
-      { threshold: 0.25, rootMargin: "-10% 0px -10% 0px" }
-    );
-    NAV_ITEMS.forEach(item => { const el = document.getElementById(item.id); if (el) observer.observe(el); });
-    return () => observer.disconnect();
-  }, []);
+  const activeSection = useActiveSection(NAV_ITEMS);
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:ital,wght@0,300;0,500;0,700;1,400&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { background: ${T.bg}; color: ${T.text}; overflow-x: hidden; }
-        ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-track { background: ${T.bg}; }
-        ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 2px; }
-        input[type=range] { height: 4px; cursor: pointer; }
-        a { text-decoration: none; }
-        button { outline: none; }
-      `}</style>
-
-      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: T.bg }}>
-        <Sidebar activeSection={activeSection} />
-
-        <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
-          <div style={{ maxWidth: "100%", padding: "0 36px" }}>
-            <HeroSection />
-            <WhyFunctionsSection />
-            <FnAnatomySection />
-            <FnTypesSection />
-            <ScopeSection />
-            <RecursionSection />
-            <Arrays1DSection />
-            <Arrays2DSection />
-            <TraversalSection />
-            <ArrayProblemsSection />
-            <StringsSection />
-            <StringFunctionsSection />
-            <EngineSection />
-            <div style={{ height: 80 }} />
-          </div>
-        </main>
-
-        <RightPanel activeSection={activeSection} />
-      </div>
-
-    </>
+    <CPageLayout
+      chapterNum={4}
+      navItems={NAV_ITEMS}
+      activeSection={activeSection}
+      sectionInsights={{
+        hero: [
+          { icon: "◎", title: "CHAPTER 4", body: "Functions decompose problems. Arrays store collections. Strings are just char arrays. Together — the backbone of real C programs.", color: T.neon },
+          { icon: "🎯", title: "LEARNING GOAL", body: "Write your own functions, manipulate arrays with indices and pointers, and understand how C handles text as null-terminated char arrays.", color: T.neon2 },
+          { icon: "💡", title: "WHY THIS MATTERS", body: "Every serious program uses functions for modularity and arrays for data. Without these, you're limited to toy programs with hardcoded values.", color: T.neon4 },
+        ],
+        "why-fn": [
+          { icon: "🧩", title: "WHY FUNCTIONS", body: "Functions let you write code once and reuse it. Instead of copying 20 lines everywhere, call computeAvg(). Change it once, it updates everywhere.", color: T.neon },
+          { icon: "📐", title: "DECOMPOSITION", body: "Complex problems → small functions. readInput() → processData() → displayResults(). Each function does ONE thing well.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "God functions — one 300-line function that does everything. Impossible to test, debug, or reuse. If a function needs scrolling, split it.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Functions are contracts: given these inputs, I guarantee this output. Same input = same output = predictable, testable code.", color: T.neon4 },
+        ],
+        "fn-anatomy": [
+          { icon: "🔬", title: "FUNCTION ANATOMY", body: "return_type name(param_type param) { body; return value; } — four parts: return type, name, parameters, body.", color: T.neon },
+          { icon: "📐", title: "PASS BY VALUE", body: "Arguments are COPIED into parameters. void foo(int x) — x is a copy. Modifying x inside foo does NOT change the original.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Expecting a function to modify your variable. swap(a,b) won't work — a and b are copies! Need swap(&a, &b) with pointers.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Function call = create new stack frame → copy arguments → execute body → destroy frame → return value. Each call is isolated.", color: T.neon4 },
+          { icon: "💡", title: "DECLARATION", body: "Declare before use: int add(int, int); at the top (prototype). Define anywhere: int add(int a, int b) { return a+b; }", color: T.accent },
+        ],
+        "fn-types": [
+          { icon: "⚙️", title: "4 FUNCTION TYPES", body: "1) No args, no return (void fn). 2) Args, no return. 3) No args, returns value. 4) Args + returns value (most common).", color: T.neon },
+          { icon: "📐", title: "VOID FUNCTIONS", body: "void printMenu() — performs an action but returns nothing. void greet(char *name) — takes input but no output value.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Mixing I/O with logic: int calcArea() should NOT printf. Separate computation from display. Makes testing possible.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Pure functions (input→output, no side effects) are the ideal. They're predictable, testable, and composable.", color: T.neon4 },
+        ],
+        scope: [
+          { icon: "🔒", title: "SCOPE RULES", body: "Local: exists inside { }. Global: exists everywhere. Static local: persists between calls but is only accessible in its function.", color: T.neon },
+          { icon: "📐", title: "LIFETIME", body: "Local vars: born when function enters, die when it returns. Global: born at program start, die at program end. static: born once, dies at end.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Shadowing: int x = 5; { int x = 10; } — inner x hides outer x. Compiles fine but causes logic bugs. Avoid same-name variables.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Scope = visibility. Lifetime = duration. A variable can be alive but invisible (shadowed), or visible but about to die (end of block).", color: T.neon4 },
+        ],
+        recursion: [
+          { icon: "🔄", title: "RECURSION", body: "A function that calls itself. fact(n) = n * fact(n-1). Must have: 1) base case (stop condition), 2) recursive case (shrink input).", color: T.neon },
+          { icon: "📐", title: "BASE CASE", body: "Without a base case: infinite recursion → stack overflow → crash. fact(1) = 1 is the base case — it stops the chain.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Forgetting the base case. Or base case that's never reached (fact(n) = n * fact(n+1) — grows instead of shrinks!).", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Trust the recursion. 1) Define what the function does. 2) Assume it works for n-1. 3) Use that result for n. 4) Add base case. Done.", color: T.neon4 },
+          { icon: "💡", title: "STACK COST", body: "Each recursive call pushes a new stack frame (~100 bytes). fact(10000) = 10000 frames = possible stack overflow. Use loops for large n.", color: T.accent },
+        ],
+        "arrays-1d": [
+          { icon: "■", title: "1D ARRAYS", body: "int arr[5] = {10, 20, 30, 40, 50}; — contiguous block of 5 ints. arr[0]=10, arr[4]=50. Size fixed at compile time.", color: T.neon },
+          { icon: "📐", title: "MEMORY LAYOUT", body: "arr[i] = *(arr + i). Array name IS a pointer to first element. Elements are sizeof(type) bytes apart. arr[2] = base + 2*4 bytes.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "arr[5] on a size-5 array — OUT OF BOUNDS! Valid indices: 0 to 4. C does NO bounds checking. You'll read/write random memory.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Array = numbered mailboxes in a row. Index = mailbox number. base address + index × size = exact memory location. O(1) access.", color: T.neon4 },
+        ],
+        strings: [
+          { icon: "📝", title: "STRINGS", body: "char str[] = \"Hello\"; allocates 6 bytes: H, e, l, l, o, and \\0 (null terminator). The \\0 marks the end — CRITICAL.", color: T.neon },
+          { icon: "📐", title: "NULL TERMINATOR", body: "C strings have NO length field. strlen() counts bytes until \\0. printf(\"%s\") prints until \\0. No \\0 = reads past your buffer.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "char s[5] = \"Hello\" — NO room for \\0! Need s[6]. scanf(\"%s\", s) has no bounds check — use scanf(\"%4s\", s) to limit.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "String = char array + sentinel value (\\0). Always allocate strlen(s) + 1 bytes. The +1 is for the null terminator.", color: T.neon4 },
+          { icon: "💡", title: "STRING.H FUNCTIONS", body: "strlen = length, strcpy = copy, strcmp = compare, strcat = concatenate. Use the 'n' variants (strncpy, strncat) for safety.", color: T.accent },
+        ],
+        engine: [
+          { icon: "🚀", title: "FULL ENGINE", body: "Watch functions call into arrays, arrays pass to functions, strings get manipulated — all working together in real programs.", color: T.neon },
+          { icon: "📐", title: "ARRAYS + FUNCTIONS", body: "Passing array to function = passing pointer. void sort(int arr[], int n) — arr IS a pointer. Changes inside sort() affect the original!", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "sizeof(arr) inside a function gives pointer size (8 bytes), NOT array size. Always pass array length as a separate parameter.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Master functions + arrays + strings = ready for pointers, structs, and file I/O. These three are the prerequisite for all advanced C.", color: T.neon4 },
+        ],
+      }}
+    >
+      <HeroSection />
+      <WhyFunctionsSection />
+      <FnAnatomySection />
+      <FnTypesSection />
+      <ScopeSection />
+      <RecursionSection />
+      <Arrays1DSection />
+      <Arrays2DSection />
+      <TraversalSection />
+      <ArrayProblemsSection />
+      <StringsSection />
+      <StringFunctionsSection />
+      <EngineSection />
+      <div style={{ height: 80 }} />
+    </CPageLayout>
   );
 }

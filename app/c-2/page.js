@@ -12,6 +12,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars, Float, MeshDistortMaterial } from "@react-three/drei";
 import * as THREE from "three";
 import Link from "next/link";
+import CPageLayout, { useActiveSection } from "@/comps/CPageLayout";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DESIGN TOKENS
@@ -2048,93 +2049,73 @@ function Sidebar({ activeSection }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROOT PAGE
+// ROOT PAGE — uses shared CPageLayout
 // ─────────────────────────────────────────────────────────────────────────────
+const C2_NAV = [
+  { id: "hero2",      label: "OVERVIEW",   num: "00", icon: "◎" },
+  { id: "datatypes",  label: "DATA TYPES", num: "01", icon: "🧊" },
+  { id: "variables",  label: "VARIABLES",  num: "02", icon: "📦" },
+  { id: "io",         label: "I/O ENGINE", num: "03", icon: "⌨️" },
+  { id: "formatspec", label: "FORMAT %",   num: "04", icon: "🔣" },
+  { id: "stepexec",   label: "EXECUTION",  num: "05", icon: "▶" },
+];
+
 export default function CFundamentalsPage() {
-  const [activeSection, setActiveSection] = useState("hero2");
+  const activeSection = useActiveSection(C2_NAV);
   const voice = usePremiumVoice();
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => { entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }); },
-      { threshold: 0.3 }
-    );
-    NAV_ITEMS.forEach(item => {
-      const el = document.getElementById(item.id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, []);
-
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:ital,wght@0,300;0,500;0,700;1,400&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { background: ${T.bg}; color: ${T.text}; overflow-x: hidden; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: ${T.bg}; }
-        ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 4px; }
-        @keyframes scrollUp {
-          from { transform: translateY(0); }
-          to   { transform: translateY(-50%); }
-        }
-        input::placeholder { color: ${T.dim}; }
-        input { transition: border-color 0.2s; }
-
-        .page-layout {
-          display: grid;
-          grid-template-columns: 324px 1fr 260px; /* 360 × 0.9 = 324 */
-          height: 100vh;
-          overflow: hidden;
-        }
-        @media (max-width: 1100px) {
-          .page-layout {
-            grid-template-columns: 1fr;
-            grid-template-rows: auto auto auto;
-            overflow-y: auto;
-            height: auto;
-          }
-          .sidebar-left, .sidebar-right {
-            position: relative !important;
-            width: 100% !important;
-            min-width: unset !important;
-            height: auto !important;
-            border: none !important;
-            border-bottom: 1px solid ${T.dim} !important;
-            padding: 20px !important;
-          }
-          main { order: 1; }
-          .sidebar-left { order: 2; }
-          .sidebar-right { order: 3; }
-        }
-        @media (max-width: 640px) {
-          .sidebar-left, .sidebar-right { padding: 16px !important; }
-          main > div { padding: 0 16px !important; }
-        }
-      `}</style>
-
-      <div className="page-layout">
-        {/* LEFT: Deep Understanding + Voice */}
-        <DeepUnderstandingPanel activeSection={activeSection} voice={voice} />
-
-        {/* MAIN CONTENT */}
-        <main style={{ overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
-          <div style={{ maxWidth: "100%", padding: "0 36px" }}>
-            <Hero2 voice={voice} />
-            <DataTypesSection voice={voice} />
-            <VariablesSection voice={voice} />
-            <IOSection voice={voice} />
-            <FormatSpecSection voice={voice} />
-            <StepExecutionSection voice={voice} />
-            <div style={{ height: 80 }} />
-          </div>
-        </main>
-
-        {/* RIGHT: Navigation */}
-        <Sidebar activeSection={activeSection} />
-      </div>
-    </>
+    <CPageLayout
+      chapterNum={2}
+      navItems={C2_NAV}
+      activeSection={activeSection}
+      sectionInsights={{
+        hero2: [
+          { icon: "◎", title: "OVERVIEW", body: "Chapter 2: How data lives in memory. Data types, variables, and I/O — the building blocks of every program.", color: T.neon },
+          { icon: "🎯", title: "LEARNING GOAL", body: "Understand how the CPU stores integers vs floats vs characters, why types have different sizes, and how printf/scanf work.", color: T.neon2 },
+          { icon: "💡", title: "KEY INSIGHT", body: "Everything in a computer is just bytes. Data types tell the compiler HOW to interpret those bytes — as numbers, letters, or addresses.", color: T.neon4 },
+        ],
+        datatypes: [
+          { icon: "🧊", title: "DATA TYPES", body: "int (4B, whole numbers), float (4B, decimals), double (8B, precise decimals), char (1B, single character). Size = memory cost.", color: T.neon },
+          { icon: "📐", title: "SIZE MATTERS", body: "int = 4 bytes = 32 bits = range -2B to +2B. char = 1 byte = 256 values. Choosing wrong type wastes memory or causes overflow.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "int x = 7/2 gives 3, not 3.5! Integer division truncates. Use float x = 7.0/2.0 for decimal results. This is the #1 beginner bug.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Types are labels on boxes. A 4-byte box labeled 'int' holds a whole number. Same 4 bytes labeled 'float' holds a decimal. Same bits, different meaning.", color: T.neon4 },
+          { icon: "🌍", title: "REAL-WORLD", body: "Game engines use float for positions (fast, approximate). Banking uses double (precise). Embedded systems use char/short to save precious RAM.", color: T.accent },
+        ],
+        variables: [
+          { icon: "📦", title: "VARIABLES", body: "A variable is a named memory location. 'int x = 5;' tells the compiler: allocate 4 bytes, name them 'x', store the value 5.", color: T.neon },
+          { icon: "📍", title: "STACK ALLOCATION", body: "Local variables live on the stack. Created when function starts, destroyed when function returns. Automatic lifetime management.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Using uninitialized variables: 'int x; printf(\"%d\",x);' prints GARBAGE — whatever was in that memory before. Always initialize!", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Variables are sticky notes on RAM addresses. The name 'x' is for YOU. The compiler converts it to an address like 0x7FFE1234.", color: T.neon4 },
+        ],
+        io: [
+          { icon: "⌨️", title: "I/O ENGINE", body: "printf() writes formatted text to screen (stdout). scanf() reads formatted input from keyboard (stdin). Both use format strings.", color: T.neon },
+          { icon: "📋", title: "FORMAT STRINGS", body: "printf(\"x = %d\\n\", x); — %d is a placeholder. The compiler inserts the value of x where %d appears. \\n = newline character.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "scanf(\"%d\", x) — WRONG! Must be scanf(\"%d\", &x). scanf needs the ADDRESS of x (&x) to write into it. Missing & = crash.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "printf = 'print formatted'. scanf = 'scan formatted'. They're mirrors: printf sends data OUT, scanf brings data IN. Both use the same format codes.", color: T.neon4 },
+          { icon: "💡", title: "BUFFER CONCEPT", body: "Input is buffered — user types, presses Enter, THEN scanf reads. The \\n stays in buffer! This causes bugs with char input after int input.", color: T.accent },
+        ],
+        formatspec: [
+          { icon: "🔣", title: "FORMAT SPECIFIERS", body: "%d = int, %f = float, %c = char, %s = string, %x = hex, %o = octal, %p = pointer address, %ld = long, %lf = double.", color: T.neon },
+          { icon: "🎨", title: "WIDTH & PRECISION", body: "%5d = pad to 5 chars. %-5d = left-align. %.2f = 2 decimal places. %05d = zero-pad. Master these for formatted output.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Using %d for float → prints garbage. Using %f for int → prints garbage. The format MUST match the variable type exactly.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Format specifiers are instructions: 'interpret these bytes as an integer (%d)' or 'as a float (%f)'. Wrong instruction → wrong interpretation.", color: T.neon4 },
+        ],
+        stepexec: [
+          { icon: "▶", title: "STEP EXECUTION", body: "Code executes top-to-bottom, one statement at a time. Each line either reads memory, writes memory, or performs arithmetic.", color: T.neon },
+          { icon: "🔬", title: "WATCH MEMORY", body: "The execution engine shows you exactly what happens: variable created → value assigned → expression evaluated → result stored.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Assuming all lines run simultaneously. C is sequential: line 1 FULLY completes before line 2 starts. Order matters critically.", color: T.neon3 },
+          { icon: "💡", title: "DEBUGGING TIP", body: "Add printf after every line to see values. printf(\"x=%d\\n\", x); — this is the simplest debugger. Remove prints when done.", color: T.neon4 },
+        ],
+      }}
+    >
+      <Hero2 voice={voice} />
+      <DataTypesSection voice={voice} />
+      <VariablesSection voice={voice} />
+      <IOSection voice={voice} />
+      <FormatSpecSection voice={voice} />
+      <StepExecutionSection voice={voice} />
+      <div style={{ height: 80 }} />
+    </CPageLayout>
   );
 }

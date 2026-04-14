@@ -5,26 +5,31 @@ import {
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import CPageLayout, { useActiveSection } from "@/comps/CPageLayout";
+import dynamic from "next/dynamic";
+import { useVoiceEngine, VoiceButton } from "@/comps/VoiceEngine";
+
+const Hero3D = dynamic(() => import("@/comps/Hero3D"), { ssr: false });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DESIGN TOKENS — darker, more electric than C4
+// DESIGN TOKENS — unified green neon theme
 // ─────────────────────────────────────────────────────────────────────────────
 const T = {
-  bg:      "#020509",
-  bg1:     "#050A12",
-  bg2:     "#08111F",
-  glass:   "rgba(5,12,25,0.82)",
-  border:  "rgba(255,100,0,0.10)",
-  neon:    "#FF6400",
-  neon2:   "#00E5FF",
-  neon3:   "#FF2D6B",
-  neon4:   "#B4FF00",
-  accent:  "#A855F7",
-  text:    "#E8ECF4",
-  muted:   "#3A506B",
-  dim:     "#111D2A",
-  mono:    "'Fira Code', monospace",
-  display: "'Bebas Neue', sans-serif",
+  bg:      "#030810",
+  bg1:     "#060D1C",
+  bg2:     "#0A1428",
+  glass:   "rgba(10,20,40,0.75)",
+  border:  "rgba(0,255,163,0.10)",
+  neon:    "#00FFA3",
+  neon2:   "#00D4FF",
+  neon3:   "#FF6B6B",
+  neon4:   "#FFB347",
+  accent:  "#BD69FF",
+  text:    "#DDE8F8",
+  muted:   "#3E5A7A",
+  dim:     "#1A2A3A",
+  mono:    "'JetBrains Mono', monospace",
+  display: "'Syne', sans-serif",
 };
 
 const NAV_ITEMS = [
@@ -1577,15 +1582,19 @@ function HeroSection5() {
       minHeight: "100vh", display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden",
       background: `
-        radial-gradient(ellipse 80% 50% at 50% -5%, rgba(255,100,0,0.09) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 35% at 85% 75%, rgba(168,85,247,0.07) 0%, transparent 55%),
-        radial-gradient(ellipse 35% 25% at 10% 85%, rgba(0,229,255,0.05) 0%, transparent 55%),
+        radial-gradient(ellipse 90% 60% at 50% -10%, rgba(0,255,163,0.07) 0%, transparent 65%),
+        radial-gradient(ellipse 50% 35% at 85% 75%, rgba(0,212,255,0.05) 0%, transparent 55%),
+        radial-gradient(ellipse 35% 25% at 10% 85%, rgba(189,105,255,0.05) 0%, transparent 55%),
         ${T.bg}
       `,
     }}>
+      <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+        <Hero3D />
+      </div>
       <div style={{
         position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-        backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,100,0,0.012) 2px, rgba(255,100,0,0.012) 4px)",
+        backgroundImage: `linear-gradient(rgba(0,255,163,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,163,0.018) 1px, transparent 1px)`,
+        backgroundSize: "52px 52px",
       }} />
 
       <div style={{ position: "relative", zIndex: 10, textAlign: "center", maxWidth: 920, padding: "0 24px" }}>
@@ -1593,7 +1602,7 @@ function HeroSection5() {
           style={{
             display: "inline-flex", alignItems: "center", gap: 10,
             fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon,
-            border: `1px solid ${T.border}`, background: "rgba(255,100,0,0.05)",
+            border: `1px solid ${T.border}`, background: "rgba(0,255,163,0.04)",
             padding: "7px 22px", borderRadius: 100, marginBottom: 30,
           }}>
           <motion.span animate={{ opacity: [1, 0.1, 1], scale: [1, 0.6, 1] }} transition={{ duration: 1.1, repeat: Infinity }}
@@ -1604,9 +1613,9 @@ function HeroSection5() {
         <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
           style={{
-            fontFamily: T.display, fontWeight: 400,
+            fontFamily: T.display, fontWeight: 800,
             fontSize: "clamp(50px, 9vw, 108px)",
-            lineHeight: 0.9, letterSpacing: 6, color: T.text, marginBottom: 22,
+            lineHeight: 0.9, letterSpacing: -4, color: T.text, marginBottom: 22,
           }}>
           C
           <br />
@@ -1883,60 +1892,79 @@ function RightPanel5({ activeSection }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROOT PAGE
+// ROOT PAGE — uses shared CPageLayout
 // ─────────────────────────────────────────────────────────────────────────────
 export default function C5Page() {
-  const [activeSection, setActiveSection] = useState("hero");
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => {
-        entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); });
-      },
-      { threshold: 0.2, rootMargin: "-10% 0px -10% 0px" }
-    );
-    NAV_ITEMS.forEach(item => {
-      const el = document.getElementById(item.id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, []);
+  const activeSection = useActiveSection(NAV_ITEMS);
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fira+Code:wght@300;400;500;600;700&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { background: ${T.bg}; color: ${T.text}; overflow-x: hidden; }
-        ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-track { background: ${T.bg}; }
-        ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 2px; }
-        input[type=range] { height: 4px; cursor: pointer; }
-        a { text-decoration: none; }
-        button { outline: none; }
-      `}</style>
-
-      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: T.bg }}>
-        <Sidebar5 activeSection={activeSection} />
-
-        <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
-          <div style={{ maxWidth: "100%", padding: "0 38px" }}>
-            <HeroSection5 />
-            <PointersSection />
-            <AddrDerefSection />
-            <PtrArraysSection />
-            <StructsSection />
-            <UnionsSection />
-            <PreprocessorSection />
-            <DynMemSection />
-            <EngineSection5 />
-            <div style={{ height: 80 }} />
-          </div>
-        </main>
-
-        <RightPanel5 activeSection={activeSection} />
-      </div>
-    </>
+    <CPageLayout
+      chapterNum={5}
+      navItems={NAV_ITEMS}
+      activeSection={activeSection}
+      sectionInsights={{
+        hero: [
+          { icon: "◈", title: "CHAPTER 5", body: "Pointers unlock the true power of C. Structs organize data. Dynamic memory gives you full control over allocation.", color: T.neon },
+          { icon: "🎯", title: "LEARNING GOAL", body: "Understand addresses, dereference, pointer arithmetic, struct layouts, union memory sharing, preprocessor macros, and heap allocation.", color: T.neon2 },
+          { icon: "💡", title: "KEY INSIGHT", body: "A pointer is just an integer that stores a memory address. That's it. All the 'magic' of pointers is just reading/writing addresses.", color: T.neon4 },
+          { icon: "🌍", title: "REAL-WORLD", body: "Every linked list, tree, graph, OS kernel, and database engine uses pointers. No pointers = no data structures = no CS.", color: T.accent },
+        ],
+        pointers: [
+          { icon: "→", title: "POINTERS", body: "int *p = &x; — p stores the address of x. *p reads the value at that address. &x gets the address of x.", color: T.neon },
+          { icon: "📐", title: "TWO OPERATIONS", body: "& (address-of): gives you the memory address. * (dereference): follows the address to read/write the value there.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Using *p before p is assigned: int *p; *p = 5; — crash! p points to random memory. ALWAYS initialize: int *p = &x; or int *p = NULL;", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "p is a sticky note with a house address. *p = go to that house and look inside. &x = read x's house number. Simple.", color: T.neon4 },
+        ],
+        "addr-deref": [
+          { icon: "⊕", title: "& AND *", body: "& and * are inverse operations. &(*p) = p. *(&x) = x. One goes up (to address), the other goes down (to value).", color: T.neon },
+          { icon: "📐", title: "POINTER ARITHMETIC", body: "p + 1 doesn't add 1 byte — it adds sizeof(*p) bytes. For int*, p+1 = p+4 bytes. This is how array indexing works under the hood.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Confusing int *p (declaration of pointer) with *p (dereference expression). Same * symbol, two completely different meanings!", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "& = 'where does X live?' (get address). * = 'go to this address and look/write' (follow pointer). They undo each other.", color: T.neon4 },
+        ],
+        structs: [
+          { icon: "⬡", title: "STRUCTS", body: "struct Point { int x, y; }; — groups related data. struct Point p = {3, 7}; Access: p.x or with pointer: ptr->x.", color: T.neon },
+          { icon: "📐", title: "MEMORY LAYOUT", body: "Struct members are laid out sequentially with possible padding for alignment. sizeof(struct) may be larger than sum of members.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Cannot compare structs with ==. Must compare member by member: p1.x == p2.x && p1.y == p2.y. Or use memcmp (but beware of padding).", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Struct = blueprint for a custom data type. Like creating a form with specific fields. Each instance fills in the form differently.", color: T.neon4 },
+          { icon: "💡", title: "DOT vs ARROW", body: "Use . (dot) for struct variables: p.x. Use -> (arrow) for struct pointers: ptr->x is shorthand for (*ptr).x.", color: T.accent },
+        ],
+        unions: [
+          { icon: "◎", title: "UNIONS", body: "union { int i; float f; } u; — ALL members share the same memory. sizeof(union) = size of largest member. Only store one at a time.", color: T.neon },
+          { icon: "📐", title: "TYPE PUNNING", body: "Write u.i = 0x3F800000, then read u.f = 1.0. Same bits, different interpretation. Used in low-level bit manipulation.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Writing one member, reading another is technically undefined behavior (except char). In practice it works but isn't portable.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Union = one box with multiple labels. You can call the box 'integer' or 'float' but it's the same physical storage.", color: T.neon4 },
+        ],
+        preproc: [
+          { icon: "#", title: "PREPROCESSOR", body: "#include copies file contents. #define does text replacement. #ifdef enables conditional compilation. All happen BEFORE compiling.", color: T.neon },
+          { icon: "📐", title: "MACROS", body: "#define SQ(x) ((x)*(x)) — parentheses are critical! Without them: SQ(1+2) becomes 1+2*1+2 = 5, not 9.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "#define SQ(x) x*x — precedence bug. #define MAX 100; — no semicolons in defines! They're literal text substitution.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Preprocessor = Find & Replace before compilation. The compiler never sees #include or #define — they're gone by then.", color: T.neon4 },
+        ],
+        dynmem: [
+          { icon: "∞", title: "DYNAMIC MEMORY", body: "malloc(n) allocates n bytes on the heap. Returns pointer to allocated block. free(ptr) releases it. YOU manage the lifetime.", color: T.neon },
+          { icon: "📐", title: "MALLOC vs CALLOC", body: "malloc = uninitialized memory (faster). calloc = zero-initialized memory (safer). Both return NULL on failure — ALWAYS check!", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Memory leak: malloc without free. Double free: free(p); free(p); — crash. Use-after-free: free(p); *p = 5; — undefined behavior.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Stack = automatic (compiler manages). Heap = manual (you manage). malloc = check out a book. free = return the book. Lose the receipt = leak.", color: T.neon4 },
+          { icon: "💡", title: "BEST PRACTICE", body: "Pattern: int *p = malloc(n * sizeof(int)); if (!p) return -1; /* use p */ free(p); p = NULL; — NULL after free prevents use-after-free.", color: T.accent },
+        ],
+        engine: [
+          { icon: "🚀", title: "FULL ENGINE", body: "Pointers, structs, and dynamic memory working together in real programs. This is how linked lists, trees, and databases are built.", color: T.neon },
+          { icon: "📐", title: "PUTTING IT TOGETHER", body: "struct Node { int data; struct Node *next; }; — a linked list node uses struct + pointer. Allocate with malloc, connect with pointers.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Not freeing dynamically allocated structs. Each malloc in a linked list needs a corresponding free when removing nodes.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Chapter 5 = the gateway to systems programming. Master pointers + structs + malloc and you understand how every language runtime works.", color: T.neon4 },
+        ],
+      }}
+    >
+      <HeroSection5 />
+      <PointersSection />
+      <AddrDerefSection />
+      <PtrArraysSection />
+      <StructsSection />
+      <UnionsSection />
+      <PreprocessorSection />
+      <DynMemSection />
+      <EngineSection5 />
+      <div style={{ height: 80 }} />
+    </CPageLayout>
   );
 }

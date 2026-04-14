@@ -1,100 +1,66 @@
 import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+const SYSTEM = `Programming tutor for engineering students (C/Python/Java). Rules: no greetings, answer directly, keep short, use \`\`\`lang code blocks, bullets for lists.`;
+
+function getMaxTokens(msg) {
+  if (/code|program|write|implement|function|example/i.test(msg)) return 500;
+  if (/explain|what|how|why|difference|compare/i.test(msg)) return 350;
+  return 250;
+}
 
 export async function POST(req) {
   try {
-    const { messages } = await req.json();
+    const { message } = await req.json();
+    if (!message) return NextResponse.json({ error: "No message" }, { status: 400 });
 
-    // -------------------------
-    // 1. TRY GROQ FIRST
-    // -------------------------
+    const maxTokens = getMaxTokens(message);
+    const msgs = [
+      { role: "system", content: SYSTEM },
+      { role: "user", content: message },
+    ];
+
+    // 1. TRY GEMINI
     try {
-      const groqRes = await groq.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
-        messages: messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-        temperature: 0.7,
-        max_tokens: 1024,
-      });
-
-      return NextResponse.json({
-        provider: "groq",
-        role: "assistant",
-        content: groqRes.choices[0].message.content,
-      });
-    } catch (groqError) {
-      console.error("Groq failed → switching to Gemini", groqError.message);
-    }
-
-    // -------------------------
-    // 2. FALLBACK → GEMINI
-    // -------------------------
-    const contents = messages.map((msg) => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }],
-    }));
-
-    const geminiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents,
-          generationConfig: {
-            maxOutputTokens: 1024,
-            temperature: 0.7,
-          },
-        }),
-      }
-    );
-
-    if (!geminiRes.ok) {
-      const error = await geminiRes.json();
-      const msg = error.error?.message ?? "Gemini API error";
-
-      return NextResponse.json(
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
-          error: "Both Groq and Gemini failed",
-          details: msg,
-        },
-        { status: 500 }
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              { role: "user", parts: [{ text: SYSTEM + "\n\nQ: " + message }] },
+            ],
+            generationConfig: { maxOutputTokens: maxTokens, temperature: 0.4 },
+          }),
+        }
       );
-    }
+      if (res.ok) {
+        const d = await res.json();
+        const t = d.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (t) return NextResponse.json({ content: t });
+      }
+    } catch {}
 
-    const data = await geminiRes.json();
-    const text =
-      data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+    // 2. FALLBACK → GROQ
+    try {
+      const r = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: msgs,
+        temperature: 0.4,
+        max_tokens: maxTokens,
+      });
+      return NextResponse.json({ content: r.choices[0].message.content });
+    } catch {}
 
-    return NextResponse.json({
-      provider: "gemini",
-      role: "assistant",
-      content: text,
-    });
-
-  } catch (error) {
-    return NextResponse.json(
-      {
-        error: "Server error",
-        details: error.message,
-      },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "API unavailable. Try again." }, { status: 500 });
+  } catch (e) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
 
-// Prevent 405
 export async function GET() {
-  return NextResponse.json(
-    { error: "Method not allowed. Use POST." },
-    { status: 405 }
-  );
+  return NextResponse.json({ error: "POST only" }, { status: 405 });
 }

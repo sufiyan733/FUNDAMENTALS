@@ -22,6 +22,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import Link from "next/link";
 import { Stars, Float } from "@react-three/drei";
 import * as THREE from "three";
+import CPageLayout, { useActiveSection } from "@/comps/CPageLayout";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DESIGN TOKENS
@@ -2409,57 +2410,75 @@ function RightPanel({ activeSection }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROOT PAGE
+// ROOT PAGE — uses shared CPageLayout
 // ─────────────────────────────────────────────────────────────────────────────
 export default function C3Page() {
-  const [activeSection, setActiveSection] = useState("hero");
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }),
-      { threshold: 0.25 }
-    );
-    NAV_ITEMS.forEach(item => {
-      const el = document.getElementById(item.id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, []);
+  const activeSection = useActiveSection(NAV_ITEMS);
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:ital,wght@0,300;0,500;0,700;1,400&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { background: ${T.bg}; color: ${T.text}; overflow-x: hidden; }
-        ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-track { background: ${T.bg}; }
-        ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 2px; }
-        input[type=range] { height: 4px; cursor: pointer; }
-        a { text-decoration: none; }
-      `}</style>
-      <div style={{ display:"flex", height:"100vh", overflow:"hidden", background:T.bg }}>
-        <Sidebar activeSection={activeSection} />
-        <main style={{ flex:7, overflowY:"auto", overflowX:"hidden", minWidth:0 }}>
-          <div style={{ maxWidth:"100%", padding:"0 36px" }}>
-            <HeroSection />
-            <ArithmeticSection />
-            <RelationalSection />
-            <LogicalSection />
-            <AssignmentSection />
-            <IncDecSection />
-            <PrecedenceSection />
-            <IfElseSection />
-            <SwitchSection />
-            <LoopsSection />
-            <JumpsSection />
-            <EngineSection />
-            <div style={{ height:80 }} />
-          </div>
-        </main>
-        <RightPanel activeSection={activeSection} />
-      </div>
-    </>
+    <CPageLayout
+      chapterNum={3}
+      navItems={NAV_ITEMS}
+      activeSection={activeSection}
+      sectionInsights={{
+        hero: [
+          { icon: "◎", title: "CHAPTER 3", body: "Operators transform data. Control flow directs execution. Together they form the logic engine of every C program.", color: T.neon },
+          { icon: "🎯", title: "LEARNING GOAL", body: "Master arithmetic, relational, and logical operators. Then use if/else, switch, and loops to control program flow.", color: T.neon2 },
+          { icon: "💡", title: "KEY INSIGHT", body: "Operators are CPU instructions disguised as symbols. + = ADD instruction. == = CMP instruction. C is thin abstraction over hardware.", color: T.neon4 },
+        ],
+        arithmetic: [
+          { icon: "➕", title: "ARITHMETIC", body: "+ (add), - (subtract), * (multiply), / (divide), % (modulus/remainder). These map directly to CPU ALU instructions.", color: T.neon },
+          { icon: "📐", title: "INTEGER DIVISION", body: "7 / 2 = 3 (not 3.5). Integer division truncates toward zero. To get 3.5: use 7.0 / 2.0 (float division).", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Division by zero is undefined behavior — not just an error, it can crash your program or produce random results. Always check divisor ≠ 0.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "% (modulus) gives the remainder: 7%2=1, 10%3=1. Used for: even/odd check (n%2==0), wrapping (hour%12), cycling through arrays.", color: T.neon4 },
+        ],
+        relational: [
+          { icon: "⚖️", title: "COMPARISON OPS", body: "== (equal), != (not equal), < (less), > (greater), <= (less or equal), >= (greater or equal). All return 0 (false) or 1 (true).", color: T.neon },
+          { icon: "📐", title: "RESULT IS INTEGER", body: "In C, there's no boolean type (before C99). Comparisons return int: 0 = false, any non-zero = true. if(5) is true!", color: T.neon2 },
+          { icon: "⚠️", title: "#1 C BUG", body: "if (x = 5) — this ASSIGNS 5 to x and always evaluates to true! You meant if (x == 5). Single = vs double == is the most common C bug ever.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Comparisons are questions: 'Is x > y?' The CPU answers with 1 (yes) or 0 (no). This answer feeds into if/while conditions.", color: T.neon4 },
+        ],
+        logical: [
+          { icon: "🧠", title: "LOGICAL OPS", body: "&& (AND), || (OR), ! (NOT). Combine conditions: if (age >= 18 && age <= 65) checks if age is in working range.", color: T.neon },
+          { icon: "⚡", title: "SHORT-CIRCUIT", body: "&& stops at first false. || stops at first true. if(ptr && ptr->val) is SAFE — if ptr is NULL, ptr->val is never evaluated.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "& vs && — totally different! & is BITWISE AND (operates on bits). && is LOGICAL AND (operates on truth values). Using & instead of && = subtle bugs.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "AND = both must be true. OR = at least one true. NOT = flip the result. Same as digital logic gates in hardware.", color: T.neon4 },
+        ],
+        ifelse: [
+          { icon: "🔀", title: "IF/ELSE", body: "if (condition) { code } else { other code }. The condition is evaluated as int: 0 = skip, non-zero = execute.", color: T.neon },
+          { icon: "📐", title: "ELSE IF CHAINS", body: "if (x > 90) A; else if (x > 80) B; else C; — only ONE branch executes. First true condition wins, rest are skipped.", color: T.neon2 },
+          { icon: "⚠️", title: "DANGLING ELSE", body: "if(a) if(b) X; else Y; — the else binds to the NEAREST if. Always use braces {} to make your intent explicit and readable.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "if/else is a fork in the road. The CPU evaluates the condition, then takes exactly one path. Compiles to CMP + conditional JMP.", color: T.neon4 },
+          { icon: "💡", title: "TERNARY SHORTCUT", body: "int max = (a > b) ? a : b; — one-line if/else. Returns a if true, b if false. Great for assignments, avoid for complex logic.", color: T.accent },
+        ],
+        loops: [
+          { icon: "🔄", title: "FOR / WHILE / DO-WHILE", body: "for: init+condition+increment in one line. while: condition only. do-while: body executes at least once, then checks.", color: T.neon },
+          { icon: "📐", title: "CHOOSING THE RIGHT LOOP", body: "Know count? → for. Unknown count? → while. Must run once? → do-while. 90% of loops are for loops.", color: T.neon2 },
+          { icon: "⚠️", title: "INFINITE LOOPS", body: "while(1) runs forever — intentional in servers. Forgetting i++ in for loop → infinite. Wrong condition (< vs <=) → off-by-one.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Loops are conditional jumps. The CPU jumps back to the condition check after each iteration. No special 'loop' hardware — just JMP.", color: T.neon4 },
+          { icon: "💡", title: "NESTED LOOPS", body: "Loop inside loop = O(n²). for(i) { for(j) { } } — inner loop runs n times for EACH outer iteration. Total = n×n iterations.", color: T.accent },
+        ],
+        engine: [
+          { icon: "🚀", title: "FULL ENGINE", body: "Real programs combine all of these: operators inside conditions inside loops. Watch the execution engine trace through live C programs.", color: T.neon },
+          { icon: "📐", title: "PRECEDENCE", body: "Multiplication before addition, && before ||. When in doubt: use parentheses. (a + b) * c is unambiguous and free.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Writing complex expressions without parentheses: a + b * c — is this (a+b)*c or a+(b*c)? The compiler knows but YOU might not.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Every C program = data (variables) + logic (operators) + flow (control). Master these three categories and you can express ANY algorithm.", color: T.neon4 },
+        ],
+      }}
+    >
+      <HeroSection />
+      <ArithmeticSection />
+      <RelationalSection />
+      <LogicalSection />
+      <AssignmentSection />
+      <IncDecSection />
+      <PrecedenceSection />
+      <IfElseSection />
+      <SwitchSection />
+      <LoopsSection />
+      <JumpsSection />
+      <EngineSection />
+      <div style={{ height: 80 }} />
+    </CPageLayout>
   );
 }

@@ -3,27 +3,32 @@
 import { useState, useEffect, useRef, useMemo, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import CPageLayout, { useActiveSection } from "@/comps/CPageLayout";
+import dynamic from "next/dynamic";
+import { useVoiceEngine, VoiceButton } from "@/comps/VoiceEngine";
+
+const Hero3D = dynamic(() => import("@/comps/Hero3D"), { ssr: false });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DESIGN TOKENS — matching Page 2 aesthetic
+// DESIGN TOKENS — unified green neon theme
 // ─────────────────────────────────────────────────────────────────────────────
 const T = {
-  bg:      "#010308",
-  bg1:     "#040B14",
-  bg2:     "#07111F",
-  glass:   "rgba(4,11,20,0.92)",
-  border:  "rgba(255,255,255,0.06)",
-  neon:    "#FF6400",
-  neon2:   "#00E5FF",
-  neon3:   "#FF2D6B",
-  neon4:   "#B4FF00",
-  accent:  "#A855F7",
-  text:    "#C8D8E8",
+  bg:      "#030810",
+  bg1:     "#060D1C",
+  bg2:     "#0A1428",
+  glass:   "rgba(10,20,40,0.75)",
+  border:  "rgba(0,255,163,0.10)",
+  neon:    "#00FFA3",
+  neon2:   "#00D4FF",
+  neon3:   "#FF6B6B",
+  neon4:   "#FFB347",
+  accent:  "#BD69FF",
+  text:    "#DDE8F8",
   textStrong: "#FFFFFF",
-  muted:   "#2E4A62",
-  dim:     "#0A1520",
-  mono:    "'Fira Code', monospace",
-  display: "'Bebas Neue', cursive",
+  muted:   "#3E5A7A",
+  dim:     "#1A2A3A",
+  mono:    "'JetBrains Mono', monospace",
+  display: "'Syne', sans-serif",
   body:    "'Syne', sans-serif",
 };
 
@@ -35,19 +40,19 @@ const ease = { type: "tween", duration: 0.3, ease: [0.4, 0, 0.2, 1] };
 // ─────────────────────────────────────────────────────────────────────────────
 const GlobalStyles = () => (
   <style>{`
-    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fira+Code:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:ital,wght@0,300;0,500;0,700;1,400&display=swap');
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: ${T.muted} ${T.bg1}; }
     body { background: ${T.bg}; color: ${T.text}; font-family: 'Syne', sans-serif; overflow-x: hidden; }
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: ${T.bg1}; }
-    ::-webkit-scrollbar-thumb { background: ${T.neon2}; border-radius: 4px; }
-    ::selection { background: rgba(0,229,255,0.18); color: #fff; }
+    ::-webkit-scrollbar { width: 3px; }
+    ::-webkit-scrollbar-track { background: ${T.bg}; }
+    ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 2px; }
+    ::selection { background: rgba(0,255,163,0.18); color: #fff; }
     a { color: inherit; text-decoration: none; }
     button, input, select { font-family: inherit; cursor: pointer; }
     input[type=range] { -webkit-appearance: none; height: 4px; border-radius: 2px; outline: none; background: ${T.muted}55; }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: ${T.neon2}; border: 2px solid ${T.bg}; cursor: pointer; }
-    .fk:focus-visible { outline: 2px solid ${T.neon2}; outline-offset: 2px; border-radius: 6px; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: ${T.neon}; border: 2px solid ${T.bg}; cursor: pointer; }
+    .fk:focus-visible { outline: 2px solid ${T.neon}; outline-offset: 2px; border-radius: 6px; }
     @keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }
     @keyframes scanLine { from{transform:translateY(-100%)} to{transform:translateY(200vh)} }
     @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
@@ -223,8 +228,8 @@ function FileDiagramAnim() {
         {stages.map((s,i) => (
           <g key={i}>
             <rect x={s.x} y={16} width={56} height={50} rx={8} fill={`${s.color}14`} stroke={`${s.color}44`} strokeWidth={1.5}/>
-            <text x={s.x+28} y={34} textAnchor="middle" fontSize={8} fill={s.color} fontFamily="'Bebas Neue'" letterSpacing="0.12em">{s.label}</text>
-            <text x={s.x+28} y={50} textAnchor="middle" fontSize={7} fill={T.muted} fontFamily="'Fira Code'">{s.sub}</text>
+            <text x={s.x+28} y={34} textAnchor="middle" fontSize={8} fill={s.color} fontFamily="'Syne'" letterSpacing="0.12em">{s.label}</text>
+            <text x={s.x+28} y={50} textAnchor="middle" fontSize={7} fill={T.muted} fontFamily="'JetBrains Mono'">{s.sub}</text>
           </g>
         ))}
       </svg>
@@ -562,8 +567,8 @@ function DataFlowAnim({ op, active }) {
         {nodes.map((n, i) => (
           <g key={i}>
             <rect x={i*110+2} y={10} width={82} height={48} rx={8} fill={`${c}12`} stroke={`${c}${i<=Math.floor(p*3)+1?"44":"22"}`} strokeWidth={1.5}/>
-            <text x={i*110+43} y={30} textAnchor="middle" fontSize={8} fill={c} fontFamily="'Bebas Neue'" letterSpacing="0.1em">{n}</text>
-            <text x={i*110+43} y={46} textAnchor="middle" fontSize={8} fill={T.muted} fontFamily="'Fira Code'">{op.unit}</text>
+            <text x={i*110+43} y={30} textAnchor="middle" fontSize={8} fill={c} fontFamily="'Syne'" letterSpacing="0.1em">{n}</text>
+            <text x={i*110+43} y={46} textAnchor="middle" fontSize={8} fill={T.muted} fontFamily="'JetBrains Mono'">{op.unit}</text>
             {i < 3 && (
               <g>
                 <line x1={i*110+84} y1={34} x2={i*110+110} y2={34} stroke={T.muted} strokeWidth={1.5} opacity={0.3}/>
@@ -1290,52 +1295,88 @@ function RightSidebar({ active }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROOT PAGE
+// ROOT PAGE — uses shared CPageLayout
 // ─────────────────────────────────────────────────────────────────────────────
-export default function CFileIOPage() {
-  const [active, setActive] = useState("hero");
+const C6_NAV_ITEMS = [
+  { id: "hero", label: "OVERVIEW",  num: "00", icon: "◎" },
+  { id: "s01",  label: "MODES",     num: "01", icon: "📂" },
+  { id: "s02",  label: "TXT/BIN",   num: "02", icon: "💾" },
+  { id: "s03",  label: "R/W",       num: "03", icon: "✍️" },
+  { id: "s04",  label: "ERRORS",    num: "04", icon: "⚠️" },
+  { id: "s05",  label: "SEEK",      num: "05", icon: "🔍" },
+  { id: "s06",  label: "BUFFER",    num: "06", icon: "📦" },
+  { id: "s07",  label: "STRUCT",    num: "07", icon: "🧩" },
+  { id: "s08",  label: "PROJECT",   num: "08", icon: "🚀" },
+];
 
-  useEffect(() => {
-    const obs = new IntersectionObserver(
-      entries => entries.forEach(e => { if (e.isIntersecting) setActive(e.target.id); }),
-      { rootMargin: "-30% 0px -60% 0px" }
-    );
-    NAV.forEach(n => { const el = document.getElementById(n.id); if (el) obs.observe(el); });
-    return () => obs.disconnect();
-  }, []);
+export default function CFileIOPage() {
+  const active = useActiveSection(C6_NAV_ITEMS);
 
   return (
-    <>
-      <GlobalStyles/>
-      <div className="page-layout">
-        {/* LEFT: Deep Understanding */}
-        <DeepPanel active={active}/>
-
-        {/* MAIN */}
-        <main style={{overflowY:"auto",overflowX:"hidden",minWidth:0}}>
-          <div style={{maxWidth:"100%",padding:"0 28px"}}>
-            <div id="hero"><Hero/></div>
-            <S01/><S02/><S03/><S04/><S05/><S06/><S07/><S08/>
-            {/* Footer nav */}
-            <div style={{display:"flex",justifyContent:"space-between",gap:10,paddingTop:24,paddingBottom:48,borderTop:`1px solid ${T.border}`,flexWrap:"wrap"}}>
-              {[{href:"/c-5",dir:"←",pre:"PREVIOUS",title:"Chapter 5: Pointers",c:T.neon2},{href:"/c-7",dir:"→",pre:"NEXT",title:"Chapter 7: Advanced Topics",c:T.neon}].map(({href,dir,pre,title,c})=>(
-                <motion.a key={href} href={href} whileHover={{x:dir==="←"?-3:3}} transition={sp}
-                  style={{display:"flex",alignItems:"center",gap:10,padding:"12px 18px",borderRadius:11,border:`1px solid ${T.border}`,background:T.bg2}}>
-                  {dir==="←" && <span style={{color:c,fontSize:16}}>{dir}</span>}
-                  <div style={{textAlign:dir==="→"?"right":"left"}}>
-                    <div style={{fontSize:8,color:T.muted,fontFamily:T.mono,letterSpacing:"0.1em"}}>{pre}</div>
-                    <div style={{fontFamily:T.display,fontSize:15,color:T.textStrong}}>{title}</div>
-                  </div>
-                  {dir==="→" && <span style={{color:c,fontSize:16}}>{dir}</span>}
-                </motion.a>
-              ))}
-            </div>
-          </div>
-        </main>
-
-        {/* RIGHT: Navigation */}
-        <RightSidebar active={active}/>
-      </div>
-    </>
+    <CPageLayout
+      chapterNum={6}
+      navItems={C6_NAV_ITEMS}
+      activeSection={active}
+      sectionInsights={{
+        hero: [
+          { icon: "◎", title: "CHAPTER 6", body: "File I/O connects your program to the outside world. Read data, write results, persist state — files are how programs survive shutdown.", color: T.neon },
+          { icon: "🎯", title: "LEARNING GOAL", body: "Master fopen/fclose, text vs binary modes, reading/writing strategies, error handling, seeking, buffering, and struct serialization.", color: T.neon2 },
+          { icon: "💡", title: "KEY INSIGHT", body: "A FILE* is an opaque pointer to a struct that tracks: the file descriptor, buffer, position, error status. fopen gives you this handle.", color: T.neon4 },
+        ],
+        s01: [
+          { icon: "📂", title: "FILE MODES", body: "\"r\" = read (must exist). \"w\" = write (creates/truncates!). \"a\" = append. \"+\" = read+write. \"b\" = binary. Always pair fopen ↔ fclose.", color: T.neon },
+          { icon: "📐", title: "fopen RETURNS NULL ON FAILURE", body: "File doesn't exist? Permission denied? Disk full? fopen returns NULL. ALWAYS check: if (fp == NULL) { perror(\"fopen\"); return 1; }", color: T.neon2 },
+          { icon: "⚠️", title: "DEADLY MISTAKE", body: "\"w\" truncates IMMEDIATELY. Opening an existing file with \"w\" destroys ALL content the instant fopen() is called — before you write anything.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "fopen = unlock a door and get a key (FILE*). fclose = return the key. The OS limits open files (~1024). Unclosed files leak resources.", color: T.neon4 },
+        ],
+        s02: [
+          { icon: "💾", title: "TEXT vs BINARY", body: "Text mode: newlines translated (\\n → \\r\\n on Windows), numbers as ASCII digits. Binary mode: exact bytes copied, no translation.", color: T.neon },
+          { icon: "📐", title: "WHEN TO USE WHICH", body: "Config files, logs, CSV → text mode. Images, databases, serialized structs → binary mode. Text is human-readable but larger and slower.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Opening binary files in text mode on Windows. \\r\\n translation corrupts binary data. Always use \"rb\"/\"wb\" for non-text files.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Text = human language (digits, letters, newlines). Binary = machine language (raw bytes, exact memory copy). Choose based on audience.", color: T.neon4 },
+        ],
+        s03: [
+          { icon: "✍️", title: "4 I/O STRATEGIES", body: "fgetc/fputc: one char at a time. fgets/fputs: one line. fread/fwrite: block of bytes. fprintf/fscanf: formatted. Choose wisely.", color: T.neon },
+          { icon: "📐", title: "PERFORMANCE", body: "fread(buf, 1, 4096, fp) = 1 syscall for 4KB. fgetc() 4096 times = 4096 function calls. Block reads are 100-1000x faster.", color: T.neon2 },
+          { icon: "⚠️", title: "CRITICAL BUG", body: "fgetc returns INT, not char! EOF is -1. char c = fgetc(fp); — on unsigned char, EOF wraps to 255 and is never detected. Always use int.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "fgetc = picking grains of sand (slow). fgets = grabbing handfuls (better). fread = scooping with a shovel (fast). Choose the right tool.", color: T.neon4 },
+        ],
+        s04: [
+          { icon: "⚠️", title: "ERROR HANDLING", body: "ALWAYS check return values. fopen → NULL. fread → 0. fprintf → negative. ferror(fp) checks for errors. feof(fp) checks for end-of-file.", color: T.neon },
+          { icon: "📐", title: "errno + perror", body: "errno is set on failure. perror(\"context\") prints: context: No such file or directory. Check errno IMMEDIATELY after failure — next call may overwrite it.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Checking feof BEFORE reading. Wrong! feof only returns true AFTER a failed read. Pattern: read first, check return value, then check feof vs ferror.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Return value = traffic light. NULL/0/EOF = red light. Check it BEFORE proceeding. errno = detective clue at the crime scene — read it immediately.", color: T.neon4 },
+        ],
+        s05: [
+          { icon: "🔍", title: "FILE SEEKING", body: "fseek(fp, offset, SEEK_SET/SEEK_CUR/SEEK_END) — jump to any byte in the file. ftell(fp) — get current position. rewind(fp) — go to start.", color: T.neon },
+          { icon: "📐", title: "RANDOM ACCESS", body: "Files aren't just sequential tapes. fseek lets you jump to record #500 instantly: fseek(fp, 500 * sizeof(Record), SEEK_SET).", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Seeking without flushing. When mixing reads and writes on the same file, always fflush() before fseek() or data corruption can occur.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "FILE* has an invisible cursor. fseek moves it. ftell reads it. fread/fwrite advance it. You can teleport anywhere in the file.", color: T.neon4 },
+        ],
+        s06: [
+          { icon: "📦", title: "BUFFERING", body: "STDIO doesn't write directly to disk. It buffers data (8KB default). _IOFBF = fully buffered (files). _IOLBF = line buffered (stdout). _IONBF = unbuffered (stderr).", color: T.neon },
+          { icon: "📐", title: "PERFORMANCE TUNING", body: "setvbuf(fp, NULL, _IOFBF, 65536) — 64KB buffer reduces syscalls dramatically. For massive files, buffer = free performance.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "fflush ≠ fsync. fflush moves data from STDIO buffer → OS kernel. fsync moves from kernel → physical disk. For crash safety, need BOTH.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Buffer = batching letters before mailing. Don't send one letter at a time — collect them, then send in bulk. fflush = 'send everything NOW'.", color: T.neon4 },
+        ],
+        s07: [
+          { icon: "🧩", title: "STRUCT I/O", body: "fwrite(&record, sizeof(Record), 1, fp) — writes raw struct bytes to disk. fread reads them back. Fast binary serialization.", color: T.neon },
+          { icon: "📐", title: "ALIGNMENT & PADDING", body: "Compiler inserts padding bytes for alignment. sizeof(struct) can be larger than sum of fields. This affects binary file format.", color: T.neon2 },
+          { icon: "⚠️", title: "DANGER", body: "Never fwrite structs with pointer members! Pointers hold virtual addresses — meaningless after program exits or on different machines.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "fwrite copies memory → disk. fread copies disk → memory. Same struct definition = same layout = works. Different compiler/platform = might not.", color: T.neon4 },
+          { icon: "💡", title: "MAGIC BYTES", body: "Start binary files with a magic number (e.g., 'PLYR'). Lets tools identify the format and detect corruption. Always validate on read.", color: T.accent },
+        ],
+        s08: [
+          { icon: "🚀", title: "MASTER PROJECT", body: "Build a production-grade logging system: rotation, timestamps, severity levels, variadic formatting. This uses EVERY file I/O concept.", color: T.neon },
+          { icon: "📐", title: "LOG ROTATION", body: "Check ftell() before each write. If size > limit, rename current log to .1 and open a fresh file. Prevents unbounded log growth.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Not flushing log files. If program crashes, buffered log entries are lost. Use setvbuf with _IOLBF for line-buffered logging.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Logging = append-only journal. Open with \"a\", timestamp every entry, never truncate. Rotate when full = new page in notebook.", color: T.neon4 },
+        ],
+      }}
+    >
+      <div id="hero"><Hero /></div>
+      <S01 /><S02 /><S03 /><S04 /><S05 /><S06 /><S07 /><S08 />
+      <div style={{ height: 80 }} />
+    </CPageLayout>
   );
 }

@@ -5,6 +5,7 @@ import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion"
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Stars, Float, MeshDistortMaterial } from "@react-three/drei";
 import Link from "next/link";
+import CPageLayout, { T as SharedT, useActiveSection } from "@/comps/CPageLayout";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // DESIGN TOKENS
@@ -1565,72 +1566,67 @@ function NextPageButton({ isMobile, isTablet }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROOT PAGE
+// ROOT PAGE — uses shared CPageLayout
 // ─────────────────────────────────────────────────────────────────────────────
 export default function CIntroPage() {
-  const { isMobile, isTablet, isDesktop } = useBreakpoint();
-  const showLeftPanel = isDesktop;
-  const showRightSidebar = isDesktop;
-  const [activeSection, setActiveSection] = useState("hero");
-  const [insightOpen, setInsightOpen] = useState(false);
-
-  // Single shared voice engine — one instance for whole page
+  const activeSection = useActiveSection(NAV_ITEMS);
   const engine = useVoiceEngine();
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => { entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }); },
-      { threshold: 0.3 }
-    );
-    NAV_ITEMS.forEach(item => { const el = document.getElementById(item.id); if (el) observer.observe(el); });
-    return () => observer.disconnect();
-  }, []);
-
-  const mainPadding = isMobile ? "0 16px" : isTablet ? "0 24px" : "0 36px";
-  const bottomPad = isMobile ? 148 : isTablet ? 88 : 0;
+  const { isMobile } = useBreakpoint();
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:ital,wght@0,300;0,500;0,700;1,400&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { background: ${T.bg}; color: ${T.text}; overflow-x: hidden; }
-        ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-track { background: ${T.bg}; }
-        ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 2px; }
-        @keyframes scrollUp { from{transform:translateY(0)} to{transform:translateY(-50%)} }
-        textarea { color-scheme: dark; }
-        textarea::placeholder { color: ${T.muted}; }
-      `}</style>
-
-      <div style={{ display:"flex", height:isMobile||isTablet?"auto":"100vh", overflow:isMobile||isTablet?"visible":"hidden", background:T.bg }}>
-        {showLeftPanel && <LeftInsightPanel isMobile={false} isOpen={false} onClose={() => {}} />}
-
-        <main style={{ flex:7, overflowY:isMobile||isTablet?"visible":"auto", overflowX:"hidden", minWidth:0, paddingBottom:bottomPad }}>
-          <div style={{ maxWidth:"100%", padding:mainPadding }}>
-            <HeroSection isMobile={isMobile} />
-            <WhatIsC isMobile={isMobile} engine={engine} />
-            <ProgramStructure isMobile={isMobile} engine={engine} />
-            <KeywordsIdentifiers isMobile={isMobile} engine={engine} />
-            <CompilationPipeline isMobile={isMobile} engine={engine} />
-            <ExecutionVisualizer isMobile={isMobile} engine={engine} />
-            <div style={{ height:48 }} />
-          </div>
-        </main>
-
-        {showRightSidebar && <RightSidebar activeSection={activeSection} engine={engine} />}
-      </div>
-
-      {(isMobile || isTablet) && (
-        <>
-          <MobileBottomNav activeSection={activeSection} onInsightOpen={() => setInsightOpen(true)} />
-          <LeftInsightPanel isMobile={true} isOpen={insightOpen} onClose={() => setInsightOpen(false)} />
-        </>
-      )}
-
-      <NextPageButton isMobile={isMobile} isTablet={isTablet} />
-
-    </>
+    <CPageLayout
+      chapterNum={1}
+      navItems={NAV_ITEMS}
+      activeSection={activeSection}
+      sectionInsights={{
+        hero: [
+          { icon: "◎", title: "WELCOME", body: "Chapter 1: Introduction to C — the language that powers operating systems, databases, and embedded devices.", color: T.neon },
+          { icon: "🎯", title: "LEARNING GOAL", body: "By the end of this chapter you'll understand why C exists, how a C program is structured, and the full journey from source code to execution.", color: T.neon2 },
+          { icon: "📌", title: "PREREQUISITES", body: "Zero prior programming knowledge needed. This is truly page one. If you can use a computer, you can learn C.", color: T.neon4 },
+          { icon: "🚀", title: "WHY START HERE", body: "C teaches you how computers actually work. Every other language (Python, Java, JS) hides details C makes visible. Master C → master all.", color: T.accent },
+        ],
+        whatIsc: [
+          { icon: "⚡", title: "WHY C MATTERS", body: "C is the mother of all languages. C++, Java, Python, Go — all descended from or inspired by C. Linux, Windows kernel, Git — all written in C.", color: T.neon },
+          { icon: "🔧", title: "DIRECT HARDWARE", body: "C gives you direct memory access via pointers, zero runtime overhead, and predictable performance. No garbage collector, no virtual machine.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Beginners skip C and go straight to Python. They never understand memory, pointers, or how programs really execute. This creates a weak foundation.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Think of C as 'portable assembly'. You write human-readable code that maps almost 1:1 to CPU instructions. Maximum control, maximum responsibility.", color: T.neon4 },
+          { icon: "🌍", title: "REAL-WORLD USAGE", body: "Linux kernel (30M lines of C), SQLite, Redis, Nginx, Git, Python interpreter (CPython), most embedded systems — all C.", color: T.accent },
+        ],
+        structure: [
+          { icon: "🧬", title: "ANATOMY", body: "Every C program has: #include (preprocessor), main() function (entry point), statements (logic), return 0 (exit code to OS).", color: T.neon },
+          { icon: "📐", title: "PROGRAM SKELETON", body: "#include <stdio.h> → tells compiler to include standard I/O library. main() → OS calls this first. return 0 → tells OS 'success'.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Forgetting #include <stdio.h> when using printf. Forgetting return 0 — older compilers return garbage to OS. Missing semicolons after statements.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "A C program is a recipe: #include = gather ingredients, main() = start cooking, statements = steps, return = serve the dish.", color: T.neon4 },
+          { icon: "💡", title: "KEY INSIGHT", body: "main() returns int, not void. The return value is the exit code: 0 = success, non-zero = error. The OS uses this to check if your program worked.", color: T.accent },
+        ],
+        keywords: [
+          { icon: "🔑", title: "32 KEYWORDS", body: "C has only 32 reserved words: int, float, char, if, else, while, for, return, void, struct, union, enum, typedef, sizeof, etc.", color: T.neon },
+          { icon: "📝", title: "IDENTIFIERS", body: "Names you create for variables/functions. Rules: start with letter/underscore, case-sensitive, no spaces. 'myVar' ≠ 'myvar'.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Using a keyword as a variable name: 'int int = 5;' → compiler error. Using 'l' (lowercase L) or 'O' (capital O) that look like 1 and 0.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Keywords are the language's vocabulary — only 32 words. Everything else (printf, scanf) comes from LIBRARIES, not the language itself.", color: T.neon4 },
+        ],
+        compilation: [
+          { icon: "⚙️", title: "4 PHASES", body: "1) Preprocess: expand #include/#define. 2) Compile: C → assembly. 3) Assemble: assembly → machine code (.o). 4) Link: combine .o files → executable.", color: T.neon },
+          { icon: "🔍", title: "PREPROCESSOR", body: "#include copies header file content. #define does text replacement. These happen BEFORE compilation — the compiler never sees #include.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Thinking compilation is one step. When you get 'undefined reference' errors, that's the LINKER failing — not the compiler. Knowing the phase helps debug.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Preprocessing = translation. Compilation = convert language. Assembly = encode to numbers. Linking = build the final package. Each step has its own errors.", color: T.neon4 },
+          { icon: "💡", title: "KEY COMMAND", body: "gcc -o program program.c does all 4 steps. Use gcc -E to see preprocessor output. gcc -S for assembly. gcc -c for object file only.", color: T.accent },
+        ],
+        execution: [
+          { icon: "▶", title: "CPU CYCLE", body: "Fetch instruction → Decode what it means → Execute the operation. Modern CPUs do this billions of times per second (GHz = billion cycles/sec).", color: T.neon },
+          { icon: "📦", title: "MEMORY LAYOUT", body: "Your program gets: Text (code), Data (globals), Stack (local vars), Heap (dynamic). Understanding this = understanding C.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Assuming your program runs in isolation. The OS manages memory, scheduling, and I/O. Your ./a.out is just one of hundreds of running processes.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Execution is a conveyor belt: instructions flow through fetch→decode→execute. The CPU has no idea what 'C' is — it only sees binary instructions.", color: T.neon4 },
+        ],
+      }}
+    >
+      <HeroSection isMobile={isMobile} />
+      <WhatIsC isMobile={isMobile} engine={engine} />
+      <ProgramStructure isMobile={isMobile} engine={engine} />
+      <KeywordsIdentifiers isMobile={isMobile} engine={engine} />
+      <CompilationPipeline isMobile={isMobile} engine={engine} />
+      <ExecutionVisualizer isMobile={isMobile} engine={engine} />
+      <div style={{ height: 48 }} />
+    </CPageLayout>
   );
 }

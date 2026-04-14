@@ -3,106 +3,31 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import CPageLayout, { useActiveSection } from "@/comps/CPageLayout";
+import dynamic from "next/dynamic";
+import { useVoiceEngine, VoiceButton } from "@/comps/VoiceEngine";
+
+const Hero3D = dynamic(() => import("@/comps/Hero3D"), { ssr: false });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// VOICE SYSTEM – PREMIUM MALE VOICE (browser native)
-// ─────────────────────────────────────────────────────────────────────────────
-function useTextToSpeech() {
-  const [voice, setVoice] = useState(null);
-  const synthRef = useRef(null);
-  const speakingRef = useRef(false);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    synthRef.current = window.speechSynthesis;
-
-    const loadVoices = () => {
-      const voices = synthRef.current.getVoices();
-      // Try to pick a natural male voice (Google UK English Male, Microsoft David, etc.)
-      const preferred = voices.find(v =>
-        v.name.includes("Google UK English Male") ||
-        v.name.includes("Microsoft David") ||
-        (v.lang === "en-US" && v.name.includes("Male")) ||
-        (v.lang === "en-GB" && v.name.includes("Male"))
-      ) || voices.find(v => v.lang === "en-US") || voices[0];
-      setVoice(preferred);
-    };
-
-    loadVoices();
-    if (synthRef.current.onvoiceschanged !== undefined) {
-      synthRef.current.onvoiceschanged = loadVoices;
-    }
-  }, []);
-
-  const speak = useCallback((text) => {
-    if (!synthRef.current || !text) return;
-    // Cancel any ongoing speech
-    synthRef.current.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.rate = 0.9;
-    utterance.pitch = 1.0;
-    if (voice) utterance.voice = voice;
-    utterance.onend = () => { speakingRef.current = false; };
-    utterance.onerror = () => { speakingRef.current = false; };
-    speakingRef.current = true;
-    synthRef.current.speak(utterance);
-  }, [voice]);
-
-  return { speak, isSpeaking: speakingRef.current };
-}
-
-function VoiceButton({ text, label = "🔊", color = "#FF6400" }) {
-  const { speak } = useTextToSpeech();
-  const handleClick = (e) => {
-    e.stopPropagation();
-    speak(text);
-  };
-  return (
-    <motion.button
-      whileHover={{ scale: 1.1, rotate: 6 }}
-      whileTap={{ scale: 0.9 }}
-      onClick={handleClick}
-      style={{
-        background: "transparent",
-        border: `1px solid ${color}40`,
-        borderRadius: "50%",
-        width: 28,
-        height: 28,
-        fontSize: 14,
-        cursor: "pointer",
-        color: color,
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        marginLeft: 8,
-        transition: "all 0.2s",
-      }}
-      title="Voice explanation"
-    >
-      {label}
-    </motion.button>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// DESIGN TOKENS
+// DESIGN TOKENS — unified green neon theme
 // ─────────────────────────────────────────────────────────────────────────────
 const T = {
-  bg:      "#020509",
-  bg1:     "#050A12",
-  bg2:     "#08111F",
-  glass:   "rgba(5,12,25,0.82)",
-  border:  "rgba(255,100,0,0.10)",
-  neon:    "#FF6400",
-  neon2:   "#00E5FF",
-  neon3:   "#FF2D6B",
-  neon4:   "#B4FF00",
-  accent:  "#A855F7",
-  text:    "#E8ECF4",
-  muted:   "#3A506B",
-  dim:     "#111D2A",
-  mono:    "'Fira Code', monospace",
-  display: "'Bebas Neue', sans-serif",
+  bg:      "#030810",
+  bg1:     "#060D1C",
+  bg2:     "#0A1428",
+  glass:   "rgba(10,20,40,0.75)",
+  border:  "rgba(0,255,163,0.10)",
+  neon:    "#00FFA3",
+  neon2:   "#00D4FF",
+  neon3:   "#FF6B6B",
+  neon4:   "#FFB347",
+  accent:  "#BD69FF",
+  text:    "#DDE8F8",
+  muted:   "#3E5A7A",
+  dim:     "#1A2A3A",
+  mono:    "'JetBrains Mono', monospace",
+  display: "'Syne', sans-serif",
 };
 
 const NAV_ITEMS = [
@@ -305,7 +230,7 @@ function HeroSection() {
         if (p.y < -20) { p.y = H + 10; p.x = Math.random() * W; }
         ctx.globalAlpha = p.alpha;
         ctx.fillStyle = p.color;
-        ctx.font = `${p.size}px 'Fira Code', monospace`;
+        ctx.font = `${p.size}px 'JetBrains Mono', monospace`;
         ctx.fillText(p.char, p.x, p.y);
       });
       ctx.globalAlpha = 1;
@@ -334,16 +259,19 @@ function HeroSection() {
       minHeight: "100vh", display: "flex", flexDirection: "column",
       alignItems: "center", justifyContent: "center",
       position: "relative", overflow: "hidden",
-      background: `radial-gradient(ellipse 80% 50% at 50% -5%, rgba(255,100,0,0.09) 0%, transparent 60%),
-                   radial-gradient(ellipse 50% 35% at 85% 75%, rgba(168,85,247,0.07) 0%, transparent 55%),
-                   radial-gradient(ellipse 35% 25% at 10% 85%, rgba(0,229,255,0.05) 0%, transparent 55%), ${T.bg}`,
+      background: `radial-gradient(ellipse 90% 60% at 50% -10%, rgba(0,255,163,0.07) 0%, transparent 65%),
+                   radial-gradient(ellipse 50% 35% at 85% 75%, rgba(0,212,255,0.05) 0%, transparent 55%),
+                   radial-gradient(ellipse 35% 25% at 10% 85%, rgba(189,105,255,0.05) 0%, transparent 55%), ${T.bg}`,
     }}>
+      <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+        <Hero3D />
+      </div>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", opacity: 0.45 }} />
-      <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,100,0,0.012) 2px, rgba(255,100,0,0.012) 4px)" }} />
+      <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", backgroundImage: `linear-gradient(rgba(0,255,163,0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,163,0.018) 1px, transparent 1px)`, backgroundSize: "52px 52px" }} />
 
       <div style={{ position: "relative", zIndex: 10, textAlign: "center", maxWidth: 940, padding: "0 24px" }}>
         <motion.div initial={{ opacity: 0, y: -14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          style={{ display: "inline-flex", alignItems: "center", gap: 10, fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, border: `1px solid ${T.border}`, background: "rgba(255,100,0,0.05)", padding: "7px 22px", borderRadius: 100, marginBottom: 30 }}>
+          style={{ display: "inline-flex", alignItems: "center", gap: 10, fontFamily: T.mono, fontSize: 9, letterSpacing: 5, color: T.neon, border: `1px solid ${T.border}`, background: "rgba(0,255,163,0.04)", padding: "7px 22px", borderRadius: 100, marginBottom: 30 }}>
           <motion.span animate={{ opacity: [1, 0.1, 1], scale: [1, 0.6, 1] }} transition={{ duration: 1.1, repeat: Infinity }}
             style={{ width: 5, height: 5, borderRadius: "50%", background: T.neon, display: "inline-block" }} />
           C · CHAPTER 7 · POINTERS + RECURSION
@@ -351,7 +279,7 @@ function HeroSection() {
 
         <motion.h1 initial={{ opacity: 0, y: 40 }} animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
-          style={{ fontFamily: T.display, fontWeight: 400, fontSize: "clamp(50px, 9vw, 108px)", lineHeight: 0.9, letterSpacing: 6, color: T.text, marginBottom: 22 }}>
+          style={{ fontFamily: T.display, fontWeight: 800, fontSize: "clamp(50px, 9vw, 108px)", lineHeight: 0.9, letterSpacing: -4, color: T.text, marginBottom: 22 }}>
           FINAL
           <br />
           <motion.span
@@ -2174,60 +2102,80 @@ function RightPanel({ activeSection }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ROOT PAGE
+// ROOT PAGE — uses shared CPageLayout
 // ─────────────────────────────────────────────────────────────────────────────
 export default function C7Page() {
-  const [activeSection, setActiveSection] = useState("hero");
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      entries => { entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); }); },
-      { threshold: 0.2, rootMargin: "-10% 0px -10% 0px" }
-    );
-    NAV_ITEMS.forEach(item => {
-      const el = document.getElementById(item.id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, []);
+  const activeSection = useActiveSection(NAV_ITEMS);
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Fira+Code:wght@300;400;500;600;700&display=swap');
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body { background: ${T.bg}; color: ${T.text}; overflow-x: hidden; }
-        ::-webkit-scrollbar { width: 3px; }
-        ::-webkit-scrollbar-track { background: ${T.bg}; }
-        ::-webkit-scrollbar-thumb { background: ${T.neon}; border-radius: 2px; }
-        input[type=range] { height: 4px; cursor: pointer; -webkit-appearance: none; appearance: none; background: ${T.dim}; border-radius: 2px; outline: none; }
-        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: ${T.neon}; cursor: pointer; box-shadow: 0 0 10px ${T.neon}70; }
-        input[type=number] { -moz-appearance: textfield; }
-        input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
-        button { outline: none; }
-        a { text-decoration: none; }
-      `}</style>
-
-      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: T.bg }}>
-        <Sidebar activeSection={activeSection} />
-
-        <main style={{ flex: 1, overflowY: "auto", overflowX: "hidden", minWidth: 0 }}>
-          <div style={{ maxWidth: "100%", padding: "0 38px" }}>
-            <HeroSection />
-            <RamSection />
-            <PointersSection />
-            <OpsSection />
-            <PtrFnSection />
-            <RecursionSection />
-            <CallStackSection />
-            <EngineSection />
-            <div style={{ height: 80 }} />
-          </div>
-        </main>
-
-        <RightPanel activeSection={activeSection} />
-      </div>
-    </>
+    <CPageLayout
+      chapterNum={7}
+      navItems={NAV_ITEMS}
+      activeSection={activeSection}
+      sectionInsights={{
+        hero: [
+          { icon: "◈", title: "CHAPTER 7", body: "The grand finale — advanced pointers and recursion. These two concepts are the foundation of ALL data structures and algorithms.", color: T.neon },
+          { icon: "🎯", title: "LEARNING GOAL", body: "Deep dive into pointer mechanics, pass-by-pointer, recursive thinking, call stack visualization, and how it all connects to DSA.", color: T.neon2 },
+          { icon: "💡", title: "KEY INSIGHT", body: "After this chapter, you'll understand how linked lists, trees, and graphs work at the memory level. This is your bridge to DSA.", color: T.neon4 },
+          { icon: "🌍", title: "REAL-WORLD", body: "Every sorting algorithm, tree traversal, graph search, and compiler uses recursion + pointers. This is the computer science core.", color: T.accent },
+        ],
+        ram: [
+          { icon: "⬜", title: "RAM MODEL", body: "RAM = giant array of bytes. Every byte has a unique address (0x0000 to 0xFFFF...). Variables are just named regions in this array.", color: T.neon },
+          { icon: "📐", title: "MEMORY SEGMENTS", body: "Text: your code. Data: globals. Stack: local vars (LIFO). Heap: malloc'd memory. Each has different rules and lifetimes.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Thinking memory is infinite. Stack is typically 1-8MB. Heap is larger but finite. Allocate too much → crash. Always check limits.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "RAM = a huge hotel. Each room (byte) has a number (address). Pointers hold room numbers. *p = 'go to room p and look inside'.", color: T.neon4 },
+        ],
+        pointers: [
+          { icon: "→", title: "POINTER MASTERY", body: "int **pp = pointer to pointer. *pp = the inner pointer. **pp = the actual value. Each * peels off one level of indirection.", color: T.neon },
+          { icon: "📐", title: "POINTER + ARRAYS", body: "arr[i] = *(arr+i). &arr[i] = arr+i. Array name decays to pointer. Understanding this duality is key to advanced C programming.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "int *p = NULL; *p = 5; → segfault! NULL dereference is the #1 runtime crash. Always check: if (p != NULL) before dereferencing.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Single pointer = house address. Double pointer = address of the paper that has the house address. Each * = 'follow one arrow'.", color: T.neon4 },
+          { icon: "💡", title: "VOID POINTERS", body: "void *p can point to ANY type. Used by malloc (returns void*). Must cast before dereferencing: int *ip = (int*)p;", color: T.accent },
+        ],
+        ops: [
+          { icon: "&", title: "& AND * DEEP DIVE", body: "& = get address (go UP one level). * = follow address (go DOWN one level). They're perfect inverses: *(&x) = x, &(*p) = p.", color: T.neon },
+          { icon: "📐", title: "POINTER ARITHMETIC", body: "p++ on int* moves forward 4 bytes (sizeof int). On char*, 1 byte. The compiler scales by type size automatically.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Arithmetic on void* is undefined (what's sizeof void?). Cast first. Also: never compare pointers from different arrays — undefined.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "p+1 isn't +1 byte, it's +1 element. The compiler knows the element size from the pointer type. It's like 'next room' not 'next byte'.", color: T.neon4 },
+        ],
+        "ptr-fn": [
+          { icon: "ƒ", title: "PASS BY POINTER", body: "void swap(int *a, int *b) — receives addresses. *a and *b modify the ORIGINAL variables. This is how functions return multiple values in C.", color: T.neon },
+          { icon: "📐", title: "FUNCTION POINTERS", body: "int (*fp)(int, int) = &add; fp(3,4) = 7. Functions have addresses too. Used for callbacks, qsort, signal handlers.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "void modify(int *x) { x = malloc(10); } — changes LOCAL copy of pointer! Need: void modify(int **x) { *x = malloc(10); }", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Pass by value = photocopy a paper. Pass by pointer = give the room key. With the key, the function can change what's in the room.", color: T.neon4 },
+          { icon: "💡", title: "ARRAYS AS PARAMS", body: "void foo(int arr[]) is IDENTICAL to void foo(int *arr). Arrays always decay to pointers when passed. sizeof won't work inside.", color: T.accent },
+        ],
+        recursion: [
+          { icon: "↻", title: "RECURSIVE THINKING", body: "1) Define what f(n) does. 2) Trust that f(n-1) works correctly. 3) Use f(n-1) to build f(n). 4) Handle f(0) or f(1) as base case.", color: T.neon },
+          { icon: "📐", title: "THREE ELEMENTS", body: "Every recursive function needs: 1) Base case (when to stop). 2) Recursive case (call with smaller input). 3) Progress toward base case.", color: T.neon2 },
+          { icon: "⚠️", title: "COMMON MISTAKE", body: "Missing base case → infinite recursion → stack overflow. Wrong recursion (n+1 instead of n-1) → diverges. Always verify convergence.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Recursion is delegation: 'I'll handle my part, delegate the rest to a clone of myself.' Each clone gets a simpler task until it's trivial.", color: T.neon4 },
+          { icon: "💡", title: "RECURSION vs ITERATION", body: "Every recursion can be rewritten as a loop (with an explicit stack). Recursion is elegant but slower (function call overhead). Choose wisely.", color: T.accent },
+        ],
+        callstack: [
+          { icon: "⧖", title: "CALL STACK VISUALIZED", body: "Each function call pushes a frame: return address, parameters, local vars. Return = pop frame. Stack grows down in memory.", color: T.neon },
+          { icon: "📐", title: "STACK FRAME ANATOMY", body: "Frame contains: saved registers, return address, parameters, local variables. The CPU's stack pointer (SP) tracks the top.", color: T.neon2 },
+          { icon: "⚠️", title: "STACK OVERFLOW", body: "Default stack size ~1-8MB. Deep recursion (>10000 calls) or large local arrays (int arr[1000000]) can overflow. Use heap for big data.", color: T.neon3 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "Call stack = stack of plates. Each function call adds a plate (frame). Return removes a plate. You can only access the top plate.", color: T.neon4 },
+          { icon: "💡", title: "DEBUGGING", body: "Segfault? Run with gdb: bt (backtrace) shows the call stack — every function that led to the crash, with line numbers. Essential skill.", color: T.accent },
+        ],
+        engine: [
+          { icon: "🚀", title: "MASTERY ENGINE", body: "Combine everything: pointers + recursion + call stack. Build a recursive linked list traversal and watch the stack grow/shrink.", color: T.neon },
+          { icon: "📐", title: "DSA READINESS", body: "After this chapter: linked lists (pointer chains), trees (recursive + pointers), sorting (recursion), searching (binary search) — you're ready.", color: T.neon2 },
+          { icon: "🌍", title: "WHAT'S NEXT", body: "You now understand: memory, types, operators, control flow, functions, arrays, strings, pointers, structs, file I/O, recursion. TIME FOR DSA.", color: T.neon4 },
+          { icon: "🧠", title: "MENTAL MODEL", body: "C fundamentals = the 'physics' of programming. DSA = engineering with that physics. You've learned the laws — now build machines.", color: T.accent },
+        ],
+      }}
+    >
+      <HeroSection />
+      <RamSection />
+      <PointersSection />
+      <OpsSection />
+      <PtrFnSection />
+      <RecursionSection />
+      <CallStackSection />
+      <EngineSection />
+      <div style={{ height: 80 }} />
+    </CPageLayout>
   );
 }
