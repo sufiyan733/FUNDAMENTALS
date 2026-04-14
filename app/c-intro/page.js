@@ -571,6 +571,62 @@ export default function CIntroPage() {
         @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
         @keyframes scan-line{0%{top:-2px}100%{top:100%}}
         @keyframes data-pulse{0%,100%{opacity:0.3}50%{opacity:0.8}}
+
+        /* ── RESPONSIVE — TABLET (≤1024px) ── */
+        @media(max-width:1024px){
+          html,body{overflow:auto!important;overflow-x:hidden!important}
+          .ci-hud-center{display:none!important}
+          .ci-hud-right{display:none!important}
+          .ci-main{height:auto!important;min-height:100vh;overflow:visible!important;padding:12px 16px!important}
+          .ci-cards{
+            flex-wrap:wrap!important;
+            overflow-x:visible!important;
+            gap:12px!important;
+          }
+          .ci-cards>div{
+            min-width:calc(50% - 8px)!important;
+            max-width:calc(50% - 8px)!important;
+            flex:0 0 calc(50% - 8px)!important;
+            height:auto!important;
+            min-height:280px;
+          }
+          .ci-pill{flex-wrap:wrap!important;justify-content:center!important}
+          .ci-pill>div{white-space:nowrap}
+          .ci-bottom{
+            flex-wrap:wrap!important;
+            justify-content:center!important;
+            gap:10px!important;
+            padding:12px 16px!important;
+          }
+          .ci-bottom-right{display:none!important}
+        }
+
+        /* ── RESPONSIVE — PHONE (≤640px) ── */
+        @media(max-width:640px){
+          .ci-main{padding:10px 12px!important}
+          .ci-cards{
+            flex-direction:column!important;
+            gap:14px!important;
+          }
+          .ci-cards>div{
+            min-width:100%!important;
+            max-width:100%!important;
+            flex:0 0 100%!important;
+            min-height:auto!important;
+            height:auto!important;
+          }
+          .ci-hero-row{flex-direction:column!important;gap:8px!important}
+          .ci-pill-bar{flex-direction:column!important;width:100%}
+          .ci-pill-bar>div{border-right:none!important;border-bottom:1px solid ${T.neon}15;text-align:center;justify-content:center!important}
+          .ci-pill-bar>div:last-child{border-bottom:none!important}
+          .ci-bottom{
+            flex-direction:column!important;
+            gap:10px!important;
+            text-align:center;
+            align-items:center!important;
+            padding:14px!important;
+          }
+        }
       `}</style>
 
       <ConstellationBG />
@@ -608,11 +664,12 @@ export default function CIntroPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: mounted ? 1 : 0 }}
         transition={{ duration: 0.8 }}
+        className="ci-main"
         style={{
           position: "relative", zIndex: 10,
           width: "100%", height: "100vh",
           display: "flex", flexDirection: "column",
-          padding: "clamp(8px,1.2vh,14px) clamp(10px,1.5vw,20px)",
+          padding: "clamp(8px,1.2vh,14px) clamp(10px,2vw,20px)",
           overflow: "hidden",
         }}
       >
@@ -661,7 +718,7 @@ export default function CIntroPage() {
           </div>
 
           {/* Center — Title */}
-          <div style={{ textAlign: "center", display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="ci-hud-center" style={{ textAlign: "center", display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ width: 24, height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}40)`, display: "block" }} />
             <span style={{ fontFamily: T.mono, fontSize: 9, letterSpacing: 4, color: T.muted }}>
               C PROGRAMMING SYLLABUS
@@ -669,8 +726,8 @@ export default function CIntroPage() {
             <span style={{ width: 24, height: 1, background: `linear-gradient(90deg, ${T.neon}40, transparent)`, display: "block" }} />
           </div>
 
-          {/* Right — Status */}
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          {/* Right — Status (hidden on tablet/mobile via CSS) */}
+          <div className="ci-hud-right" style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <div style={{ fontFamily: T.mono, fontSize: 8, letterSpacing: 2, color: T.dim, textAlign: "right" }}>
               <span style={{ color: `${T.neon}60` }}>SIG </span>
               <span style={{ color: "#39ff14" }}>LIVE</span>
@@ -694,14 +751,13 @@ export default function CIntroPage() {
             position: "relative",
           }}
         >
-          {/* Decorative side lines */}
+          {/* Decorative side lines behind title */}
           <div style={{
-            position: "absolute", top: "50%", left: 0, right: 0,
+            position: "absolute", top: "38%", left: 0, right: 0,
             display: "flex", alignItems: "center", justifyContent: "center",
             pointerEvents: "none", transform: "translateY(-50%)",
           }}>
-            <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}08)`, marginRight: 20 }} />
-            <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, ${T.neon}08, transparent)`, marginLeft: 20 }} />
+            <div style={{ flex: 1, height: 1, background: `linear-gradient(90deg, transparent 10%, ${T.neon}10 50%, transparent 90%)` }} />
           </div>
 
           {/* Main heading */}
@@ -713,42 +769,44 @@ export default function CIntroPage() {
               fontFamily: T.display, fontSize: "clamp(24px,3.8vh,42px)",
               fontWeight: 800, letterSpacing: -1.5, lineHeight: 1.05, margin: 0,
               textAlign: "center", position: "relative",
+              display: "flex", alignItems: "center", gap: "clamp(8px,1.5vw,18px)",
             }}
           >
-            <span style={{ color: T.text }}>Master </span>
+            {/* Left decorative bracket */}
             <span style={{
-              color: T.neon,
-              textShadow: `0 0 40px ${T.neon}50, 0 0 80px ${T.neon}20`,
-              position: "relative",
+              display: "inline-flex", flexDirection: "column", gap: 3, opacity: 0.2,
             }}>
-              C
-              <span style={{
-                position: "absolute", bottom: -2, left: 0, right: 0, height: 2,
-                background: `linear-gradient(90deg, ${T.neon}, transparent)`,
-                borderRadius: 1,
-              }} />
+              <span style={{ width: 14, height: 2, background: T.neon, borderRadius: 1 }} />
+              <span style={{ width: 8, height: 2, background: T.neon, borderRadius: 1 }} />
             </span>
-            <span style={{ color: T.text }}> Programming</span>
+
+            <span>
+              <span style={{ color: T.text }}>Master </span>
+              <span style={{
+                color: T.neon,
+                textShadow: `0 0 40px ${T.neon}50, 0 0 80px ${T.neon}20`,
+                position: "relative",
+              }}>
+                C
+                <span style={{
+                  position: "absolute", bottom: -2, left: 0, right: 0, height: 2,
+                  background: `linear-gradient(90deg, ${T.neon}, transparent)`,
+                  borderRadius: 1,
+                }} />
+              </span>
+              <span style={{ color: T.text }}> Programming</span>
+            </span>
+
+            {/* Right decorative bracket */}
+            <span style={{
+              display: "inline-flex", flexDirection: "column", gap: 3, opacity: 0.2, alignItems: "flex-end",
+            }}>
+              <span style={{ width: 14, height: 2, background: T.neon, borderRadius: 1 }} />
+              <span style={{ width: 8, height: 2, background: T.neon, borderRadius: 1 }} />
+            </span>
           </motion.h1>
 
-          {/* Subtitle with typing effect */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            style={{
-              fontFamily: T.mono, fontSize: "clamp(9px,1vh,11px)",
-              color: T.muted, marginTop: 6, letterSpacing: 0.5,
-              textAlign: "center",
-            }}
-          >
-            <TypingText
-              text="From absolute zero → DSA-ready · 7 chapters · 42+ topics"
-              delay={800}
-              speed={18}
-              style={{}}
-            />
-          </motion.div>
+
         </motion.div>
 
         {/* ═══════════════════════════════════════════════════════════════════ */}
@@ -773,7 +831,7 @@ export default function CIntroPage() {
         {/* ═══════════════════════════════════════════════════════════════════ */}
         {/* ── 7 CHAPTER CARDS ── */}
         {/* ═══════════════════════════════════════════════════════════════════ */}
-        <div style={{
+        <div className="ci-cards" style={{
           flex: 1, minHeight: 0,
           display: "flex", gap: "clamp(6px,0.7vw,12px)",
         }}>
@@ -789,6 +847,7 @@ export default function CIntroPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.6 }}
+          className="ci-bottom"
           style={{
             flexShrink: 0, marginTop: "clamp(4px,0.6vh,8px)",
             display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -797,35 +856,94 @@ export default function CIntroPage() {
             backdropFilter: "blur(16px)",
             border: `1px solid ${T.dim}50`,
             borderRadius: 10,
+            gap: "clamp(8px,1vw,16px)",
           }}
         >
           {/* Left — Credits */}
           <div style={{
             fontFamily: T.mono, fontSize: 7, letterSpacing: 3, color: T.dim,
             display: "flex", alignItems: "center", gap: 6,
+            flexShrink: 0,
           }}>
             <span style={{ width: 12, height: 1, background: `linear-gradient(90deg, ${T.neon}40, transparent)`, display: "block" }} />
             VISUOSLAYER // SAIF
           </div>
 
-          {/* Center — label */}
-          <div style={{
-            fontFamily: T.mono, fontSize: 7, letterSpacing: 3,
-            color: T.dim, display: "flex", alignItems: "center", gap: 8,
+          {/* Center — Subtitle pill */}
+          <div className="ci-pill-bar" style={{
+            display: "flex", alignItems: "center", gap: 0,
+            background: `linear-gradient(135deg, rgba(0,255,163,0.08), rgba(0,212,255,0.04))`,
+            border: `1px solid ${T.neon}35`,
+            borderRadius: 10, overflow: "hidden",
+            boxShadow: `0 0 30px ${T.neon}12, 0 0 60px ${T.neon}06, inset 0 0 20px ${T.neon}06`,
           }}>
-            <span style={{ width: 16, height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}30)`, display: "block" }} />
-            ZERO → DSA READY
-            <span style={{ width: 16, height: 1, background: `linear-gradient(90deg, ${T.neon}30, transparent)`, display: "block" }} />
+            {/* "From absolute zero → DSA-ready" segment */}
+            <div style={{
+              padding: "6px 14px",
+              fontFamily: T.mono, fontSize: "clamp(9px,1vh,12px)",
+              fontWeight: 600, letterSpacing: 0.8, color: T.neon,
+              background: `linear-gradient(135deg, ${T.neon}18, ${T.neon}08)`,
+              borderRight: `1px solid ${T.neon}25`,
+              display: "flex", alignItems: "center", gap: 8,
+              textShadow: `0 0 16px ${T.neon}50, 0 0 4px ${T.neon}30`,
+            }}>
+              <span style={{
+                width: 7, height: 7, borderRadius: "50%",
+                background: T.neon, boxShadow: `0 0 10px ${T.neon}, 0 0 20px ${T.neon}60`,
+                animation: "data-pulse 2s ease-in-out infinite",
+                flexShrink: 0,
+              }} />
+              From absolute zero → DSA-ready
+            </div>
+            {/* "7 chapters" segment */}
+            <div style={{
+              padding: "6px 12px",
+              fontFamily: T.mono, fontSize: "clamp(9px,1vh,12px)",
+              letterSpacing: 0.8, color: T.neon2,
+              borderRight: `1px solid ${T.neon}18`,
+              textShadow: `0 0 10px ${T.neon2}40`,
+            }}>
+              <span style={{ fontWeight: 800, fontSize: "clamp(11px,1.2vh,14px)" }}>7</span> chapters
+            </div>
+            {/* "42+ topics" segment */}
+            <div style={{
+              padding: "6px 12px",
+              fontFamily: T.mono, fontSize: "clamp(9px,1vh,12px)",
+              letterSpacing: 0.8, color: T.neon4,
+              textShadow: `0 0 10px ${T.neon4}40`,
+            }}>
+              <span style={{ fontWeight: 800, fontSize: "clamp(11px,1.2vh,14px)" }}>42+</span> topics
+            </div>
           </div>
 
-          {/* Right — symmetry */}
-          <div style={{
-            fontFamily: T.mono, fontSize: 7, letterSpacing: 3, color: T.dim,
-            display: "flex", alignItems: "center", gap: 6,
-          }}>
-            7 CHAPTERS · 42+ TOPICS
-            <span style={{ width: 12, height: 1, background: `linear-gradient(90deg, transparent, ${T.neon}40)`, display: "block" }} />
-          </div>
+          {/* Right — START CH-1 button */}
+          <Link href="/c-1" style={{ textDecoration: "none", flexShrink: 0 }}>
+            <motion.div
+              whileHover={{
+                scale: 1.06,
+                boxShadow: `0 0 30px ${T.neon}30, 0 0 60px ${T.neon}10`,
+              }}
+              whileTap={{ scale: 0.96 }}
+              style={{
+                fontFamily: T.mono, fontSize: "clamp(9px,1vh,11px)", fontWeight: 700,
+                letterSpacing: 2.5, padding: "6px 18px",
+                background: `linear-gradient(135deg, ${T.neon}28, ${T.neon}10)`,
+                border: `1px solid ${T.neon}50`, borderRadius: 8,
+                color: T.neon, cursor: "pointer",
+                boxShadow: `0 0 20px ${T.neon}18, 0 0 40px ${T.neon}08`,
+                display: "flex", alignItems: "center", gap: 8,
+                whiteSpace: "nowrap",
+              }}
+            >
+              <span style={{ fontSize: "clamp(9px,1vh,12px)" }}>▶</span>
+              START CH-1
+              <motion.span
+                animate={{ x: [0, 3, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                style={{ opacity: 0.7 }}
+              >→</motion.span>
+            </motion.div>
+          </Link>
         </motion.div>
       </motion.div>
     </>
