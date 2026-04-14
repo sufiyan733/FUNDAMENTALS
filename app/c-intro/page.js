@@ -579,8 +579,10 @@ export default function CIntroPage() {
           .ci-hud-right{display:none!important}
           .ci-main{height:auto!important;min-height:100vh;overflow:visible!important;padding:12px 16px!important}
           .ci-cards{
+            flex:none!important;
+            min-height:unset!important;
             flex-wrap:wrap!important;
-            overflow-x:visible!important;
+            overflow:visible!important;
             gap:12px!important;
           }
           .ci-cards>div{
@@ -588,8 +590,10 @@ export default function CIntroPage() {
             max-width:calc(50% - 8px)!important;
             flex:0 0 calc(50% - 8px)!important;
             height:auto!important;
-            min-height:280px;
+            min-height:280px!important;
           }
+          .ci-cards>div>a{height:auto!important}
+          .ci-cards>div>a>div{height:auto!important}
           .ci-pill{flex-wrap:wrap!important;justify-content:center!important}
           .ci-pill>div{white-space:nowrap}
           .ci-bottom{
@@ -606,12 +610,13 @@ export default function CIntroPage() {
           .ci-main{padding:10px 12px!important}
           .ci-cards{
             flex-direction:column!important;
+            flex-wrap:nowrap!important;
             gap:14px!important;
           }
           .ci-cards>div{
             min-width:100%!important;
             max-width:100%!important;
-            flex:0 0 100%!important;
+            flex:0 0 auto!important;
             min-height:auto!important;
             height:auto!important;
           }
